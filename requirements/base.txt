@@ -3,7 +3,7 @@
 Django>=6.0.1,<6.1
 psycopg[binary]>=3.2,<4
 argon2-cffi>=23.1
-cryptography>=44
+cryptography>=50.0.2
 Pillow>=11.0
 whitenoise>=6.9,<7
 gunicorn>=23
