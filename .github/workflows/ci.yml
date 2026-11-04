@@ -52,6 +52,11 @@ jobs:
           cache: pip
           cache-dependency-path: requirements/*.txt
       - run: pip install -r requirements/dev.txt
+      - name: Primeira execução local (copiando o .env.example, como no README)
+        run: |
+          cp .env.example .env
+          DJANGO_SETTINGS_MODULE=config.settings.dev python manage.py check
+          rm .env
       - name: Migrations em dia com os models
         run: python manage.py makemigrations --check --dry-run -v 3
       - run: python manage.py migrate --noinput

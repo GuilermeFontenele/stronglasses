@@ -1,5 +1,7 @@
 import os
+import tempfile
 from decimal import Decimal
+from pathlib import Path
 from unittest import mock
 
 from cryptography.fernet import Fernet
@@ -14,7 +16,7 @@ from apps.core.middleware import UsuarioAtualMiddleware, get_usuario_atual
 from apps.core.models import Parametro, RegistroAuditoria
 from apps.core.parametros import get_parametro
 from apps.core.validators import validar_cnpj, validar_cpf
-from config.env import env_bool, env_int, env_list, env_str
+from config.env import env_bool, env_int, env_list, env_str, load_dotenv
 
 
 class EnvTests(SimpleTestCase):
@@ -31,6 +33,17 @@ class EnvTests(SimpleTestCase):
     def test_booleano_invalido_falha(self):
         with mock.patch.dict(os.environ, {"X_BOOL": "talvez"}), self.assertRaises(ImproperlyConfigured):
             env_bool("X_BOOL")
+
+    def test_dotenv(self):
+        conteudo = "# comentario\nX_VAZIA=\nX_VALOR=abc\nexport X_ASPAS='com espaco'\nX_EXISTENTE=novo\n"
+        with tempfile.TemporaryDirectory() as pasta, mock.patch.dict(os.environ, {"X_EXISTENTE": "antigo"}):
+            caminho = Path(pasta) / ".env"
+            caminho.write_text(conteudo, encoding="utf-8")
+            load_dotenv(caminho)
+            self.assertNotIn("X_VAZIA", os.environ)  # vazio no .env não apaga padrões
+            self.assertEqual(os.environ["X_VALOR"], "abc")
+            self.assertEqual(os.environ["X_ASPAS"], "com espaco")
+            self.assertEqual(os.environ["X_EXISTENTE"], "antigo")  # ambiente real tem prioridade
 
 
 class CryptoTests(SimpleTestCase):
