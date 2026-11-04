@@ -1,0 +1,11 @@
+# O que o Graphify não precisa indexar
+graphify-out/
+static/
+staticfiles/
+media/
+.venv/
+env/
+venv/
+*.sqlite3
+.env
+.env.*

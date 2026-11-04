@@ -1,0 +1,27 @@
+[project]
+name = "stronglasses"
+version = "0.1.0"
+description = "Loja virtual da Strong Glasses"
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["*/migrations/*", "graphify-out"]
+
+[tool.ruff.lint]
+# E/F: erros, I: imports, B: bugs comuns, UP: Python moderno, DJ: Django,
+# S: segurança (bandit), BLE: except genérico, RUF: regras do ruff
+select = ["E", "F", "I", "B", "UP", "DJ", "S", "BLE", "RUF"]
+ignore = ["RUF012"]
+
+[tool.ruff.lint.per-file-ignores]
+"config/settings/*" = ["E402", "F403", "F405", "S105"]
+"**/tests/*" = ["S101", "S105", "S106", "S608"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["apps", "config"]
+
+[tool.coverage.run]
+source = ["apps", "config"]
+omit = ["*/migrations/*", "*/tests/*"]

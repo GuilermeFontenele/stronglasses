@@ -1,0 +1,17 @@
+{% load static %}<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Strong Glasses{% endblock %}</title>
+  <meta name="description" content="{% block description %}Óculos de sol e armações Strong Glasses.{% endblock %}">
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <main id="conteudo">
+    {% block content %}{% endblock %}
+  </main>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

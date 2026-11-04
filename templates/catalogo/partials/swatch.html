@@ -1,0 +1,12 @@
+<svg class="swatch" viewBox="0 0 2 2" role="img" aria-label="{{ rotulo }}" focusable="false">
+  <title>{{ rotulo }}</title>
+  <defs><clipPath id="{{ id_clip }}"><circle cx="1" cy="1" r="1"/></clipPath></defs>
+  <g clip-path="url(#{{ id_clip }})">
+    {% if armacao_textura %}
+      <image href="{{ armacao_textura }}" x="0" y="0" width="1" height="2" preserveAspectRatio="xMidYMid slice"/>
+    {% else %}
+      <rect x="0" y="0" width="1" height="2" fill="{{ armacao_hex }}"/>
+    {% endif %}
+    <rect x="1" y="0" width="1" height="2" fill="{{ lente_hex }}"/>
+  </g>
+</svg>
