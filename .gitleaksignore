@@ -1,0 +1,4 @@
+# Chaves de exemplo (não são segredos reais) que ficaram no primeiro commit,
+# antes de passarem a ser derivadas em tempo de execução. Removidas em 0245aeb.
+fa03a19ca13d215b7bf65d08437efb28a91d3509:config/settings/test.py:generic-api-key:6
+fa03a19ca13d215b7bf65d08437efb28a91d3509:config/settings/dev.py:generic-api-key:7
