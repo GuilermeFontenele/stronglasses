@@ -1,7 +1,7 @@
 # Dependências de produção. Poucas de propósito: cada pacote é superfície de ataque.
 # O Dependabot abre PRs de atualização e o CI roda pip-audit.
 Django>=6.0.1,<6.1
-psycopg[binary]>=3.2,<4
+psycopg[binary]>=3.3.6,<4
 argon2-cffi>=23.1
 cryptography>=44
 Pillow>=11.0
