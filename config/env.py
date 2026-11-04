@@ -4,6 +4,8 @@ Nenhum segredo fica no código. Em desenvolvimento, um arquivo `.env` na raiz
 (nunca versionado) é carregado sem sobrescrever variáveis já definidas.
 """
 
+import base64
+import hashlib
 import os
 from pathlib import Path
 
@@ -27,6 +29,13 @@ def load_dotenv(path: Path) -> None:
         if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
             value = value[1:-1]
         os.environ.setdefault(key, value)
+
+
+def chave_derivada(finalidade: str, segredo: str) -> str:
+    """Chave Fernet determinística derivada de outro segredo. Só para dev/teste:
+    evita deixar chaves fixas no repositório. Produção usa chaves próprias."""
+    digest = hashlib.sha256(f"{finalidade}:{segredo}".encode()).digest()
+    return base64.urlsafe_b64encode(digest).decode()
 
 
 def env_str(name: str, default: str | None = None, *, required: bool = False) -> str:

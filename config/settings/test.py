@@ -2,9 +2,11 @@
 
 import os
 
+from config.env import chave_derivada
+
 os.environ.setdefault("DJANGO_SECRET_KEY", "teste-" + "y" * 50)
-os.environ.setdefault("FIELD_ENCRYPTION_KEYS", "dGVzdGUtY2hhdmUtZmVybmV0LTMyLWJ5dGVzLW9rISE=")
-os.environ.setdefault("FIELD_HASH_KEY", "teste-hmac")
+os.environ.setdefault("FIELD_ENCRYPTION_KEYS", chave_derivada("fernet", os.environ["DJANGO_SECRET_KEY"]))
+os.environ.setdefault("FIELD_HASH_KEY", chave_derivada("hmac", os.environ["DJANGO_SECRET_KEY"]))
 
 from .base import *
 

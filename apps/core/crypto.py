@@ -33,9 +33,9 @@ def decifrar(token: str) -> str:
 
 
 def normalizar(valor: str) -> str:
-    """Remove pontuação/espaços e acentos para comparar documentos e contatos."""
+    """Mantém só letras e números, sem acento: '529.982.247-25' == '52998224725'."""
     sem_acento = unicodedata.normalize("NFKD", valor).encode("ascii", "ignore").decode("ascii")
-    return "".join(ch for ch in sem_acento.lower() if ch.isalnum() or ch in "@.+_-")
+    return "".join(ch for ch in sem_acento.lower() if ch.isalnum())
 
 
 def hash_busca(valor: str) -> str:
