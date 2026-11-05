@@ -201,3 +201,10 @@ class GetParametrosTests(TestCase):
         with self.assertNumQueries(1):
             valores = get_parametros("PARCELAS_SEM_JUROS", "NAO_EXISTE", padroes={"NAO_EXISTE": "x"})
         self.assertEqual(valores, {"PARCELAS_SEM_JUROS": 3, "NAO_EXISTE": "x"})
+
+
+class FaviconTests(TestCase):
+    def test_favicon_na_raiz_redireciona_para_o_estatico(self):
+        resposta = self.client.get("/favicon.ico")
+        self.assertEqual(resposta.status_code, 301)
+        self.assertTrue(resposta["Location"].endswith("favicon.ico"))

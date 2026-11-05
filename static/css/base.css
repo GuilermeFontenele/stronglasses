@@ -18,7 +18,8 @@ h1, h2, h3 { line-height: 1.2; }
 
 .faixa { background: var(--destaque); color: #fff; font-size: 12px; text-align: center; padding: 8px 16px; letter-spacing: .02em; }
 .topo { position: sticky; top: 0; z-index: 5; background: #fff; border-bottom: 1px solid var(--linha); padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: center; }
-.marca { font-weight: 800; letter-spacing: .18em; text-decoration: none; font-size: 15px; }
+.marca { display: inline-flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: .16em; text-decoration: none; font-size: 14px; }
+.marca img { width: auto; height: 40px; }
 .menu { display: flex; gap: 16px; overflow-x: auto; white-space: nowrap; font-size: 14px; scrollbar-width: none; }
 .menu a { text-decoration: none; padding: 4px 0; }
 .menu a:hover { text-decoration: underline; }
@@ -111,7 +112,9 @@ main { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
 .banners-trilho { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
 .banners-trilho::-webkit-scrollbar { display: none; }
 .banner { flex: 0 0 100%; margin: 0; scroll-snap-align: start; }
-.banner img { width: 100%; height: auto; max-height: 78vh; object-fit: cover; }
+.banner img { width: 100%; height: auto; object-fit: cover; }
+.banner-com-celular img { aspect-ratio: 12 / 5; }
+@media (max-width: 719px) { .banner-com-celular img { aspect-ratio: 4 / 5; } }
 
 /* Faixa de vantagens */
 .beneficios { list-style: none; margin: 0; padding: 20px 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 12px; border-bottom: 1px solid var(--linha); font-size: 13px; }
@@ -146,6 +149,7 @@ a.botao-sec { display: inline-block; text-decoration: none; color: var(--texto);
 .rodape ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
 .rodape a { text-decoration: none; }
 .rodape a:hover { text-decoration: underline; }
+.rodape-logo { display: block; margin: 32px auto 0; width: 96px; height: auto; }
 .rodape-legal { max-width: 1200px; margin: 24px auto 0; padding-top: 16px; border-top: 1px solid var(--linha); font-size: 12px; }
 .rodape { padding-bottom: 88px; } /* espaço para o botão flutuante no celular */
 

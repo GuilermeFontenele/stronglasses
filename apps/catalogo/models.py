@@ -33,6 +33,11 @@ def caminho_textura(instance, filename: str) -> str:
     return _nome_aleatorio("texturas", filename)
 
 
+# Tamanhos ideais do banner principal (largura, altura).
+BANNER_COMPUTADOR = (1920, 800)
+BANNER_CELULAR = (1080, 1350)
+
+
 def caminho_banner(instance, filename: str) -> str:
     return _nome_aleatorio("banners", filename)
 
@@ -291,14 +296,13 @@ class Banner(AuditModel):
         "imagem (computador)",
         upload_to=caminho_banner,
         validators=[FileExtensionValidator(EXTENSOES_IMAGEM), validar_tamanho_imagem],
-        help_text="Sugestão: 1920 x 800 px.",
+        help_text="Formato computador: 1920 x 800 px (proporção 12:5), JPG ou WEBP de até 500 KB.",
     )
     imagem_mobile = models.ImageField(
         "imagem (celular)",
         upload_to=caminho_banner,
-        blank=True,
         validators=[FileExtensionValidator(EXTENSOES_IMAGEM), validar_tamanho_imagem],
-        help_text="Opcional. Sugestão: 1080 x 1350 px. Vazio = usa a do computador.",
+        help_text="Formato celular: 1080 x 1350 px (proporção 4:5, igual ao post vertical do Instagram).",
     )
     link = models.CharField(
         "link", max_length=300, blank=True, validators=[validar_link_banner], help_text="Ex.: /masculino/"
@@ -315,6 +319,25 @@ class Banner(AuditModel):
 
     def __str__(self):
         return self.titulo
+
+    def clean(self):
+        erros = {}
+        for campo, (largura, altura), nome in (
+            ("imagem", BANNER_COMPUTADOR, "do computador"),
+            ("imagem_mobile", BANNER_CELULAR, "do celular"),
+        ):
+            arquivo = getattr(self, campo)
+            try:
+                tamanho = (arquivo.width, arquivo.height) if arquivo else None
+            except (OSError, ValueError):
+                tamanho = None  # arquivo ausente: os outros validadores cuidam
+            if tamanho and abs(tamanho[0] / tamanho[1] - largura / altura) > (largura / altura) * 0.1:
+                erros[campo] = (
+                    f"A imagem {nome} tem {tamanho[0]} x {tamanho[1]} px. "
+                    f"Use {largura} x {altura} px (ou a mesma proporção) para não cortar o banner."
+                )
+        if erros:
+            raise ValidationError(erros)
 
     @classmethod
     def no_ar(cls):

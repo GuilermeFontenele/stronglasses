@@ -24,3 +24,12 @@ def security_txt(request):
         f"Contact: mailto:{settings.SECURITY_CONTATO}\nExpires: 2027-12-31T23:59:59Z\nPreferred-Languages: pt-BR, en\n"
     )
     return HttpResponse(conteudo, content_type="text/plain; charset=utf-8")
+
+
+@require_GET
+def favicon(request):
+    """Navegadores e buscadores pedem /favicon.ico direto na raiz."""
+    from django.contrib.staticfiles.storage import staticfiles_storage
+    from django.shortcuts import redirect
+
+    return redirect(staticfiles_storage.url("favicon.ico"), permanent=True)

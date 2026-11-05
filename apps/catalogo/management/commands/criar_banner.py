@@ -44,7 +44,8 @@ class Command(BaseCommand):
         banner = Banner(titulo=opcoes["titulo"], link=opcoes["link"])
         banner.imagem.save(f"banner.{extensao}", ContentFile(conteudo), save=False)
         try:
-            banner.full_clean()
+            # Banner importado só tem a versão de computador; a de celular entra pelo painel.
+            banner.clean_fields(exclude=["imagem_mobile"])
         except ValidationError as exc:
             banner.imagem.delete(save=False)
             raise CommandError(f"Banner inválido: {exc}") from exc

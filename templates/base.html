@@ -12,7 +12,9 @@
   <meta property="og:type" content="{% block og_tipo %}website{% endblock %}">
   <meta property="og:title" content="{% block og_titulo %}Strong Glasses · Óculos de sol e armações{% endblock %}">
   <meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
-  {% block og_imagem %}{% endblock %}
+  {% block og_imagem %}<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'img/og-padrao.jpg' %}">{% endblock %}
+  <link rel="icon" href="{% static 'favicon.ico' %}" sizes="any">
+  <link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon.png' %}">
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
   {% block head %}{% endblock %}
 </head>
@@ -20,7 +22,10 @@
   <a class="pular" href="#conteudo">Pular para o conteúdo</a>
   <div class="faixa" role="note">Envio para todo o Brasil · {% if loja.pix_percentual %}{{ loja.pix_percentual }}% off no Pix · {% endif %}{% if loja.parcelas > 1 %}Até {{ loja.parcelas }}x sem juros{% endif %}</div>
   <header class="topo">
-    <a class="marca" href="/">STRONG GLASSES</a>
+    <a class="marca" href="/" aria-label="Strong Glasses, página inicial">
+      <img src="{% static 'img/logo-simbolo.png' %}" alt="" width="36" height="56">
+      <span>STRONG GLASSES</span>
+    </a>
     <nav class="menu" aria-label="Categorias">
       {% for cat in categorias_menu %}<a href="/{{ cat.slug }}/"{% if request.path == "/"|add:cat.slug|add:"/" %} aria-current="page"{% endif %}>{{ cat.nome }}</a>{% endfor %}
     </nav>
@@ -51,6 +56,7 @@
         <ul>{% for cat in categorias_menu %}<li><a href="/{{ cat.slug }}/">{{ cat.nome }}</a></li>{% endfor %}</ul>
       </section>
     </div>
+    <img class="rodape-logo" src="{% static 'img/logo.png' %}" alt="Strong Glasses" width="96" height="120" loading="lazy">
     <p class="rodape-legal">
       © {% now "Y" %} Strong Glasses{% if loja.cnpj %} · CNPJ {{ loja.cnpj }}{% endif %}{% if loja.endereco %} · {{ loja.endereco }}{% endif %}
     </p>

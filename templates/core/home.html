@@ -5,11 +5,11 @@
     <section class="banners" aria-label="Destaques da loja">
       <div class="banners-trilho">
         {% for banner in banners %}
-          <figure class="banner">
+          <figure class="banner{% if banner.imagem_mobile %} banner-com-celular{% endif %}">
             {% if banner.link %}<a href="{{ banner.link }}">{% endif %}
             <picture>
               {% if banner.imagem_mobile %}<source media="(max-width: 719px)" srcset="{{ banner.imagem_mobile.url }}">{% endif %}
-              <img src="{{ banner.imagem.url }}" alt="{{ banner.titulo }}"{% if forloop.first %} fetchpriority="high"{% else %} loading="lazy"{% endif %}>
+              <img src="{{ banner.imagem.url }}" alt="{{ banner.titulo }}" width="1920" height="800"{% if forloop.first %} fetchpriority="high"{% else %} loading="lazy"{% endif %}>
             </picture>
             {% if banner.link %}</a>{% endif %}
           </figure>

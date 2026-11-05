@@ -79,7 +79,7 @@ class ProdutoAdmin(AuditoriaAdminMixin, admin.ModelAdmin):
 
 @admin.register(Banner)
 class BannerAdmin(AuditoriaAdminMixin, admin.ModelAdmin):
-    list_display = ("miniatura", "titulo", "ativo", "ordem", "inicio", "fim")
+    list_display = ("miniatura", "titulo", "tem_versao_celular", "ativo", "ordem", "inicio", "fim")
     list_display_links = ("titulo",)
     list_editable = ("ativo", "ordem")
     list_filter = ("ativo",)
@@ -89,3 +89,7 @@ class BannerAdmin(AuditoriaAdminMixin, admin.ModelAdmin):
         if not obj.imagem:
             return "—"
         return format_html('<img src="{}" alt="" width="120" height="50" class="miniatura-banner">', obj.imagem.url)
+
+    @admin.display(description="versão celular", boolean=True)
+    def tem_versao_celular(self, obj):
+        return bool(obj.imagem_mobile)

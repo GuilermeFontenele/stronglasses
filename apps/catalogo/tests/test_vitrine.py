@@ -138,8 +138,26 @@ class HomeTests(VitrineBase):
     def test_link_do_banner_validado(self):
         for link in ("javascript:alert(1)", "http://x.com", "//x.com"):
             with self.subTest(link=link), self.assertRaises(ValidationError):
-                Banner(titulo="X", link=link).full_clean(exclude=["imagem"])
-        Banner(titulo="X", link="/masculino/").full_clean(exclude=["imagem"])
+                Banner(titulo="X", link=link).full_clean(exclude=["imagem", "imagem_mobile"])
+        Banner(titulo="X", link="/masculino/").full_clean(exclude=["imagem", "imagem_mobile"])
+
+    def test_banner_exige_versao_celular_e_proporcao_certa(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        def png(largura, altura):
+            saida = io.BytesIO()
+            Image.new("RGB", (largura, altura), "white").save(saida, "PNG")
+            return SimpleUploadedFile("b.png", saida.getvalue(), content_type="image/png")
+
+        with self.assertRaises(ValidationError) as erro:
+            Banner(titulo="X", imagem=png(192, 80)).full_clean()
+        self.assertIn("imagem_mobile", erro.exception.message_dict)
+
+        with self.assertRaises(ValidationError) as erro:
+            Banner(titulo="X", imagem=png(108, 135), imagem_mobile=png(192, 80)).full_clean()  # trocadas
+        self.assertEqual(set(erro.exception.message_dict), {"imagem", "imagem_mobile"})
+
+        Banner(titulo="X", imagem=png(192, 80), imagem_mobile=png(108, 135)).full_clean()
 
     def test_rodape_e_whatsapp(self):
         resposta = self.client.get("/")
