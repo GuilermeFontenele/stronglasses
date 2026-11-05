@@ -1,0 +1,18 @@
+{% extends "admin/change_list.html" %}
+{% load humanize %}
+{% block object-tools %}
+  {% if faturamento_por_ano %}
+    <div class="module">
+      <h2>Faturamento pago por ano (pedidos do site)</h2>
+      <table>
+        <thead><tr><th>Ano</th><th>Pedidos pagos</th><th>Faturamento</th></tr></thead>
+        <tbody>
+          {% for linha in faturamento_por_ano %}
+            <tr><td>{{ linha.ano }}</td><td>{{ linha.pedidos }}</td><td>R$ {{ linha.total|floatformat:2|intcomma }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+  {{ block.super }}
+{% endblock %}

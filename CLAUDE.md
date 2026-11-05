@@ -19,10 +19,13 @@ Loja virtual da Strong Glasses (óculos de sol e armações), em Django 6.
   `RegistroAuditoria` (trilha imutável), criptografia de campos, validadores BR.
 - `apps/clientes`: `Cliente`, `Consentimento` e os direitos do titular (`lgpd.py`).
 - `apps/catalogo`: `Produto` → `Variacao` (armação + lente, SKU, estoque), imagens, seletor de cor.
+- `apps/historico`: pedidos e métricas da Nuvemshop (somente leitura; faturamento por ano para o MEI).
+- `apps/nuvemshop`: importação via API (`importar_nuvemshop`, `nuvemshop_token`). Ver `docs/IMPORTACAO.md`.
 
 ## Regras do projeto (não negociáveis)
 
-1. **Segredos nunca no código.** Use `config.env`. Nada de senha, token ou chave em arquivo versionado.
+1. **Segredos e dados de clientes nunca no git.** Use `config.env`; nada de senha, token ou chave em arquivo
+   versionado. O repositório é público: `importacao/`, relatórios, métricas e dumps ficam fora do git.
 2. **LGPD.** Colete o mínimo. Documento (CPF/CNPJ) só com `EncryptedTextField` + hash para busca.
    Dado pessoal novo? Atualize `docs/LGPD.md` (finalidade, base legal, retenção) e `lgpd.exportar_dados`.
 3. **Nada de dado pessoal em logs.** O filtro mascara o óbvio, mas não conte com ele.

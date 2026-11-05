@@ -32,6 +32,7 @@ class Cliente(AuditModel):
     )
     documento_hash = models.CharField("hash do documento", max_length=64, blank=True, editable=False)
     anonimizado_em = models.DateTimeField("anonimizado em", null=True, blank=True, editable=False)
+    nuvemshop_id = models.BigIntegerField("ID na Nuvemshop", null=True, blank=True, unique=True, editable=False)
 
     class Meta:
         ordering = ["-criado_em"]
@@ -88,6 +89,7 @@ class Consentimento(models.Model):
         CADASTRO = "cadastro", "Cadastro"
         CHECKOUT = "checkout", "Checkout"
         PAINEL = "painel", "Registrado pela loja"
+        IMPORTACAO = "importacao", "Importado da Nuvemshop"
 
     cliente = models.ForeignKey(
         Cliente, verbose_name="cliente", on_delete=models.CASCADE, related_name="consentimentos"

@@ -15,7 +15,12 @@ Revise com um contador ou advogado: isto é um ponto de partida técnico, não p
 | CPF/CNPJ | `Cliente.documento` (cifrado) | Nota fiscal para PJ; exigência de pagamento ou envio | Obrigação legal (II) / contrato (V) | 5 anos após a venda |
 | Contato para ofertas | `Consentimento` | Marketing por e-mail ou WhatsApp | Consentimento (I) | Até revogação |
 | IP e navegador do aceite | `Consentimento.ip/user_agent` | Provar o consentimento; segurança | Legítimo interesse (IX) / Marco Civil | 180 dias (`lgpd_expurgar`) |
+| Pedidos anteriores (Nuvemshop): itens, valores, cidade/UF | `PedidoHistorico` | Histórico de vendas, limite do MEI, atendimento | Execução de contrato (V) / obrigação legal (II) | 5 anos após a venda; depois, desvincular do cliente |
+| Aceite de e-mail marketing vindo da Nuvemshop | `Consentimento` (origem "importacao") | Continuar enviando ofertas a quem já tinha aceitado | Consentimento (I) | Até revogação |
 | Usuário do painel | `RegistroAuditoria` | Rastrear alterações e acessos | Legítimo interesse (IX) | Indefinida (não contém dados de clientes em claro) |
+
+**Na importação da Nuvemshop** (ver `docs/IMPORTACAO.md`) ficam de fora o CPF de pessoa física e o endereço
+completo; titulares anonimizados nunca são reimportados.
 
 **Não coletamos:** data de nascimento, gênero, foto ou endereço fora do pedido. Dados de cartão nunca
 passam pelo nosso servidor (tokenização do Mercado Pago).

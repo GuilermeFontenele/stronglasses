@@ -29,3 +29,7 @@ graphify-out/cache/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Dados exportados da Nuvemshop (contêm dados pessoais e de negócio): NUNCA versionar
+importacao/
+metricas-nuvemshop.json

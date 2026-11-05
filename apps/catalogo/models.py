@@ -47,6 +47,7 @@ class Categoria(AuditModel):
     )
     ativa = models.BooleanField("ativa", default=True)
     ordem = models.PositiveSmallIntegerField("ordem", default=0)
+    nuvemshop_id = models.BigIntegerField("ID na Nuvemshop", null=True, blank=True, unique=True, editable=False)
 
     class Meta:
         ordering = ["ordem", "nome"]
@@ -148,6 +149,7 @@ class Produto(AuditModel):
     destaque = models.BooleanField("destaque na home", default=False)
     seo_titulo = models.CharField("título para o Google", max_length=70, blank=True)
     seo_descricao = models.CharField("descrição para o Google", max_length=160, blank=True)
+    nuvemshop_id = models.BigIntegerField("ID na Nuvemshop", null=True, blank=True, unique=True, editable=False)
 
     class Meta:
         ordering = ["nome"]
@@ -198,6 +200,7 @@ class Variacao(AuditModel):
     estoque = models.PositiveIntegerField("estoque", default=0)
     ativa = models.BooleanField("ativa", default=True)
     ordem = models.PositiveSmallIntegerField("ordem", default=0)
+    nuvemshop_id = models.BigIntegerField("ID na Nuvemshop", null=True, blank=True, unique=True, editable=False)
 
     class Meta:
         ordering = ["produto", "ordem", "id"]
@@ -254,6 +257,7 @@ class ImagemProduto(models.Model):
         "texto alternativo", max_length=150, help_text="Descreva a foto (acessibilidade e Google)."
     )
     ordem = models.PositiveSmallIntegerField("ordem", default=0)
+    nuvemshop_id = models.BigIntegerField("ID na Nuvemshop", null=True, blank=True, unique=True, editable=False)
 
     class Meta:
         ordering = ["ordem", "id"]

@@ -36,6 +36,10 @@ def _cnpj_valido(cnpj: str) -> bool:
     return True
 
 
+def cnpj_valido(valor: str) -> bool:
+    return _cnpj_valido(so_digitos(valor))
+
+
 def validar_cpf(valor: str) -> None:
     if not _cpf_valido(so_digitos(valor)):
         raise ValidationError("CPF inválido.")

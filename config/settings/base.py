@@ -33,6 +33,8 @@ INSTALLED_APPS = [
     "apps.core",
     "apps.clientes",
     "apps.catalogo",
+    "apps.historico",
+    "apps.nuvemshop",
 ]
 
 MIDDLEWARE = [
@@ -176,6 +178,16 @@ LGPD_VERSAO_POLITICA = env_str("LGPD_VERSAO_POLITICA", "2026-11")
 LGPD_RETENCAO_IP_DIAS = env_int("LGPD_RETENCAO_IP_DIAS", 180)
 LGPD_CONTATO_ENCARREGADO = env_str("LGPD_CONTATO_ENCARREGADO", "privacidade@stronglasses.com.br")
 SECURITY_CONTATO = env_str("SECURITY_CONTATO", "seguranca@stronglasses.com.br")
+
+# ---------------------------------------------------------------------------
+# Nuvemshop (só para a importação; remova depois da migração)
+# ---------------------------------------------------------------------------
+NUVEMSHOP_API_URL = env_str("NUVEMSHOP_API_URL", "https://api.nuvemshop.com.br/2025-03")
+NUVEMSHOP_STORE_ID = env_str("NUVEMSHOP_STORE_ID")
+NUVEMSHOP_ACCESS_TOKEN = env_str("NUVEMSHOP_ACCESS_TOKEN")
+NUVEMSHOP_CLIENT_ID = env_str("NUVEMSHOP_CLIENT_ID")
+NUVEMSHOP_CLIENT_SECRET = env_str("NUVEMSHOP_CLIENT_SECRET")
+NUVEMSHOP_USER_AGENT = env_str("NUVEMSHOP_USER_AGENT", f"Strong Glasses Importador ({LGPD_CONTATO_ENCARREGADO})")
 
 # ---------------------------------------------------------------------------
 # Internacionalização

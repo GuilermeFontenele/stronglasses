@@ -39,6 +39,8 @@ migrations, `check --deploy` com as configurações de produção, `pip-audit` e
 | `apps/core/` | auditoria, parâmetros da loja, criptografia, validadores, health check |
 | `apps/clientes/` | clientes, consentimentos e direitos do titular (LGPD) |
 | `apps/catalogo/` | categorias, produtos, variações (armação + lente), imagens |
-| `docs/` | `LGPD.md` (inventário de dados) |
+| `apps/historico/` | pedidos e métricas importados da Nuvemshop |
+| `apps/nuvemshop/` | importação da Nuvemshop (`docs/IMPORTACAO.md`) |
+| `docs/` | `LGPD.md` (inventário de dados), `IMPORTACAO.md` |
 
 Segurança: veja `SECURITY.md`. Privacidade: veja `docs/LGPD.md`.

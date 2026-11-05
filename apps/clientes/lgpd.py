@@ -58,7 +58,27 @@ def exportar_dados(cliente: Cliente, usuario=None) -> dict:
             }
             for c in cliente.consentimentos.all()
         ],
-        # Quando existirem pedidos, inclua-os aqui.
+        "pedidos_anteriores": [
+            {
+                "numero": p.numero,
+                "data": p.realizado_em.isoformat(),
+                "total": str(p.total),
+                "pagamento": p.status_pagamento,
+                "cidade": p.cidade,
+                "uf": p.uf,
+                "itens": [
+                    {
+                        "produto": i.nome,
+                        "variante": i.variante,
+                        "quantidade": i.quantidade,
+                        "preco": str(i.preco_unitario),
+                    }
+                    for i in p.itens.all()
+                ],
+            }
+            for p in cliente.pedidos_historicos.prefetch_related("itens")
+        ],
+        # Quando existirem pedidos da loja nova, inclua-os aqui.
     }
     registrar(RegistroAuditoria.Acao.EXPORTACAO, cliente, None, None, usuario)
     return dados
