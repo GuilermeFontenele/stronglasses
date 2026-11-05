@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import connection
 from django.http import HttpResponse, JsonResponse
+from django.shortcuts import render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
 
@@ -33,3 +34,8 @@ def favicon(request):
     from django.shortcuts import redirect
 
     return redirect(staticfiles_storage.url("favicon.ico"), permanent=True)
+
+
+@require_GET
+def contato(request):
+    return render(request, "core/contato.html")

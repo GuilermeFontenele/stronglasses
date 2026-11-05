@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Contato · Strong Glasses{% endblock %}
+{% block description %}Fale com a Strong Glasses pelo WhatsApp, e-mail ou Instagram.{% endblock %}
+{% block content %}
+  <article class="pagina">
+    <h1>Contato</h1>
+    <div class="pagina-texto">
+      <p>Tirou uma dúvida sobre modelo, cor, medida ou entrega? O jeito mais rápido é pelo WhatsApp.</p>
+    </div>
+    {% include "core/partials/contatos.html" %}
+    {% if loja.whatsapp %}<a class="botao botao-whatsapp contato-botao" href="https://wa.me/{{ loja.whatsapp }}?text={{ "Olá! Vim pelo site da Strong Glasses."|urlencode:"" }}" rel="noopener" target="_blank">{% include "catalogo/partials/icone_whatsapp.html" %} Chamar no WhatsApp</a>{% endif %}
+  </article>
+{% endblock %}

@@ -175,3 +175,32 @@ class Redirecionamento(AuditModel):
             raise ValidationError({"destino": "Use um caminho começando com / ou um endereço https://."})
         if self.destino.rstrip("/") == self.origem.rstrip("/"):
             raise ValidationError({"destino": "O destino é igual à origem."})
+
+
+class Pagina(AuditModel):
+    """Página institucional editável no painel (ex.: /trocas-e-devolucoes/, mesmo endereço da Nuvemshop)."""
+
+    titulo = models.CharField("título", max_length=120)
+    slug = models.SlugField(
+        "endereço (slug)",
+        max_length=120,
+        unique=True,
+        help_text="Fica em /<slug>/. Não use o mesmo endereço de uma categoria (a categoria tem prioridade).",
+    )
+    conteudo = models.TextField(
+        "conteúdo",
+        help_text="Texto simples. Deixe uma linha em branco entre parágrafos e comece um subtítulo com ## .",
+    )
+    seo_descricao = models.CharField("descrição para o Google", max_length=160, blank=True)
+    publicada = models.BooleanField("publicada", default=True)
+
+    class Meta:
+        ordering = ["titulo"]
+        verbose_name = "página"
+        verbose_name_plural = "páginas"
+
+    def __str__(self):
+        return self.titulo
+
+    def get_absolute_url(self):
+        return f"/{self.slug}/"

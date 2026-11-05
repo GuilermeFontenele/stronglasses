@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load paginas %}
+{% block title %}{{ pagina.titulo }} · Strong Glasses{% endblock %}
+{% block description %}{{ pagina.seo_descricao|default:pagina.titulo }}{% endblock %}
+{% block content %}
+  <article class="pagina">
+    <h1>{{ pagina.titulo }}</h1>
+    <div class="pagina-texto">{{ pagina.conteudo|texto_pagina }}</div>
+    {% if loja.whatsapp or loja.email %}
+      <aside class="pagina-contato">
+        <p>Ficou alguma dúvida? Fale com a gente:</p>
+        {% include "core/partials/contatos.html" %}
+      </aside>
+    {% endif %}
+  </article>
+{% endblock %}

@@ -68,31 +68,57 @@
     {% block content %}{% endblock %}
   </main>
   <footer class="rodape">
-    <div class="rodape-colunas">
-      <section>
-        <h2>Atendimento</h2>
-        <ul>
-          {% if loja.whatsapp %}<li><a href="https://wa.me/{{ loja.whatsapp }}" rel="noopener" target="_blank">WhatsApp</a></li>{% endif %}
-          {% if loja.instagram %}<li><a href="https://instagram.com/{{ loja.instagram }}" rel="noopener" target="_blank">Instagram @{{ loja.instagram }}</a></li>{% endif %}
-        </ul>
-      </section>
-      <section>
-        <h2>Compra segura</h2>
-        <ul>
-          {% if loja.pix_percentual %}<li>{{ loja.pix_percentual }}% de desconto no Pix</li>{% endif %}
-          {% if loja.parcelas > 1 %}<li>Até {{ loja.parcelas }}x sem juros no cartão</li>{% endif %}
-          <li>7 dias para devolver (direito de arrependimento)</li>
-        </ul>
-      </section>
-      <section>
-        <h2>Categorias</h2>
-        <ul>{% for cat in categorias_menu %}<li><a href="/{{ cat.slug }}/">{{ cat.nome }}</a></li>{% endfor %}</ul>
-      </section>
+    {% if loja.instagram %}
+      <a class="rodape-instagram" href="https://instagram.com/{{ loja.instagram }}" rel="noopener" target="_blank">
+        {% include "partials/icones/camera.html" %}
+        <span><small>Siga-nos no Instagram</small><strong>@{{ loja.instagram }}</strong></span>
+      </a>
+    {% endif %}
+    <div class="rodape-conteudo">
+      <div class="rodape-colunas">
+        <section class="rodape-navegacao">
+          <h2>Navegação</h2>
+          <ul>
+            <li><a href="/">Início</a></li>
+            {% for cat in categorias_menu %}<li><a href="/{{ cat.slug }}/">{{ cat.nome }}</a></li>{% endfor %}
+            <li><a href="/trocas-e-devolucoes/">Trocas e devoluções</a></li>
+            <li><a href="{% url 'core:contato' %}">Contato</a></li>
+          </ul>
+        </section>
+        <section>
+          <h2>Meios de pagamento</h2>
+          {# Formas aceitas pelo Mercado Pago. Em texto: logos de bandeira só com o material oficial delas. #}
+          <ul class="selos" aria-label="Formas de pagamento aceitas">
+            <li class="selo selo-pix">Pix{% if loja.pix_percentual %} <b>{{ loja.pix_percentual }}% off</b>{% endif %}</li>
+            <li class="selo">Visa</li>
+            <li class="selo">Mastercard</li>
+            <li class="selo">Elo</li>
+            <li class="selo">American Express</li>
+            <li class="selo">Hipercard</li>
+          </ul>
+          {% if loja.parcelas > 1 %}<p class="rodape-nota">{% include "partials/icones/cartao.html" %} Até {{ loja.parcelas }}x sem juros no cartão</p>{% endif %}
+        </section>
+        <section>
+          <h2>Formas de envio</h2>
+          <ul class="selos">
+            <li class="selo">{% include "partials/icones/envio.html" %} Correios</li>
+            <li class="selo">{% include "partials/icones/local.html" %} Motoboy em Fortaleza</li>
+          </ul>
+          <p class="rodape-nota">Enviamos para todo o Brasil, com código de rastreio.</p>
+        </section>
+        <section>
+          <h2>Contato</h2>
+          {% include "core/partials/contatos.html" %}
+        </section>
+      </div>
+      <div class="rodape-base">
+        <img class="rodape-logo" src="{% static 'img/logo.png' %}" alt="Strong Glasses" width="64" height="80" loading="lazy">
+        <p class="rodape-legal">
+          Copyright Strong Glasses · {% now "Y" %}. Todos os direitos reservados.
+          {% if loja.cnpj %}<br>CNPJ {{ loja.cnpj }}{% endif %}{% if loja.endereco %}{% if loja.cnpj %} · {% else %}<br>{% endif %}{{ loja.endereco }}{% endif %}
+        </p>
+      </div>
     </div>
-    <img class="rodape-logo" src="{% static 'img/logo.png' %}" alt="Strong Glasses" width="96" height="120" loading="lazy">
-    <p class="rodape-legal">
-      © {% now "Y" %} Strong Glasses{% if loja.cnpj %} · CNPJ {{ loja.cnpj }}{% endif %}{% if loja.endereco %} · {{ loja.endereco }}{% endif %}
-    </p>
   </footer>
   {% block whatsapp_flutuante %}
     {% if loja.whatsapp %}

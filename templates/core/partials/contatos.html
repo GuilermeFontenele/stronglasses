@@ -1,0 +1,6 @@
+{% load paginas %}<ul class="lista-contatos">
+  {% if loja.whatsapp %}<li><a href="https://wa.me/{{ loja.whatsapp }}" rel="noopener" target="_blank">{% include "catalogo/partials/icone_whatsapp.html" %}<span>{{ loja.whatsapp|telefone }}</span></a></li>{% endif %}
+  {% if loja.email %}<li><a href="mailto:{{ loja.email }}">{% include "partials/icones/email.html" %}<span>{{ loja.email }}</span></a></li>{% endif %}
+  {% if loja.instagram %}<li><a href="https://instagram.com/{{ loja.instagram }}" rel="noopener" target="_blank">{% include "partials/icones/camera.html" %}<span>@{{ loja.instagram }}</span></a></li>{% endif %}
+  {% if loja.endereco %}<li>{% include "partials/icones/local.html" %}<span>{{ loja.endereco }}</span></li>{% endif %}
+</ul>

@@ -279,3 +279,31 @@ class TopoTests(VitrineBase):
         validar_video(SimpleUploadedFile("a.webm", b"\x1a\x45\xdf\xa3" + b"\x00" * 20))
         with self.assertRaises(ValidationError):
             validar_video(SimpleUploadedFile("a.mp4", b"<script>alert(1)</script>"))
+
+
+class CriarBannerArquivoTests(TestCase):
+    def _salvar(self, pasta, nome, largura, altura):
+        caminho = f"{pasta}/{nome}"
+        Image.new("RGB", (largura, altura), "white").save(caminho, "WEBP")
+        return caminho
+
+    def test_cria_com_arquivos_locais_e_substitui_os_antigos(self):
+        antigo = Banner.objects.create(titulo="Antigo", imagem="banners/a.webp")
+        with tempfile.TemporaryDirectory() as pasta, override_settings(MEDIA_ROOT=pasta):
+            pc = self._salvar(pasta, "pc.webp", 192, 80)
+            cel = self._salvar(pasta, "cel.webp", 108, 135)
+            call_command(
+                "criar_banner", "--arquivo", pc, "--arquivo-celular", cel, "--substituir", stdout=io.StringIO()
+            )
+            novo = Banner.objects.exclude(pk=antigo.pk).get()
+            self.assertTrue(novo.imagem_mobile)
+            antigo.refresh_from_db()
+            self.assertFalse(antigo.ativo)
+
+    def test_recusa_proporcao_errada(self):
+        with tempfile.TemporaryDirectory() as pasta, override_settings(MEDIA_ROOT=pasta):
+            pc = self._salvar(pasta, "pc.webp", 108, 135)  # trocadas
+            cel = self._salvar(pasta, "cel.webp", 192, 80)
+            with self.assertRaises(CommandError):
+                call_command("criar_banner", "--arquivo", pc, "--arquivo-celular", cel, stdout=io.StringIO())
+        self.assertFalse(Banner.objects.exists())

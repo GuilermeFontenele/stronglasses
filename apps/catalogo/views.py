@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404, render
 from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_GET
 
+from apps.core.models import Pagina
 from apps.core.parametros import get_parametro
 
 from .models import Banner, Categoria, Produto
@@ -120,7 +121,11 @@ def robots_txt(request):
 def categoria(request, slug):
     cat = Categoria.objects.filter(slug=slug, ativa=True).first()
     if cat is None:
-        raise Http404  # o middleware de redirecionamentos ainda pode tratar esta URL
+        # Mesmo formato de URL das páginas da Nuvemshop (/trocas-e-devolucoes/).
+        pagina = Pagina.objects.filter(slug=slug, publicada=True).first()
+        if pagina is None:
+            raise Http404  # o middleware de redirecionamentos ainda pode tratar esta URL
+        return render(request, "core/pagina.html", {"pagina": pagina})
     produtos = produtos_visiveis().filter(categorias=cat)
     publico = request.GET.get("publico", "")
     if publico in Produto.Publico.values:

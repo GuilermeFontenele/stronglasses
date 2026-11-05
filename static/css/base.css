@@ -182,7 +182,6 @@ main { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
 .contagem, .vazio { color: var(--suave); font-size: 14px; }
 .paginacao { display: flex; gap: 16px; justify-content: center; padding: 24px 0; }
 
-.rodape { border-top: 1px solid var(--linha); margin-top: 48px; padding: 24px 16px; text-align: center; color: var(--suave); font-size: 13px; }
 
 /* Seletor de cor armação | lente (ver catalogo/partials/swatch.html) */
 .swatch { width: 28px; height: 28px; display: inline-block; vertical-align: middle; }
@@ -237,16 +236,46 @@ a.botao-sec { display: inline-block; text-decoration: none; color: var(--texto);
 .trilha a { text-decoration: none; }
 .trilha a:hover { text-decoration: underline; }
 
-/* Rodapé completo */
-.rodape { text-align: left; }
-.rodape-colunas { max-width: 1200px; margin: 0 auto; display: grid; gap: 24px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
-.rodape h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--texto); margin: 0 0 8px; }
-.rodape ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+/* Rodapé (Instagram, navegação, pagamento, envio, contato e copyright) */
+.rodape { margin-top: 56px; background: #fafafa; border-top: 1px solid var(--linha); color: var(--texto); font-size: 14px; padding-bottom: 88px; } /* espaço para o botão flutuante */
+.rodape-instagram { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 28px 16px; background: #f0f0f0; text-decoration: none; }
+.rodape-instagram .icone { width: 36px; height: 36px; }
+.rodape-instagram span { display: flex; flex-direction: column; line-height: 1.15; }
+.rodape-instagram small { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--suave); }
+.rodape-instagram strong { font-size: 20px; letter-spacing: .02em; text-transform: uppercase; }
+.rodape-instagram:hover strong { text-decoration: underline; }
+.rodape-conteudo { max-width: 1200px; margin: 0 auto; padding: 32px 16px 0; }
+.rodape-colunas { display: grid; gap: 28px; grid-template-columns: 1fr; }
+@media (min-width: 720px) { .rodape-colunas { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1024px) { .rodape-colunas { grid-template-columns: 1.1fr 1.2fr 1fr 1.2fr; gap: 40px; } }
+.rodape h2 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; margin: 0 0 12px; }
+.rodape ul { list-style: none; padding: 0; margin: 0; }
 .rodape a { text-decoration: none; }
 .rodape a:hover { text-decoration: underline; }
-.rodape-logo { display: block; margin: 32px auto 0; width: 96px; height: auto; }
-.rodape-legal { max-width: 1200px; margin: 24px auto 0; padding-top: 16px; border-top: 1px solid var(--linha); font-size: 12px; }
-.rodape { padding-bottom: 88px; } /* espaço para o botão flutuante no celular */
+.rodape-navegacao ul { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; }
+.selos { display: flex; flex-wrap: wrap; gap: 6px; }
+.selo { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--linha); border-radius: 6px; background: #fff; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.selo .icone { width: 16px; height: 16px; }
+.selo-pix b { color: var(--pix); font-weight: 700; }
+.rodape-nota { display: flex; align-items: center; gap: 6px; margin: 10px 0 0; font-size: 13px; color: var(--suave); }
+.rodape-nota .icone { width: 18px; height: 18px; flex: 0 0 auto; }
+.lista-contatos { display: grid; gap: 10px; }
+.lista-contatos li, .lista-contatos a { display: flex; align-items: center; gap: 10px; }
+.lista-contatos .icone, .lista-contatos .icone-whatsapp { width: 20px; height: 20px; flex: 0 0 auto; }
+.rodape-base { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 32px; padding: 24px 0; border-top: 1px solid var(--linha); text-align: center; }
+.rodape-logo { width: 56px; height: auto; }
+.rodape-legal { margin: 0; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--suave); line-height: 1.7; }
+
+/* Páginas institucionais e contato */
+.pagina { max-width: 760px; margin: 0 auto; padding: 24px 0 8px; }
+.pagina h1 { font-size: 26px; margin: 8px 0 20px; }
+.pagina-texto { font-size: 15px; color: #333; }
+.pagina-texto h2 { font-size: 16px; margin: 28px 0 8px; color: var(--texto); }
+.pagina-texto p { margin: 0 0 12px; }
+.pagina-contato { margin-top: 32px; padding: 20px; border: 1px solid var(--linha); border-radius: 14px; }
+.pagina-contato p { margin: 0 0 12px; font-weight: 600; }
+.pagina .lista-contatos { margin: 16px 0; font-size: 15px; }
+.contato-botao { margin-top: 12px; width: auto; }
 
 @media (prefers-reduced-motion: no-preference) {
   .banners-trilho, .galeria-principal { scroll-behavior: smooth; }

@@ -14,6 +14,7 @@ def loja(request):
         "INSTAGRAM_LOJA",
         "CNPJ_LOJA",
         "ENDERECO_LOJA",
+        "EMAIL_LOJA",
         "PIX_DESCONTO_PERCENTUAL",
         "PARCELAS_SEM_JUROS",
     )
@@ -23,6 +24,7 @@ def loja(request):
             "instagram": str(p["INSTAGRAM_LOJA"] or "").strip().lstrip("@"),
             "cnpj": str(p["CNPJ_LOJA"] or "").strip(),
             "endereco": str(p["ENDERECO_LOJA"] or "").strip(),
+            "email": str(p["EMAIL_LOJA"] or "").strip(),
             "pix_percentual": p["PIX_DESCONTO_PERCENTUAL"] or 0,
             "parcelas": p["PARCELAS_SEM_JUROS"] or 1,
         }

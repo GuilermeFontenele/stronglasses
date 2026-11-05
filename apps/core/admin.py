@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from .auditoria import AuditoriaAdminMixin, RegistroAuditoriaAdmin  # noqa: F401 (registra o admin)
-from .models import Parametro, Redirecionamento
+from .models import Pagina, Parametro, Redirecionamento
 
 
 @admin.register(Parametro)
@@ -23,3 +23,12 @@ class RedirecionamentoAdmin(AuditoriaAdminMixin, admin.ModelAdmin):
     list_filter = ("ativo", "permanente")
     search_fields = ("origem", "destino")
     readonly_fields = ("acessos", "criado_em", "criado_por", "atualizado_em", "atualizado_por")
+
+
+@admin.register(Pagina)
+class PaginaAdmin(AuditoriaAdminMixin, admin.ModelAdmin):
+    list_display = ("titulo", "slug", "publicada", "atualizado_em")
+    list_filter = ("publicada",)
+    search_fields = ("titulo", "conteudo")
+    prepopulated_fields = {"slug": ("titulo",)}
+    readonly_fields = ("criado_em", "criado_por", "atualizado_em", "atualizado_por")
