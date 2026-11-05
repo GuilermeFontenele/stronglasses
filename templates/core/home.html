@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load vitrine %}
-{% block cabecalho_classe %}{% if banners %} transparente{% endif %}{% endblock %}
+{% block cabecalho_classe %}{% if banners %} transparente{% if not banners.0.imagem_mobile %} transparente-so-computador{% endif %}{% endif %}{% endblock %}
 {% block topo_pagina %}
   {% if banners %}
     <section class="banners" aria-roledescription="carrossel" aria-label="Destaques da loja" data-carrossel>

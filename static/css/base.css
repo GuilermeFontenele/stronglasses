@@ -19,7 +19,9 @@ h1, h2, h3 { line-height: 1.2; }
 
 /* Topo (estilo Saint Tropez): menu à esquerda, logo no centro, busca e carrinho à direita */
 .cabecalho { --altura-faixa: 32px; position: sticky; top: calc(-1 * var(--altura-faixa)); z-index: 40; background: #fff; color: var(--texto); transition: background-color .25s ease, color .25s ease, box-shadow .25s ease; }
-.faixa { height: var(--altura-faixa); display: flex; align-items: center; justify-content: center; padding: 0 16px; background: var(--destaque); color: #fff; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: inherit; }
+.faixa { height: var(--altura-faixa); display: flex; align-items: center; justify-content: center; padding: 0 16px; background: var(--destaque); color: #fff; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; white-space: nowrap; overflow: hidden; transition: inherit; }
+.faixa-item::before { content: "·"; margin: 0 8px; }
+@media (max-width: 480px) { .faixa-extra { display: none; } }
 .topo { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; height: 64px; padding: 0 12px; border-bottom: 1px solid var(--linha); transition: border-color .25s ease; }
 .marca { justify-self: center; display: inline-flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: .2em; text-decoration: none; font-size: 13px; white-space: nowrap; }
 .marca img { width: auto; height: 38px; transition: filter .25s ease; }
@@ -42,6 +44,14 @@ h1, h2, h3 { line-height: 1.2; }
 .cabecalho.transparente:hover .marca img, .cabecalho.transparente:focus-within .marca img, .cabecalho.transparente.solido .marca img { filter: none; }
 .cabecalho.transparente:hover .contagem-carrinho, .cabecalho.transparente:focus-within .contagem-carrinho, .cabecalho.transparente.solido .contagem-carrinho { background: var(--texto); color: #fff; }
 .cabecalho.transparente.fixo { position: fixed; top: calc(-1 * var(--altura-faixa)); animation: descer .3s ease; }
+/* Banner sem versão de celular é baixo demais para ter o topo por cima: no celular o topo fica branco. */
+@media (max-width: 719px) {
+  .cabecalho.transparente-so-computador { position: sticky; top: calc(-1 * var(--altura-faixa)); background: #fff; color: var(--texto); }
+  .cabecalho.transparente-so-computador .faixa { background: var(--destaque); }
+  .cabecalho.transparente-so-computador .topo { border-bottom-color: var(--linha); }
+  .cabecalho.transparente-so-computador .marca img { filter: none; }
+  .cabecalho.transparente-so-computador .contagem-carrinho { background: var(--texto); color: #fff; }
+}
 @keyframes descer { from { transform: translateY(-100%); } to { transform: none; } }
 
 /* Menu lateral (gaveta). Funciona sem JS: <details>; tocar fora fecha. */

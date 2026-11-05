@@ -243,3 +243,39 @@ class BuscaTests(VitrineBase):
         self.assertEqual(resposta.status_code, 200)
         self.assertEqual(resposta.context["resultados"], [])
         self.assertContains(resposta, 'name="robots" content="noindex"')
+
+
+class TopoTests(VitrineBase):
+    def test_topo_transparente_so_com_banner(self):
+        self.assertNotContains(self.client.get("/"), "transparente")
+        Banner.objects.create(titulo="Mapa", imagem="banners/mapa.webp")
+        html = self.client.get("/").content.decode()
+        self.assertIn("cabecalho transparente transparente-so-computador", html)
+        Banner.objects.create(titulo="Novo", imagem="banners/a.webp", imagem_mobile="banners/a-cel.webp", ordem=0)
+        Banner.objects.filter(titulo="Mapa").update(ordem=1)
+        self.assertNotIn("transparente-so-computador", self.client.get("/").content.decode())
+        self.assertNotIn("transparente", self.client.get("/produtos/oculos-de-sol-roshi/").content.decode())
+
+    def test_menu_lateral_e_icones(self):
+        html = self.client.get("/").content.decode()
+        self.assertIn('<details class="menu-lateral"', html)
+        self.assertIn('href="/busca/" aria-label="Buscar"', html)
+        self.assertIn('href="/carrinho/"', html)
+
+    def test_banner_com_video(self):
+        Banner.objects.create(
+            titulo="Vídeo", imagem="banners/v.webp", imagem_mobile="banners/v2.webp", video="banners/v.mp4"
+        )
+        html = self.client.get("/").content.decode()
+        self.assertIn('data-video="/media/banners/v.mp4"', html)
+        self.assertIn("muted loop playsinline", html)
+
+    def test_validar_video_pela_assinatura(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from apps.catalogo.models import validar_video
+
+        validar_video(SimpleUploadedFile("a.mp4", b"\x00\x00\x00\x18ftypmp42" + b"\x00" * 20))
+        validar_video(SimpleUploadedFile("a.webm", b"\x1a\x45\xdf\xa3" + b"\x00" * 20))
+        with self.assertRaises(ValidationError):
+            validar_video(SimpleUploadedFile("a.mp4", b"<script>alert(1)</script>"))

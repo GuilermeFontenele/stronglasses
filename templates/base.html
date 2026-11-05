@@ -21,7 +21,7 @@
 <body>
   <a class="pular" href="#conteudo">Pular para o conteúdo</a>
   <div class="cabecalho{% block cabecalho_classe %}{% endblock %}" data-cabecalho>
-    <div class="faixa" role="note">Envio para todo o Brasil{% if loja.pix_percentual %} · {{ loja.pix_percentual }}% off no Pix{% endif %}{% if loja.parcelas > 1 %} · Até {{ loja.parcelas }}x sem juros{% endif %}</div>
+    <div class="faixa" role="note"><span>Envio para todo o Brasil</span>{% if loja.pix_percentual %}<span class="faixa-item">{{ loja.pix_percentual }}% off no Pix</span>{% endif %}{% if loja.parcelas > 1 %}<span class="faixa-item faixa-extra">Até {{ loja.parcelas }}x sem juros</span>{% endif %}</div>
     <header class="topo">
       <details class="menu-lateral" data-menu>
         <summary class="topo-icone" aria-label="Abrir menu">{% include "partials/icones/menu.html" %}</summary>
