@@ -20,6 +20,7 @@
 </head>
 <body>
   <a class="pular" href="#conteudo">Pular para o conteúdo</a>
+  {% if ambiente_testes %}<div class="aviso-testes" role="note">Ambiente de testes · o botão do WhatsApp fala com a loja de verdade</div>{% endif %}
   <div class="cabecalho{% block cabecalho_classe %}{% endblock %}" data-cabecalho>
     <div class="faixa" role="note"><span>Envio para todo o Brasil</span>{% if loja.pix_percentual %}<span class="faixa-item">{{ loja.pix_percentual }}% off no Pix</span>{% endif %}{% if loja.parcelas > 1 %}<span class="faixa-item faixa-extra">Até {{ loja.parcelas }}x sem juros</span>{% endif %}</div>
     <header class="topo">

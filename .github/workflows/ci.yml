@@ -91,3 +91,28 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  imagem:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Monta a imagem do servidor
+        run: docker build -t stronglasses:ci .
+      - name: A imagem sobe e responde no /saude/
+        run: |
+          docker network create loja
+          docker run -d --name banco --network loja -e POSTGRES_DB=loja -e POSTGRES_USER=loja -e POSTGRES_PASSWORD=senha-ci postgres:17
+          for i in $(seq 1 30); do docker exec banco pg_isready -U loja && break; sleep 1; done
+          docker run -d --name app --network loja -p 8000:8000 \
+            -e DJANGO_ALLOWED_HOSTS=localhost -e DJANGO_AMBIENTE=testes -e DJANGO_BEHIND_PROXY=1 -e DJANGO_SERVIR_MEDIA=1 \
+            -e DB_NAME=loja -e DB_USER=loja -e DB_PASSWORD=senha-ci -e DB_HOST=banco -e DB_SSLMODE=disable \
+            -e DJANGO_SECRET_KEY="$(python3 -c 'import secrets; print(secrets.token_urlsafe(64))')" \
+            -e FIELD_ENCRYPTION_KEYS="$(docker run --rm stronglasses:ci python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')" \
+            -e FIELD_HASH_KEY="$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))')" \
+            stronglasses:ci
+          for i in $(seq 1 40); do curl -fsS http://localhost:8000/saude/ && break; sleep 2; done
+          curl -fsS http://localhost:8000/saude/ | grep -q '"ok"'
+          # Página da loja responde por HTTPS lógico (o proxy da hospedagem faz o TLS)
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H 'X-Forwarded-Proto: https' http://localhost:8000/)" = "200" || (docker logs app; exit 1)
+          docker exec app sh -c 'test ! -e .env && test ! -d importacao && test ! -d .git'
+          echo "Imagem ok: sobe, migra, responde e não carrega segredos."

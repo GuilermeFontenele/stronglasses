@@ -314,3 +314,6 @@ a.botao-sec { display: inline-block; text-decoration: none; color: var(--texto);
 .continuar { display: block; margin-top: 16px; text-align: center; font-size: 14px; color: var(--suave); }
 .carrinho-vazio { text-align: center; padding: 48px 0; color: var(--suave); }
 .sem-rolagem { overflow: hidden; }
+
+/* Ambiente de testes */
+.aviso-testes { background: #ffd23f; color: #111; font-size: 12px; font-weight: 700; text-align: center; padding: 6px 16px; }

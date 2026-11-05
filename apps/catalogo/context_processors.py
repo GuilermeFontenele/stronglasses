@@ -18,7 +18,10 @@ def loja(request):
         "PIX_DESCONTO_PERCENTUAL",
         "PARCELAS_SEM_JUROS",
     )
+    from django.conf import settings
+
     return {
+        "ambiente_testes": settings.AMBIENTE != "producao",
         "loja": {
             "whatsapp": "".join(c for c in str(p["WHATSAPP_LOJA"] or "") if c.isdigit()),
             "instagram": str(p["INSTAGRAM_LOJA"] or "").strip().lstrip("@"),
@@ -27,5 +30,5 @@ def loja(request):
             "email": str(p["EMAIL_LOJA"] or "").strip(),
             "pix_percentual": p["PIX_DESCONTO_PERCENTUAL"] or 0,
             "parcelas": p["PARCELAS_SEM_JUROS"] or 1,
-        }
+        },
     }

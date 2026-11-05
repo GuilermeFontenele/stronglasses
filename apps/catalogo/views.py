@@ -1,5 +1,6 @@
 import json
 
+from django.conf import settings
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import Http404, HttpResponse
@@ -113,6 +114,8 @@ def _dados_estruturados(request, item, variacoes, fotos, preco, url):
 
 @require_GET
 def robots_txt(request):
+    if settings.AMBIENTE != "producao":
+        return HttpResponse("User-agent: *\nDisallow: /\n", content_type="text/plain; charset=utf-8")
     linhas = ["User-agent: *", "Disallow: /saude/", f"Sitemap: {request.build_absolute_uri('/sitemap.xml')}", ""]
     return HttpResponse("\n".join(linhas), content_type="text/plain; charset=utf-8")
 

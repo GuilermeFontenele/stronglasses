@@ -1,0 +1,26 @@
+# Nada de segredo, dado de cliente ou lixo local dentro da imagem
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+importacao/
+metricas-nuvemshop.json
+media/
+staticfiles/
+db.sqlite3*
+*.sql
+*.dump
+.git/
+.github/
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.ruff_cache/
+.coverage
+htmlcov/
+graphify-out/
+.idea/
+.vscode/

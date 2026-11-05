@@ -52,6 +52,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django.middleware.csp.ContentSecurityPolicyMiddleware",
     "apps.core.middleware.RedirecionamentoMiddleware",
+    "apps.core.middleware.AmbienteTestesMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -212,6 +213,12 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 MEDIA_URL = "media/"
 MEDIA_ROOT = Path(env_str("DJANGO_MEDIA_ROOT", str(BASE_DIR / "media")))
+
+# Servir /media/ pelo próprio Django (homologação ou loja pequena sem CDN/bucket).
+DJANGO_SERVIR_MEDIA = env_bool("DJANGO_SERVIR_MEDIA", False)
+
+# "producao" ou "testes". Em testes: faixa de aviso no topo e nada é indexado pelo Google.
+AMBIENTE = env_str("DJANGO_AMBIENTE", "producao")
 
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},

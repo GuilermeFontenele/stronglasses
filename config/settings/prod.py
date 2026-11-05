@@ -19,6 +19,8 @@ DATABASES["default"]["OPTIONS"]["sslmode"] = env_str("DB_SSLMODE", "require")
 
 # HTTPS em tudo
 SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", True)
+# O health check da hospedagem chama /saude/ por HTTP interno; não redireciona essa rota.
+SECURE_REDIRECT_EXEMPT = [r"^saude/$"]
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_NAME = "__Host-sessionid"

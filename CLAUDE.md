@@ -23,6 +23,8 @@ Loja virtual da Strong Glasses (óculos de sol e armações), em Django 6.
 - `apps/carrinho`: carrinho na sessão (só IDs e quantidades, sem dado pessoal); totais sempre recalculados
   no servidor. Finalização pelo WhatsApp até o checkout do Mercado Pago existir.
 - `apps/historico`: pedidos e métricas da Nuvemshop (somente leitura; faturamento por ano para o MEI).
+- Deploy: `Dockerfile` + `scripts/iniciar.sh`; homologação em `docs/HOMOLOGACAO.md`
+  (`exportar_catalogo`/`importar_catalogo` levam só o catálogo, nunca clientes).
 - `apps/nuvemshop`: importação via API (`importar_nuvemshop`, `nuvemshop_token`). Ver `docs/IMPORTACAO.md`.
 
 ## Regras do projeto (não negociáveis)

@@ -5,6 +5,8 @@ Usa contextvars (seguro com threads e async), em vez de variáveis globais.
 
 from contextvars import ContextVar
 
+from django.conf import settings
+
 _usuario_atual: ContextVar = ContextVar("usuario_atual", default=None)
 _ip_atual: ContextVar = ContextVar("ip_atual", default=None)
 
@@ -73,3 +75,16 @@ class RedirecionamentoMiddleware:
             destino = f"{destino}?{request.META['QUERY_STRING']}"
         classe = HttpResponsePermanentRedirect if regra.permanente else HttpResponseRedirect
         return classe(destino)
+
+
+class AmbienteTestesMiddleware:
+    """Ambiente de testes nunca aparece no Google (evita conteúdo duplicado com a loja real)."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        if settings.AMBIENTE != "producao":
+            response["X-Robots-Tag"] = "noindex, nofollow"
+        return response
