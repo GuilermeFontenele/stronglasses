@@ -228,3 +228,18 @@ class CriarBannerTests(TestCase):
         with mock.patch(alvo, side_effect=ImagemInvalida("404")), self.assertRaises(CommandError):
             call_command("criar_banner", "--url", "https://exemplo.com/a.png", stdout=io.StringIO())
         self.assertFalse(Banner.objects.exists())
+
+
+class BuscaTests(VitrineBase):
+    def test_busca_por_nome_cor_e_categoria(self):
+        for termo in ("roshi", "verde", "de sol", "ROSHI tartaruga"):
+            with self.subTest(termo=termo):
+                resposta = self.client.get("/busca/", {"q": termo})
+                self.assertEqual([p.slug for p in resposta.context["resultados"]], ["oculos-de-sol-roshi"])
+        self.assertEqual(self.client.get("/busca/", {"q": "rascunho"}).context["resultados"], [])
+
+    def test_busca_curta_nao_consulta(self):
+        resposta = self.client.get("/busca/", {"q": "a"})
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(resposta.context["resultados"], [])
+        self.assertContains(resposta, 'name="robots" content="noindex"')

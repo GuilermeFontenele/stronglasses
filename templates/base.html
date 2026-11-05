@@ -20,16 +20,49 @@
 </head>
 <body>
   <a class="pular" href="#conteudo">Pular para o conteúdo</a>
-  <div class="faixa" role="note">Envio para todo o Brasil · {% if loja.pix_percentual %}{{ loja.pix_percentual }}% off no Pix · {% endif %}{% if loja.parcelas > 1 %}Até {{ loja.parcelas }}x sem juros{% endif %}</div>
-  <header class="topo">
-    <a class="marca" href="/" aria-label="Strong Glasses, página inicial">
-      <img src="{% static 'img/logo-simbolo.png' %}" alt="" width="36" height="56">
-      <span>STRONG GLASSES</span>
-    </a>
-    <nav class="menu" aria-label="Categorias">
-      {% for cat in categorias_menu %}<a href="/{{ cat.slug }}/"{% if request.path == "/"|add:cat.slug|add:"/" %} aria-current="page"{% endif %}>{{ cat.nome }}</a>{% endfor %}
-    </nav>
-  </header>
+  <div class="cabecalho{% block cabecalho_classe %}{% endblock %}" data-cabecalho>
+    <div class="faixa" role="note">Envio para todo o Brasil{% if loja.pix_percentual %} · {{ loja.pix_percentual }}% off no Pix{% endif %}{% if loja.parcelas > 1 %} · Até {{ loja.parcelas }}x sem juros{% endif %}</div>
+    <header class="topo">
+      <details class="menu-lateral" data-menu>
+        <summary class="topo-icone" aria-label="Abrir menu">{% include "partials/icones/menu.html" %}</summary>
+        <div class="menu-painel">
+          <div class="menu-painel-topo">
+            <span>Menu</span>
+            <button class="topo-icone" type="button" data-fechar-menu aria-label="Fechar menu" hidden>{% include "partials/icones/fechar.html" %}</button>
+          </div>
+          <nav aria-label="Categorias">
+            <ul class="menu-categorias">
+              {% for cat in categorias_menu %}
+                <li><a href="/{{ cat.slug }}/"{% if request.path == "/"|add:cat.slug|add:"/" %} aria-current="page"{% endif %}>{{ cat.nome }}{% include "partials/icones/seta.html" %}</a></li>
+              {% endfor %}
+            </ul>
+          </nav>
+          <ul class="menu-extra">
+            <li><a href="{% url 'catalogo:busca' %}">Buscar produtos</a></li>
+            <li><a href="{% url 'carrinho:ver' %}">Carrinho</a></li>
+            {% if loja.whatsapp %}<li><a href="https://wa.me/{{ loja.whatsapp }}" rel="noopener" target="_blank">Atendimento no WhatsApp</a></li>{% endif %}
+            {% if loja.instagram %}<li><a href="https://instagram.com/{{ loja.instagram }}" rel="noopener" target="_blank">Instagram @{{ loja.instagram }}</a></li>{% endif %}
+          </ul>
+        </div>
+      </details>
+      <a class="marca" href="/" aria-label="Strong Glasses, página inicial">
+        <img src="{% static 'img/logo-simbolo.png' %}" alt="" width="36" height="56">
+        <span>STRONG GLASSES</span>
+      </a>
+      <div class="topo-acoes">
+        <a class="topo-icone" href="{% url 'catalogo:busca' %}" aria-label="Buscar">{% include "partials/icones/busca.html" %}</a>
+        <a class="topo-icone" href="{% url 'carrinho:ver' %}" aria-label="Carrinho{% if carrinho_quantidade %}, {{ carrinho_quantidade }} ite{{ carrinho_quantidade|pluralize:'m,ns' }}{% endif %}">
+          {% include "partials/icones/sacola.html" %}
+          {% if carrinho_quantidade %}<span class="contagem-carrinho" aria-hidden="true">{{ carrinho_quantidade }}</span>{% endif %}
+        </a>
+      </div>
+    </header>
+  </div>
+  {% if messages %}
+    <div class="avisos" role="status">
+      {% for mensagem in messages %}<p class="aviso aviso-{{ mensagem.tags }}">{{ mensagem }}</p>{% endfor %}
+    </div>
+  {% endif %}
   {% block topo_pagina %}{% endblock %}
   <main id="conteudo">
     {% block content %}{% endblock %}

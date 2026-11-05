@@ -33,6 +33,22 @@ def caminho_textura(instance, filename: str) -> str:
     return _nome_aleatorio("texturas", filename)
 
 
+EXTENSOES_VIDEO = ["mp4", "webm"]
+TAMANHO_MAXIMO_VIDEO = 30 * 1024 * 1024  # 30 MB
+
+
+def validar_video(arquivo) -> None:
+    """Tamanho e assinatura real do arquivo (não confia só na extensão)."""
+    if arquivo.size > TAMANHO_MAXIMO_VIDEO:
+        raise ValidationError("Vídeo maior que 30 MB. Exporte em 1080p e sem som.")
+    posicao = arquivo.tell() if hasattr(arquivo, "tell") else 0
+    arquivo.seek(0)
+    cabecalho = arquivo.read(12)
+    arquivo.seek(posicao)
+    if not (cabecalho[4:8] == b"ftyp" or cabecalho[:4] == b"\x1a\x45\xdf\xa3"):
+        raise ValidationError("Arquivo não parece um vídeo MP4 ou WEBM.")
+
+
 # Tamanhos ideais do banner principal (largura, altura).
 BANNER_COMPUTADOR = (1920, 800)
 BANNER_CELULAR = (1080, 1350)
@@ -303,6 +319,21 @@ class Banner(AuditModel):
         upload_to=caminho_banner,
         validators=[FileExtensionValidator(EXTENSOES_IMAGEM), validar_tamanho_imagem],
         help_text="Formato celular: 1080 x 1350 px (proporção 4:5, igual ao post vertical do Instagram).",
+    )
+    video = models.FileField(
+        "vídeo (computador)",
+        upload_to=caminho_banner,
+        blank=True,
+        validators=[FileExtensionValidator(EXTENSOES_VIDEO), validar_video],
+        help_text="Opcional. MP4 de até 30 MB, 1920 x 800, sem som (toca mudo e em loop). "
+        "As imagens acima viram a capa enquanto o vídeo carrega.",
+    )
+    video_mobile = models.FileField(
+        "vídeo (celular)",
+        upload_to=caminho_banner,
+        blank=True,
+        validators=[FileExtensionValidator(EXTENSOES_VIDEO), validar_video],
+        help_text="Opcional. MP4 vertical 1080 x 1350. Vazio = o celular usa o vídeo do computador, centralizado.",
     )
     link = models.CharField(
         "link", max_length=300, blank=True, validators=[validar_link_banner], help_text="Ex.: /masculino/"

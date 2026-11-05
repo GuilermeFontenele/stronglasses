@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     # Apps da loja
     "apps.clientes",
     "apps.catalogo",
+    "apps.carrinho",
     "apps.historico",
     "apps.nuvemshop",
 ]
@@ -70,6 +71,7 @@ TEMPLATES = [
                 "django.template.context_processors.csp",
                 "apps.catalogo.context_processors.navegacao",
                 "apps.catalogo.context_processors.loja",
+                "apps.carrinho.context_processors.carrinho",
             ],
         },
     },

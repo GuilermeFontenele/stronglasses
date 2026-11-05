@@ -64,6 +64,7 @@ ANPD e os titulares afetados quando houver risco relevante, no prazo previsto em
 ## Pendências
 
 - [ ] Publicar a política de privacidade e os termos no site (versão = `LGPD_VERSAO_POLITICA`).
-- [ ] Banner de cookies, só se forem usados cookies não essenciais (analytics/pixels).
+- [ ] Banner de cookies, só se forem usados cookies não essenciais (analytics/pixels). O carrinho usa
+  só o cookie de sessão (essencial, sem dado pessoal: IDs de variação e quantidades), que não exige consentimento.
 - [ ] Agendar `lgpd_expurgar` diariamente na hospedagem.
 - [ ] Rotina de anonimização automática de clientes inativos após o prazo de retenção.

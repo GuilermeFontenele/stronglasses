@@ -16,6 +16,7 @@ urlpatterns = [
     path("", include("apps.core.urls")),
     path("sitemap.xml", sitemap, {"sitemaps": SITEMAPS}, name="sitemap"),
     path("robots.txt", robots_txt, name="robots"),
+    path("carrinho/", include("apps.carrinho.urls")),
     path("", include("apps.catalogo.urls")),
 ]
 

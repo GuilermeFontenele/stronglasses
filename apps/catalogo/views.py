@@ -1,6 +1,7 @@
 import json
 
 from django.core.paginator import Paginator
+from django.db.models import Q
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils.safestring import mark_safe
@@ -9,7 +10,7 @@ from django.views.decorators.http import require_GET
 from apps.core.parametros import get_parametro
 
 from .models import Banner, Categoria, Produto
-from .vitrine import produtos_visiveis
+from .vitrine import categorias_menu, produtos_visiveis
 
 POR_PAGINA = 24
 
@@ -17,18 +18,21 @@ POR_PAGINA = 24
 @require_GET
 def home(request):
     produtos = produtos_visiveis()
-    destaques = list(produtos.filter(destaque=True)[:8]) or list(produtos.order_by("-criado_em")[:8])
-    novidades = list(produtos.order_by("-criado_em")[:8])
-    acessorios = list(produtos.filter(tipo=Produto.Tipo.ACESSORIO)[:8])
+    destaques = list(produtos.filter(destaque=True)[:12]) or list(produtos.order_by("-criado_em")[:12])
+    # Uma fileira por categoria do menu (estilo New Era), com "Ver mais" para a página da categoria.
+    fileiras = []
+    for categoria_menu in categorias_menu()[:8]:
+        itens = list(produtos.filter(categorias=categoria_menu).order_by("-destaque", "-criado_em")[:12])
+        if itens:
+            fileiras.append({"categoria": categoria_menu, "produtos": itens})
     return render(
         request,
         "core/home.html",
         {
-            "banners": list(Banner.no_ar()[:5]),
+            "banners": list(Banner.no_ar()[:6]),
             "oculos_entregues": int(get_parametro("OCULOS_ENTREGUES", 0) or 0),
             "destaques": destaques,
-            "novidades": novidades,
-            "acessorios": acessorios,
+            "fileiras": fileiras,
         },
     )
 
@@ -66,6 +70,7 @@ def produto(request, slug):
             "comparativo": item.preco_comparativo
             if item.preco_comparativo and item.preco_comparativo > preco
             else None,
+            "quantidades": range(1, min(selecionada.estoque, 10) + 1) if selecionada else range(0),
             "url_canonica": url,
             "mensagem_whatsapp": mensagem,
             "dados_estruturados": _dados_estruturados(request, item, variacoes, fotos, preco, url),
@@ -135,3 +140,21 @@ def categoria(request, slug):
             "ordem": request.GET.get("ordem", ""),
         },
     )
+
+
+@require_GET
+def busca(request):
+    termo = " ".join(request.GET.get("q", "").split())[:80]
+    resultados = []
+    if len(termo) >= 2:
+        filtro = Q()
+        for palavra in termo.split()[:5]:
+            filtro &= (
+                Q(nome__icontains=palavra)
+                | Q(descricao__icontains=palavra)
+                | Q(categorias__nome__icontains=palavra)
+                | Q(variacoes__armacao__nome__icontains=palavra)
+                | Q(variacoes__lente__nome__icontains=palavra)
+            )
+        resultados = list(produtos_visiveis().filter(filtro).order_by("nome")[:48])
+    return render(request, "catalogo/busca.html", {"termo": termo, "resultados": resultados})

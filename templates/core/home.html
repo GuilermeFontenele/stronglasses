@@ -1,20 +1,32 @@
 {% extends "base.html" %}
 {% load vitrine %}
+{% block cabecalho_classe %}{% if banners %} transparente{% endif %}{% endblock %}
 {% block topo_pagina %}
   {% if banners %}
-    <section class="banners" aria-label="Destaques da loja">
-      <div class="banners-trilho">
+    <section class="banners" aria-roledescription="carrossel" aria-label="Destaques da loja" data-carrossel>
+      <div class="banners-trilho" data-trilho>
         {% for banner in banners %}
-          <figure class="banner{% if banner.imagem_mobile %} banner-com-celular{% endif %}">
-            {% if banner.link %}<a href="{{ banner.link }}">{% endif %}
+          <figure class="banner{% if banner.imagem_mobile %} banner-com-celular{% endif %}" aria-roledescription="slide" aria-label="{{ forloop.counter }} de {{ banners|length }}">
+            {% if banner.link %}<a href="{{ banner.link }}" aria-label="{{ banner.titulo }}">{% endif %}
             <picture>
               {% if banner.imagem_mobile %}<source media="(max-width: 719px)" srcset="{{ banner.imagem_mobile.url }}">{% endif %}
               <img src="{{ banner.imagem.url }}" alt="{{ banner.titulo }}" width="1920" height="800"{% if forloop.first %} fetchpriority="high"{% else %} loading="lazy"{% endif %}>
             </picture>
+            {% if banner.video %}
+              <video class="banner-video" muted loop playsinline preload="none" aria-hidden="true" tabindex="-1"
+                data-video="{{ banner.video.url }}"{% if banner.video_mobile %} data-video-celular="{{ banner.video_mobile.url }}"{% endif %}></video>
+            {% endif %}
             {% if banner.link %}</a>{% endif %}
           </figure>
         {% endfor %}
       </div>
+      {% if banners|length > 1 %}
+        <button class="banner-seta anterior" type="button" data-anterior aria-label="Banner anterior" hidden>{% include "partials/icones/seta.html" %}</button>
+        <button class="banner-seta" type="button" data-proximo aria-label="Próximo banner" hidden>{% include "partials/icones/seta.html" %}</button>
+        <div class="banner-pontos" data-pontos hidden>
+          {% for banner in banners %}<button type="button" aria-label="Ir para o banner {{ forloop.counter }}"{% if forloop.first %} aria-current="true"{% endif %}></button>{% endfor %}
+        </div>
+      {% endif %}
     </section>
   {% else %}
     <section class="hero">
@@ -30,26 +42,30 @@
 
   <ul class="beneficios" aria-label="Vantagens">
     <li>
-      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M3 7h11v9H3zM14 10h4l3 3v3h-7zM6.5 18.5a1.5 1.5 0 1 0 0-.01M17.5 18.5a1.5 1.5 0 1 0 0-.01"/></svg>
+      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" d="M3 7h11v9H3zM14 10h4l3 3v3h-7zM6.5 18.5a1.5 1.5 0 1 0 0-.01M17.5 18.5a1.5 1.5 0 1 0 0-.01"/></svg>
       <span><strong>Envio para todo o Brasil</strong> com rastreio</span>
     </li>
     {% if loja.pix_percentual %}
     <li>
-      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M12 2.5 21.5 12 12 21.5 2.5 12z"/></svg>
+      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" d="M12 2.5 21.5 12 12 21.5 2.5 12z"/></svg>
       <span><strong>{{ loja.pix_percentual }}% off no Pix</strong> em qualquer pedido</span>
     </li>
     {% endif %}
     {% if loja.parcelas > 1 %}
     <li>
-      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" d="M3 6h18v12H3zM3 10h18M7 15h3"/></svg>
+      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M3 6h18v12H3zM3 10h18M7 15h3"/></svg>
       <span><strong>Até {{ loja.parcelas }}x sem juros</strong> no cartão</span>
     </li>
     {% endif %}
     <li>
-      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6zM8.5 12l2.5 2.5 4.5-5"/></svg>
+      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6zM8.5 12l2.5 2.5 4.5-5"/></svg>
       <span><strong>Compra segura</strong> e 7 dias para devolver</span>
     </li>
   </ul>
+
+  {% if destaques %}
+    {% include "catalogo/partials/fileira.html" with id="destaques" titulo="Mais procurados" produtos=destaques link="" %}
+  {% endif %}
 
   {% if oculos_entregues %}
     <section class="contador" aria-labelledby="t-contador">
@@ -61,33 +77,9 @@
     </section>
   {% endif %}
 
-  {% if destaques %}
-    <section class="vitrine" aria-labelledby="t-destaques">
-      <h2 id="t-destaques">Mais procurados</h2>
-      <div class="grade">{% for produto in destaques %}{% include "catalogo/partials/card.html" %}{% endfor %}</div>
-    </section>
-  {% endif %}
-
-  {% if categorias_menu %}
-    <section class="categorias" aria-labelledby="t-categorias">
-      <h2 id="t-categorias">Categorias</h2>
-      <ul>{% for cat in categorias_menu %}<li><a href="/{{ cat.slug }}/">{{ cat.nome }}</a></li>{% endfor %}</ul>
-    </section>
-  {% endif %}
-
-  {% if novidades %}
-    <section class="vitrine" aria-labelledby="t-novidades">
-      <h2 id="t-novidades">Novidades</h2>
-      <div class="grade">{% for produto in novidades %}{% include "catalogo/partials/card.html" %}{% endfor %}</div>
-    </section>
-  {% endif %}
-
-  {% if acessorios %}
-    <section class="vitrine" aria-labelledby="t-acessorios">
-      <h2 id="t-acessorios">Acessórios</h2>
-      <div class="grade">{% for produto in acessorios %}{% include "catalogo/partials/card.html" %}{% endfor %}</div>
-    </section>
-  {% endif %}
+  {% for fileira in fileiras %}
+    {% include "catalogo/partials/fileira.html" with id=fileira.categoria.slug titulo=fileira.categoria.nome produtos=fileira.produtos link="/"|add:fileira.categoria.slug|add:"/" %}
+  {% endfor %}
 
   {% if not destaques %}<p class="vazio">Nenhum produto publicado ainda.</p>{% endif %}
 {% endblock %}

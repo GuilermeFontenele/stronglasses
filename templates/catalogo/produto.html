@@ -10,6 +10,11 @@
 {% block content %}
   <nav class="trilha" aria-label="Você está em"><a href="/">Início</a>{% with cat=produto.categorias.all|first %}{% if cat %} › <a href="/{{ cat.slug }}/">{{ cat.nome }}</a>{% endif %}{% endwith %}</nav>
   <article class="produto">
+    <header class="produto-cabecalho">
+      <h1>{{ produto.nome }}</h1>
+      {% precos preco comparativo %}
+    </header>
+
     <div class="galeria" data-galeria>
       <div class="galeria-principal" tabindex="0" aria-label="Fotos do produto (arraste para ver mais)">
         {% for foto in fotos %}
@@ -24,10 +29,8 @@
         </ul>
       {% endif %}
     </div>
-    <div class="info">
-      <h1>{{ produto.nome }}</h1>
-      {% precos preco comparativo %}
 
+    <div class="produto-compra">
       {% if variacoes|length > 1 %}
         <fieldset class="cores">
           <legend>Cor: <strong>{{ selecionada.descricao_cor }}</strong></legend>
@@ -40,19 +43,32 @@
       {% endif %}
 
       {% if selecionada and selecionada.disponivel %}
-        <p class="estoque ok">Em estoque, pronto para envio</p>
+        <p class="estoque ok">Em estoque, pronto para envio{% if selecionada.estoque == 1 %} · última peça!{% endif %}</p>
+        <form class="form-comprar" method="post" action="{% url 'carrinho:adicionar' %}">
+          {% csrf_token %}
+          <input type="hidden" name="variacao" value="{{ selecionada.pk }}">
+          <label class="quantidade">
+            <span class="visualmente-oculto">Quantidade</span>
+            <select name="quantidade">{% for n in quantidades %}<option value="{{ n }}">{{ n }}</option>{% endfor %}</select>
+          </label>
+          <button class="botao botao-largo" type="submit">{% include "partials/icones/sacola.html" %} Adicionar ao carrinho</button>
+        </form>
         {% if loja.whatsapp %}
-          <a class="botao botao-whatsapp" href="https://wa.me/{{ loja.whatsapp }}?text={{ mensagem_whatsapp|urlencode:"" }}" rel="noopener" target="_blank">
+          <a class="link-whatsapp" href="https://wa.me/{{ loja.whatsapp }}?text={{ mensagem_whatsapp|urlencode:"" }}" rel="noopener" target="_blank">
             {% include "catalogo/partials/icone_whatsapp.html" %} Comprar pelo WhatsApp
           </a>
-          <p class="ajuda">Atendimento rápido: confirmamos cor, frete e pagamento com você.</p>
         {% endif %}
       {% else %}
         <p class="estoque esgotado">Esgotado nesta cor</p>
         {% if loja.whatsapp %}<a class="botao-sec" href="https://wa.me/{{ loja.whatsapp }}?text={{ mensagem_whatsapp|add:" (quero ser avisado quando voltar)"|urlencode:"" }}" rel="noopener" target="_blank">Avise-me quando chegar</a>{% endif %}
       {% endif %}
-
-      {% if produto.descricao %}<div class="descricao">{{ produto.descricao|linebreaks }}</div>{% endif %}
     </div>
+
+    {% if produto.descricao %}
+      <section class="produto-descricao" aria-labelledby="t-descricao">
+        <h2 id="t-descricao">Descrição</h2>
+        <div class="descricao">{{ produto.descricao|linebreaks }}</div>
+      </section>
+    {% endif %}
   </article>
 {% endblock %}

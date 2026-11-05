@@ -1,0 +1,14 @@
+{# Fileira horizontal de produtos com setas (computador) e arrasto (celular). #}
+<section class="fileira" aria-labelledby="t-{{ id }}" data-fileira>
+  <div class="fileira-topo">
+    <h2 id="t-{{ id }}">{{ titulo }}</h2>
+    {% if link %}<a class="ver-mais" href="{{ link }}">Ver mais{% include "partials/icones/seta.html" %}</a>{% endif %}
+  </div>
+  <div class="fileira-corpo">
+    <button class="fileira-seta anterior" type="button" data-anterior aria-label="Produtos anteriores" hidden>{% include "partials/icones/seta.html" %}</button>
+    <div class="fileira-trilho" data-trilho>
+      {% for produto in produtos %}{% include "catalogo/partials/card.html" %}{% endfor %}
+    </div>
+    <button class="fileira-seta" type="button" data-proximo aria-label="Próximos produtos" hidden>{% include "partials/icones/seta.html" %}</button>
+  </div>
+</section>

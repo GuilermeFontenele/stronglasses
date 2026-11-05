@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load vitrine %}
+{% block title %}Carrinho · Strong Glasses{% endblock %}
+{% block whatsapp_flutuante %}{% endblock %}
+{% block content %}
+  <section class="carrinho">
+    <h1>Seu carrinho</h1>
+    {% if linhas %}
+      <div class="carrinho-conteudo">
+        <ul class="carrinho-itens">
+          {% for linha in linhas %}
+            {% with v=linha.variacao %}
+            <li class="carrinho-item">
+              <a class="carrinho-foto" href="{{ v.produto.get_absolute_url }}?cor={{ v.pk }}">
+                {% if linha.foto %}<img src="{{ linha.foto.imagem.url }}" alt="" width="96" height="96" loading="lazy">{% else %}<span class="sem-foto" aria-hidden="true"></span>{% endif %}
+              </a>
+              <div class="carrinho-dados">
+                <a class="carrinho-nome" href="{{ v.produto.get_absolute_url }}?cor={{ v.pk }}">{{ v.produto.nome }}</a>
+                <span class="carrinho-cor">{{ v.descricao_cor }}</span>
+                <span class="carrinho-unitario">{{ linha.preco_unitario|brl }} cada</span>
+                <div class="carrinho-acoes">
+                  <form method="post" action="{% url 'carrinho:atualizar' %}" data-auto-enviar>
+                    {% csrf_token %}
+                    <input type="hidden" name="variacao" value="{{ v.pk }}">
+                    <label class="visualmente-oculto" for="qtd-{{ v.pk }}">Quantidade de {{ v.produto.nome }}</label>
+                    <select id="qtd-{{ v.pk }}" name="quantidade">
+                      {% for n in quantidades %}{% if n <= v.estoque %}<option value="{{ n }}"{% if n == linha.quantidade %} selected{% endif %}>{{ n }}</option>{% endif %}{% endfor %}
+                    </select>
+                    <button class="link-botao" type="submit" data-sem-js>Atualizar</button>
+                  </form>
+                  <form method="post" action="{% url 'carrinho:remover' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="variacao" value="{{ v.pk }}">
+                    <button class="link-botao" type="submit">Remover</button>
+                  </form>
+                </div>
+              </div>
+              <strong class="carrinho-subtotal">{{ linha.subtotal|brl }}</strong>
+            </li>
+            {% endwith %}
+          {% endfor %}
+        </ul>
+
+        <aside class="carrinho-resumo" aria-label="Resumo do pedido">
+          <dl>
+            <div><dt>Subtotal ({{ resumo.quantidade }} ite{{ resumo.quantidade|pluralize:"m,ns" }})</dt><dd>{{ resumo.subtotal|brl }}</dd></div>
+            <div class="resumo-pix"><dt>No Pix{% if loja.pix_percentual %} ({{ loja.pix_percentual }}% off){% endif %}</dt><dd>{{ resumo.total_pix|brl }}</dd></div>
+            {% if resumo.vezes > 1 %}<div class="resumo-parcelas"><dt>No cartão</dt><dd>{{ resumo.vezes }}x de {{ resumo.parcela|brl }} sem juros</dd></div>{% endif %}
+          </dl>
+          <p class="ajuda">O frete é combinado na finalização.</p>
+          {% if link_whatsapp %}
+            <a class="botao botao-whatsapp botao-largo" href="{{ link_whatsapp }}" rel="noopener" target="_blank">
+              {% include "catalogo/partials/icone_whatsapp.html" %} Finalizar pelo WhatsApp
+            </a>
+            <p class="ajuda">Seu pedido vai pronto na mensagem. Pagamento online direto no site em breve.</p>
+          {% endif %}
+          <a class="continuar" href="/">Continuar comprando</a>
+        </aside>
+      </div>
+    {% else %}
+      <div class="carrinho-vazio">
+        <p>Seu carrinho está vazio.</p>
+        <a class="botao" href="/">Ver os óculos</a>
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}{% if termo %}{{ termo }} · {% endif %}Buscar · Strong Glasses{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block content %}
+  <section class="vitrine busca">
+    <h1>Buscar</h1>
+    <form class="busca-form" method="get" action="{% url 'catalogo:busca' %}" role="search">
+      <label class="visualmente-oculto" for="q">O que você procura?</label>
+      <input id="q" name="q" type="search" value="{{ termo }}" placeholder="Modelo, cor, categoria…" autocomplete="off" maxlength="80"{% if not termo %} autofocus{% endif %}>
+      <button class="botao" type="submit">Buscar</button>
+    </form>
+    {% if termo %}
+      <p class="contagem">{{ resultados|length }} resultado{{ resultados|length|pluralize }} para “{{ termo }}”</p>
+      <div class="grade">{% for produto in resultados %}{% include "catalogo/partials/card.html" %}{% empty %}<p class="vazio">Nada encontrado. Tente outra palavra, como “aviador” ou “tartaruga”.</p>{% endfor %}</div>
+    {% endif %}
+  </section>
+{% endblock %}

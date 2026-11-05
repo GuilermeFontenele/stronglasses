@@ -20,6 +20,8 @@ Loja virtual da Strong Glasses (óculos de sol e armações), em Django 6.
   automaticamente), criptografia de campos, validadores BR.
 - `apps/clientes`: `Cliente`, `Endereco`, `Consentimento` e os direitos do titular (`lgpd.py`).
 - `apps/catalogo`: `Produto` → `Variacao` (armação + lente, SKU, estoque), imagens, seletor de cor.
+- `apps/carrinho`: carrinho na sessão (só IDs e quantidades, sem dado pessoal); totais sempre recalculados
+  no servidor. Finalização pelo WhatsApp até o checkout do Mercado Pago existir.
 - `apps/historico`: pedidos e métricas da Nuvemshop (somente leitura; faturamento por ano para o MEI).
 - `apps/nuvemshop`: importação via API (`importar_nuvemshop`, `nuvemshop_token`). Ver `docs/IMPORTACAO.md`.
 
