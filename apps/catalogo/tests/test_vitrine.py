@@ -162,6 +162,18 @@ class ProdutoSeoTests(VitrineBase):
         self.assertIn("InStock", html)
         self.assertIn('rel="canonical" href="http://testserver/produtos/oculos-de-sol-roshi/"', html)
 
+    def test_galeria_com_miniaturas(self):
+        from apps.catalogo.models import ImagemProduto
+
+        for i in range(3):
+            ImagemProduto.objects.create(
+                produto=self.produto, imagem=f"produtos/{i}.jpg", texto_alternativo=f"Foto {i}"
+            )
+        html = self.client.get("/produtos/oculos-de-sol-roshi/").content.decode()
+        self.assertIn('id="foto-3"', html)
+        self.assertIn('href="#foto-3"', html)  # sem JS a miniatura ainda leva à foto
+        self.assertEqual(html.count('aria-current="true"'), 1)
+
     def test_json_seguro_nao_fecha_script(self):
         self.assertNotIn("</script>", _json_seguro({"nome": "</script><script>alert(1)"}))
 

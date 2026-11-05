@@ -10,10 +10,19 @@
 {% block content %}
   <nav class="trilha" aria-label="Você está em"><a href="/">Início</a>{% with cat=produto.categorias.all|first %}{% if cat %} › <a href="/{{ cat.slug }}/">{{ cat.nome }}</a>{% endif %}{% endwith %}</nav>
   <article class="produto">
-    <div class="galeria">
-      {% for foto in fotos %}
-        <img src="{{ foto.imagem.url }}" alt="{{ foto.texto_alternativo }}" width="800" height="800"{% if not forloop.first %} loading="lazy"{% endif %}>
-      {% empty %}<span class="sem-foto" aria-hidden="true"></span>{% endfor %}
+    <div class="galeria" data-galeria>
+      <div class="galeria-principal" tabindex="0" aria-label="Fotos do produto (arraste para ver mais)">
+        {% for foto in fotos %}
+          <img id="foto-{{ forloop.counter }}" src="{{ foto.imagem.url }}" alt="{{ foto.texto_alternativo }}" width="800" height="800"{% if not forloop.first %} loading="lazy"{% else %} fetchpriority="high"{% endif %}>
+        {% empty %}<span class="sem-foto" aria-hidden="true"></span>{% endfor %}
+      </div>
+      {% if fotos|length > 1 %}
+        <ul class="galeria-miniaturas" aria-label="Escolher foto">
+          {% for foto in fotos %}
+            <li><a href="#foto-{{ forloop.counter }}"{% if forloop.first %} aria-current="true"{% endif %} aria-label="Foto {{ forloop.counter }} de {{ fotos|length }}"><img src="{{ foto.imagem.url }}" alt="" width="96" height="96" loading="lazy"></a></li>
+          {% endfor %}
+        </ul>
+      {% endif %}
     </div>
     <div class="info">
       <h1>{{ produto.nome }}</h1>

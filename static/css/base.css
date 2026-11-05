@@ -56,11 +56,27 @@ main { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
 .categorias ul { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px; }
 .categorias a { display: block; border: 1px solid var(--linha); border-radius: 999px; padding: 10px 18px; text-decoration: none; }
 
-.produto { display: grid; gap: 24px; padding: 24px 0; }
-@media (min-width: 900px) { .produto { grid-template-columns: 1.2fr 1fr; gap: 48px; } }
-.galeria { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; }
-.galeria img { flex: 0 0 100%; scroll-snap-align: start; background: #f6f6f6; border-radius: 12px; aspect-ratio: 1; object-fit: contain; }
-@media (min-width: 900px) { .galeria { display: grid; overflow: visible; } }
+.produto { display: grid; gap: 24px; padding: 16px 0 24px; }
+@media (min-width: 900px) {
+  .produto { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 48px; align-items: start; }
+  .info { position: sticky; top: 72px; }
+}
+
+/* Galeria: foto grande + miniaturas (embaixo no celular, à esquerda no computador) */
+.galeria { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.galeria-principal { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; border-radius: 12px; }
+.galeria-principal::-webkit-scrollbar { display: none; }
+.galeria-principal img { flex: 0 0 100%; width: 100%; aspect-ratio: 1; object-fit: contain; scroll-snap-align: start; background: #fff; }
+.galeria-miniaturas { list-style: none; margin: 0; padding: 2px; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+.galeria-miniaturas a { display: block; width: 64px; height: 64px; border: 1px solid var(--linha); border-radius: 8px; overflow: hidden; background: #fff; }
+.galeria-miniaturas a[aria-current="true"] { border-color: var(--texto); box-shadow: 0 0 0 1px var(--texto); }
+.galeria-miniaturas img { width: 100%; height: 100%; object-fit: contain; }
+@media (min-width: 900px) {
+  .galeria { flex-direction: row-reverse; align-items: flex-start; gap: 16px; }
+  .galeria-principal { flex: 1; min-width: 0; }
+  .galeria-miniaturas { flex: 0 0 auto; flex-direction: column; max-height: min(80vh, 640px); overflow-x: hidden; overflow-y: auto; }
+  .galeria-miniaturas a { width: 88px; height: 88px; }
+}
 .info h1 { font-size: 24px; margin: 0 0 12px; }
 .info .precos { font-size: 16px; margin-bottom: 16px; }
 .info .preco { font-size: 24px; }
@@ -134,5 +150,5 @@ a.botao-sec { display: inline-block; text-decoration: none; color: var(--texto);
 .rodape { padding-bottom: 88px; } /* espaço para o botão flutuante no celular */
 
 @media (prefers-reduced-motion: no-preference) {
-  .banners-trilho, .galeria { scroll-behavior: smooth; }
+  .banners-trilho, .galeria-principal { scroll-behavior: smooth; }
 }
