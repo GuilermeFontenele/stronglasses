@@ -25,9 +25,29 @@ class MapeamentoTests(SimpleTestCase):
         self.assertEqual(m.separar_cor(""), ("", None))
 
     def test_cor_no_nome(self):
-        self.assertEqual(m.cor_no_nome("Óculos de Sol Califórnia Laranja"), "Laranja")
-        self.assertEqual(m.cor_no_nome("Óculos de Sol X Tartaruga Claro"), "Tartaruga Claro")
-        self.assertIsNone(m.cor_no_nome("Óculos de Sol Califórnia Transpararente"))
+        casos = {
+            "Óculos de Sol Califórnia Laranja": "Laranja",
+            "Óculos de Sol X Tartaruga Claro": "Tartaruga Claro",
+            "Óculos de Sol Califórnia Transpararente": "Transparente",  # erro de digitação
+            "Óculos de Sol Califórnia Azul/Tartaruga": "Azul/Tartaruga",
+            "Óculos de Sol Aviador preto/dourado": "Preto/Dourado",
+            "Óculos de Sol Monica Preto\\Amarelo Escuro": "Preto/Amarelo Escuro",
+            "Óculos de Sol RJ Champange Infantil": "Champanhe",
+            "Óculos de Sol Cancún Tartaruga/Transp": "Tartaruga/Transparente",
+            "Óculos de Sol Nepal Cinza/Madeira": "Cinza/Madeira",
+        }
+        for nome, esperado in casos.items():
+            with self.subTest(nome=nome):
+                self.assertEqual(m.cor_no_nome(nome), esperado)
+        self.assertIsNone(m.cor_no_nome("Óculos de Sol Stark"))
+
+    def test_aliases_e_tipo(self):
+        self.assertEqual(m.separar_cor("Champagne/Rosa"), ("Champanhe", "Rosa"))
+        self.assertEqual(m.hex_da_cor("champagne"), m.hex_da_cor("Champanhe"))
+        self.assertEqual(m.tipo_por_nome("Limpa Lentes", set()), "acessorio")
+        self.assertEqual(m.tipo_por_nome("Box Organizador de Óculos (5 espaços)", set()), "acessorio")
+        self.assertEqual(m.tipo_por_nome("Óculos de Grau Marajás Dourado", set()), "grau")
+        self.assertEqual(m.tipo_por_nome("Óculos de Sol Roshi", {"masculino"}), "sol")
 
     def test_precos(self):
         self.assertEqual(m.precos("159.90", "94.90"), (Decimal("94.90"), Decimal("159.90")))

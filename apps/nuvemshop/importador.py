@@ -112,8 +112,8 @@ class Importador:
                 "nome": nome[:120],
                 "slug": self._slug_livre(Produto, m.texto(item.get("handle")) or slugify(nome), item["id"]),
                 "descricao": m.html_para_texto(m.texto(item.get("description"))),
-                "tipo": Produto.Tipo.GRAU if any("grau" in n for n in nomes_categorias) else Produto.Tipo.SOL,
-                "publico": self._publico(nomes_categorias),
+                "tipo": m.tipo_por_nome(nome, nomes_categorias),
+                "publico": self._publico(nomes_categorias, nome),
                 "preco": preco,
                 "preco_comparativo": comparativo,
                 "peso_g": m.peso_gramas(primeira.get("weight")) or get_parametro("PESO_PADRAO_G", 50),
@@ -149,8 +149,8 @@ class Importador:
             self._imagem(produto, imagem, variacao_por_imagem.get(imagem.get("id")))
 
     @staticmethod
-    def _publico(nomes_categorias: set[str]) -> str:
-        if "infantil" in nomes_categorias:
+    def _publico(nomes_categorias: set[str], nome: str = "") -> str:
+        if "infantil" in nomes_categorias or "infantil" in m.chave_cor(nome).split():
             return Produto.Publico.INFANTIL
         fem, masc = "feminino" in nomes_categorias, "masculino" in nomes_categorias
         if fem and not masc:
@@ -167,7 +167,8 @@ class Importador:
         armacao_nome, lente_nome = m.separar_cor(valor_cor)
         if not armacao_nome:
             armacao_nome = "Padrão"
-            self.relatorio.pendencia("Produtos sem cor identificada (armação 'Padrão')", produto.nome)
+            if produto.tipo != Produto.Tipo.ACESSORIO:
+                self.relatorio.pendencia("Produtos sem cor identificada (armação 'Padrão')", produto.nome)
         if lente_nome and m.chave_cor(lente_nome) in m.TIPICAS_DE_ARMACAO:
             self.relatorio.pendencia(
                 "Cores 'armação/lente' que parecem invertidas", f"{produto.nome}: {armacao_nome}/{lente_nome}"

@@ -50,7 +50,28 @@ CORES = {
     "chocolate": "#4E2E1E",
     "degrade": "#8A8F96",
     "espelhado": "#B8C4CC",
+    "madeira": "#8B5A2B",
+    "ebano": "#3B2A20",
+    "carvalho": "#A47449",
+    "verde escuro": "#2F4F2F",
+    "marrom claro": "#A67B5B",
+    "azul escuro": "#1F3A5F",
+    "cinza claro": "#BDBDBD",
+    "rosa claro": "#F4C2C2",
+    "bronze": "#8C6A3F",
+    "cobre": "#B87333",
 }
+# Grafias diferentes da mesma cor viram um nome só (evita "Champagne" e "Champanhe" duplicados).
+ALIASES = {
+    "champagne": "Champanhe",
+    "champange": "Champanhe",
+    "champanhe": "Champanhe",
+    "transp": "Transparente",
+    "transparante": "Transparente",
+    "transpararente": "Transparente",
+}
+# Palavras no fim do nome que não são cor.
+SUFIXOS_NAO_COR = {"infantil", "kids", "unissex", "masculino", "feminino"}
 # Cores que costumam ser de armação: se aparecerem como "lente", vale revisar.
 TIPICAS_DE_ARMACAO = {"tartaruga", "tartaruga claro", "transparente", "cristal", "champanhe", "dourado", "prata"}
 COR_PADRAO_HEX = "#999999"
@@ -61,31 +82,58 @@ def chave_cor(nome: str) -> str:
     return " ".join(sem_acento.lower().split())
 
 
+def _canonica(nome: str) -> str | None:
+    """Chave da cor no dicionário (com aliases) ou None se não for uma cor conhecida."""
+    chave = chave_cor(nome)
+    if chave in ALIASES:
+        chave = chave_cor(ALIASES[chave])
+    return chave if chave in CORES else None
+
+
 def hex_da_cor(nome: str) -> str | None:
-    return CORES.get(chave_cor(nome))
+    chave = _canonica(nome)
+    return CORES[chave] if chave else None
 
 
 def nome_cor(valor: str) -> str:
-    """'verde ÁGUA' -> 'Verde Água'."""
+    """'verde ÁGUA' -> 'Verde Água'; 'champagne' -> 'Champanhe'."""
+    if chave_cor(valor) in ALIASES:
+        return ALIASES[chave_cor(valor)]
     return " ".join(parte[:1].upper() + parte[1:].lower() for parte in (valor or "").split())
 
 
 def separar_cor(valor: str) -> tuple[str, str | None]:
     """'Preto/Azul' -> ('Preto', 'Azul'); 'Tartaruga' -> ('Tartaruga', None)."""
-    partes = [nome_cor(p) for p in (valor or "").split("/") if p.strip()]
+    partes = [nome_cor(p) for p in (valor or "").replace("\\", "/").split("/") if p.strip()]
     if not partes:
         return "", None
     return partes[0], (partes[1] if len(partes) > 1 else None)
 
 
 def cor_no_nome(nome_produto: str) -> str | None:
-    """Produtos antigos sem variação trazem a cor no nome: 'Óculos de Sol Nice Dourado'."""
-    chave = chave_cor(nome_produto)
-    for cor in sorted(CORES, key=len, reverse=True):
-        if chave == cor or chave.endswith(" " + cor):
-            palavras = (nome_produto or "").split()
-            return nome_cor(" ".join(palavras[-len(cor.split()) :]))
+    """Produtos antigos sem variação trazem a cor no nome:
+    'Óculos de Sol Nice Dourado/Azul' -> 'Dourado/Azul'; 'RJ Preto Infantil' -> 'Preto'."""
+    palavras = (nome_produto or "").replace("\\", "/").split()
+    while palavras and chave_cor(palavras[-1]) in SUFIXOS_NAO_COR:
+        palavras.pop()
+    for inicio in range(len(palavras)):  # do trecho mais longo para o mais curto
+        partes = [p.strip() for p in " ".join(palavras[inicio:]).split("/")]
+        if partes and all(p and _canonica(p) for p in partes):
+            return "/".join(nome_cor(p) for p in partes)
     return None
+
+
+ACESSORIOS = ("limpa lente", "estojo", "box organizador", "porta oculos", "cordao", "flanela", "necessaire", "case ")
+
+
+def tipo_por_nome(nome: str, nomes_categorias: set[str]) -> str:
+    """'acessorio', 'grau' ou 'sol' a partir do nome do produto e das categorias."""
+    chave = chave_cor(nome) + " "
+    if any(palavra in chave for palavra in ACESSORIOS):
+        return "acessorio"
+    if "grau" in chave or any("grau" in n for n in nomes_categorias):
+        return "grau"
+    return "sol"
 
 
 def texto(valor, idiomas=("pt", "pt_BR", "es", "es_AR", "en", "en_US")) -> str:

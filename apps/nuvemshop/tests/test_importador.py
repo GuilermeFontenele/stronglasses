@@ -75,6 +75,18 @@ DADOS = {
             "variants": [variante(3001, "Roxo Neon", preco="100", promo=None)],
         },
         {
+            "id": 500,
+            "name": {"pt": "Limpa Lentes"},
+            "handle": {"pt": "limpa-lentes"},
+            "variants": [variante(5001, "", preco="15.00", promo=None)],
+        },
+        {
+            "id": 600,
+            "name": {"pt": "Óculos de Sol RJ Champange Infantil"},
+            "handle": {"pt": "oculos-de-sol-rj-champange-infantil"},
+            "variants": [variante(6001, "")],
+        },
+        {
             "id": 400,
             "name": {"pt": "Roshi duplicado"},
             "handle": {"pt": "oculos-de-sol-roshi-preto-azul"},
@@ -238,6 +250,11 @@ class ImportadorTests(TestCase):
 
         self.assertEqual(Produto.objects.get(nuvemshop_id=400).slug, "oculos-de-sol-roshi-preto-azul-400")
 
+        limpa = Produto.objects.get(nuvemshop_id=500)
+        self.assertEqual(limpa.tipo, Produto.Tipo.ACESSORIO)
+        rj = Produto.objects.get(nuvemshop_id=600)
+        self.assertEqual((rj.publico, rj.variacoes.get().armacao.nome), (Produto.Publico.INFANTIL, "Champanhe"))
+
         pendencias = relatorio.pendencias
         invertidas = pendencias["Cores 'armação/lente' que parecem invertidas"]
         self.assertIn("Óculos de Sol Roshi: Amarelo/Tartaruga", invertidas)
@@ -255,8 +272,8 @@ class ImportadorTests(TestCase):
         self.importar(("categorias", "produtos"))
         chamadas = self.baixador.chamadas
         self.importar(("categorias", "produtos"))
-        self.assertEqual(Produto.objects.count(), 4)
-        self.assertEqual(Variacao.objects.count(), 6)
+        self.assertEqual(Produto.objects.count(), 6)
+        self.assertEqual(Variacao.objects.count(), 8)
         self.assertEqual(ImagemProduto.objects.count(), 1)
         self.assertEqual(AcabamentoArmacao.objects.filter(nome="Preto").count(), 1)
         self.assertEqual(CorLente.objects.filter(nome="Azul").count(), 1)
