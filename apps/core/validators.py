@@ -36,6 +36,10 @@ def _cnpj_valido(cnpj: str) -> bool:
     return True
 
 
+def cpf_valido(valor: str) -> bool:
+    return _cpf_valido(so_digitos(valor))
+
+
 def cnpj_valido(valor: str) -> bool:
     return _cnpj_valido(so_digitos(valor))
 

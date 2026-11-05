@@ -47,6 +47,20 @@ def exportar_dados(cliente: Cliente, usuario=None) -> dict:
             "documento": cliente.documento,
             "cadastrado_em": cliente.criado_em.isoformat(),
         },
+        "enderecos": [
+            {
+                "destinatario": e.destinatario,
+                "cep": e.cep,
+                "logradouro": e.logradouro,
+                "numero": e.numero,
+                "complemento": e.complemento,
+                "bairro": e.bairro,
+                "cidade": e.cidade,
+                "uf": e.uf,
+                "padrao": e.padrao,
+            }
+            for e in cliente.enderecos.all()
+        ],
         "consentimentos": [
             {
                 "finalidade": c.get_finalidade_display(),
@@ -95,6 +109,7 @@ def anonimizar(cliente: Cliente, usuario=None) -> Cliente:
     cliente.documento = ""
     cliente.anonimizado_em = timezone.now()
     cliente.save()
+    cliente.enderecos.all().delete()
     cliente.consentimentos.filter(revogado_em__isnull=True).update(revogado_em=timezone.now())
     cliente.consentimentos.update(ip=None, user_agent="")
     registrar(RegistroAuditoria.Acao.ANONIMIZACAO, cliente, None, None, usuario)

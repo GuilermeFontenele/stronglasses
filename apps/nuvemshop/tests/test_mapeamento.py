@@ -39,8 +39,26 @@ class MapeamentoTests(SimpleTestCase):
         self.assertEqual(m.whatsapp("85996539142"), "+5585996539142")
         self.assertEqual(m.whatsapp("+55 (85) 99653-9142"), "+5585996539142")
         self.assertEqual(m.whatsapp("123"), "")
-        self.assertEqual(m.cnpj("11.222.333/0001-81"), "11222333000181")
-        self.assertEqual(m.cnpj("529.982.247-25"), "")  # CPF não é importado
+        self.assertEqual(m.documento("11.222.333/0001-81"), ("PJ", "11222333000181"))
+        self.assertEqual(m.documento("529.982.247-25"), ("PF", "52998224725"))
+        self.assertEqual(m.documento("111.111.111-11"), ("", ""))
+
+    def test_endereco(self):
+        dados = {
+            "address": "Rua  Tomás Pompeu",
+            "number": "111",
+            "floor": "apto 1000",
+            "locality": "Meireles",
+            "city": "Fortaleza",
+            "province": "Ceará",
+            "zipcode": "60160-080",
+            "country": "BR",
+        }
+        campos = m.endereco(dados)
+        self.assertEqual(campos["cep"], "60160080")
+        self.assertEqual(campos["logradouro"], "Rua Tomás Pompeu")
+        self.assertEqual(campos["complemento"], "apto 1000")
+        self.assertIsNone(m.endereco({"city": "Fortaleza"}))  # sem CEP/logradouro não serve para envio
 
     def test_html_para_texto_remove_scripts(self):
         resultado = m.html_para_texto("<p>Olá&nbsp;mundo</p><ul><li>UV400</li></ul><script>alert(1)</script>")

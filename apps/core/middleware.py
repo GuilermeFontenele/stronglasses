@@ -44,3 +44,32 @@ class UsuarioAtualMiddleware:
         finally:
             _usuario_atual.reset(token_usuario)
             _ip_atual.reset(token_ip)
+
+
+class RedirecionamentoMiddleware:
+    """Quando uma página não existe (404), procura um redirecionamento cadastrado."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        resposta = self.get_response(request)
+        if resposta.status_code != 404:
+            return resposta
+
+        from django.db.models import F
+        from django.http import HttpResponsePermanentRedirect, HttpResponseRedirect
+
+        from .models import Redirecionamento
+
+        caminho = Redirecionamento.normalizar(request.path)
+        candidatos = {caminho, caminho.rstrip("/") or "/", caminho.rstrip("/") + "/"}
+        regra = Redirecionamento.objects.filter(origem__in=candidatos, ativo=True).first()
+        if regra is None:
+            return resposta
+        Redirecionamento.objects.filter(pk=regra.pk).update(acessos=F("acessos") + 1)
+        destino = regra.destino
+        if request.META.get("QUERY_STRING") and "?" not in destino:
+            destino = f"{destino}?{request.META['QUERY_STRING']}"
+        classe = HttpResponsePermanentRedirect if regra.permanente else HttpResponseRedirect
+        return classe(destino)

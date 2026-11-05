@@ -16,8 +16,9 @@ Loja virtual da Strong Glasses (óculos de sol e armações), em Django 6.
 - Django 6 + Postgres, templates do Django + HTMX/Alpine (sem SPA).
 - `config/settings/{base,dev,test,prod}.py`: tudo sensível vem do ambiente (`.env.example`).
 - `apps/core`: `AuditModel` (auditoria automática), `Parametro` (configurações da loja),
-  `RegistroAuditoria` (trilha imutável), criptografia de campos, validadores BR.
-- `apps/clientes`: `Cliente`, `Consentimento` e os direitos do titular (`lgpd.py`).
+  `RegistroAuditoria` (trilha imutável), `Redirecionamento` (301 em 404; troca de slug de produto cria um
+  automaticamente), criptografia de campos, validadores BR.
+- `apps/clientes`: `Cliente`, `Endereco`, `Consentimento` e os direitos do titular (`lgpd.py`).
 - `apps/catalogo`: `Produto` → `Variacao` (armação + lente, SKU, estoque), imagens, seletor de cor.
 - `apps/historico`: pedidos e métricas da Nuvemshop (somente leitura; faturamento por ano para o MEI).
 - `apps/nuvemshop`: importação via API (`importar_nuvemshop`, `nuvemshop_token`). Ver `docs/IMPORTACAO.md`.

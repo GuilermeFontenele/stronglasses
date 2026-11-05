@@ -8,7 +8,7 @@ from apps.core.crypto import hash_busca
 from apps.core.validators import so_digitos
 
 from .lgpd import exportar_dados
-from .models import Cliente, Consentimento
+from .models import Cliente, Consentimento, Endereco
 
 
 class ConsentimentoInline(admin.TabularInline):
@@ -22,13 +22,26 @@ class ConsentimentoInline(admin.TabularInline):
         return False
 
 
+class EnderecoInline(admin.StackedInline):
+    model = Endereco
+    extra = 0
+    fields = (
+        "padrao",
+        "destinatario",
+        ("cep", "pais"),
+        ("logradouro", "numero"),
+        ("complemento", "bairro"),
+        ("cidade", "uf"),
+    )
+
+
 @admin.register(Cliente)
 class ClienteAdmin(AuditoriaAdminMixin, admin.ModelAdmin):
     list_display = ("nome", "tipo", "email", "whatsapp", "documento_mascarado", "criado_em", "anonimizado_em")
     list_filter = ("tipo", "anonimizado_em")
     search_fields = ("nome", "email", "whatsapp")
     readonly_fields = ("uuid", "criado_em", "criado_por", "atualizado_em", "atualizado_por", "anonimizado_em")
-    inlines = [ConsentimentoInline]
+    inlines = [EnderecoInline, ConsentimentoInline]
     actions = ["exportar_lgpd"]
 
     @admin.display(description="CPF/CNPJ")

@@ -89,6 +89,38 @@ DADOS = {
             "phone": "85999990000",
             "identification": "529.982.247-25",
             "accepts_marketing": True,
+            "default_address": {
+                "id": 70,
+                "address": "Rua Tomás Pompeu",
+                "number": "111",
+                "floor": "apto 1000",
+                "locality": "Meireles",
+                "city": "Fortaleza",
+                "province": "Ceará",
+                "zipcode": "60160080",
+                "country": "BR",
+            },
+            "addresses": [
+                {
+                    "id": 70,
+                    "address": "Rua Tomás Pompeu",
+                    "number": "111",
+                    "floor": "apto 1000",
+                    "locality": "Meireles",
+                    "city": "Fortaleza",
+                    "province": "Ceará",
+                    "zipcode": "60160080",
+                    "country": "BR",
+                },
+                {
+                    "id": 71,
+                    "address": "Av. Beira Mar",
+                    "number": "500",
+                    "city": "Fortaleza",
+                    "province": "Ceará",
+                    "zipcode": "60165121",
+                },
+            ],
         },
         {"id": 11, "name": "Hotel Mar", "email": "hotel@ex.com", "identification": "11.222.333/0001-81"},
         {"id": 12, "name": "Maria (2ª conta)", "email": "maria@ex.com"},
@@ -110,7 +142,14 @@ DADOS = {
             "coupon": [{"code": "PRIMEIRA10"}],
             "storefront": "store",
             "gateway_name": "Nuvem Pago",
-            "shipping_address": {"city": "Fortaleza", "province": "Ceará", "address": "Rua Secreta, 1"},
+            "shipping_address": {
+                "name": "Maria",
+                "address": "Rua Nova",
+                "number": "1",
+                "city": "Fortaleza",
+                "province": "Ceará",
+                "zipcode": "60000000",
+            },
             "products": [
                 {
                     "product_id": 100,
@@ -206,6 +245,7 @@ class ImportadorTests(TestCase):
         self.assertTrue(pendencias["Cores sem tom definido (cinza provisório)"])
         self.assertTrue(pendencias["Endereços (slug) alterados por conflito — revise o SEO"])
         self.assertIn("Produtos sem peso/medidas (frete)", pendencias)
+        self.assertEqual(Produto.objects.get(nuvemshop_id=200).peso_g, 50)  # peso padrão
 
     def test_reimportar_nao_duplica_nem_baixa_fotos_de_novo(self):
         self.importar(("categorias", "produtos"))
@@ -218,12 +258,15 @@ class ImportadorTests(TestCase):
         self.assertEqual(CorLente.objects.filter(nome="Azul").count(), 1)
         self.assertEqual(self.baixador.chamadas, chamadas + 1)  # só tenta de novo a que falhou
 
-    def test_clientes_com_minimizacao(self):
+    def test_clientes_com_documento_e_enderecos(self):
         relatorio = self.importar(("clientes",))
         maria = Cliente.objects.get(nuvemshop_id=10)
         self.assertEqual(maria.email, "maria@ex.com")
         self.assertEqual(maria.whatsapp, "+5585999990000")
-        self.assertEqual(maria.documento, "")  # CPF descartado
+        self.assertEqual((maria.tipo, maria.documento), (Cliente.Tipo.PESSOA_FISICA, "52998224725"))
+        self.assertEqual(maria.enderecos.count(), 2)  # endereço padrão não duplica
+        padrao = maria.enderecos.get(padrao=True)
+        self.assertEqual((padrao.cep, padrao.numero, padrao.complemento), ("60160080", "111", "apto 1000"))
         self.assertTrue(maria.tem_consentimento(Consentimento.Finalidade.MARKETING_EMAIL))
         self.assertEqual(maria.consentimentos.get().origem, Consentimento.Origem.IMPORTACAO)
 
@@ -231,7 +274,11 @@ class ImportadorTests(TestCase):
         self.assertEqual((hotel.tipo, hotel.documento), (Cliente.Tipo.PESSOA_JURIDICA, "11222333000181"))
 
         self.assertEqual(Cliente.objects.count(), 2)  # 2ª conta da Maria unificada
-        self.assertEqual(relatorio.contagem["CPFs descartados (minimização LGPD)"], 1)
+        self.assertEqual(relatorio.contagem["clientes com CPF"], 1)
+        self.assertEqual(relatorio.contagem["clientes com CNPJ"], 1)
+
+        self.importar(("clientes",))  # reimportar não duplica endereços
+        self.assertEqual(maria.enderecos.count(), 2)
 
     def test_nao_reimporta_titular_anonimizado(self):
         self.importar(("clientes",))
@@ -239,7 +286,8 @@ class ImportadorTests(TestCase):
         self.importar(("clientes",))
         maria = Cliente.objects.get(nuvemshop_id=10)
         self.assertIsNotNone(maria.anonimizado_em)
-        self.assertEqual(maria.email, "")
+        self.assertEqual((maria.email, maria.documento), ("", ""))
+        self.assertFalse(maria.enderecos.exists())
         self.assertFalse(maria.tem_consentimento(Consentimento.Finalidade.MARKETING_EMAIL))
 
     def test_pedidos(self):
@@ -257,8 +305,8 @@ class ImportadorTests(TestCase):
         self.assertFalse(cancelado.pago)
         self.assertEqual(cancelado.cliente.email, "novo@ex.com")  # cliente criado a partir do pedido
 
-        # Endereço completo nunca é guardado.
-        self.assertFalse(any("Rua Secreta" in str(v) for v in PedidoHistorico.objects.values_list()))
+        # Endereço da entrega vira endereço do cliente (para os próximos envios).
+        self.assertTrue(pedido.cliente.enderecos.filter(logradouro="Rua Nova", destinatario="Maria").exists())
 
         # Reimportar não duplica pedidos nem itens.
         self.importar(("pedidos",))
@@ -268,6 +316,7 @@ class ImportadorTests(TestCase):
         # Pedidos entram no direito de acesso do titular.
         dados = lgpd.exportar_dados(pedido.cliente)
         self.assertEqual(dados["pedidos_anteriores"][0]["numero"], 101)
+        self.assertEqual(len(dados["enderecos"]), 3)
 
     def test_cupons_salvos_fora_do_banco(self):
         with tempfile.TemporaryDirectory() as pasta:

@@ -136,3 +136,42 @@ class RegistroAuditoria(models.Model):
 
     def delete(self, *args, **kwargs):
         raise ValidationError("Registros de auditoria não podem ser excluídos.")
+
+
+class Redirecionamento(AuditModel):
+    """Redirecionamento 301/302 de URLs antigas (preserva SEO e links já divulgados)."""
+
+    origem = models.CharField(
+        "URL antiga",
+        max_length=255,
+        unique=True,
+        help_text="Só o caminho, começando com /. Ex.: /produtos/oculos-antigo/",
+    )
+    destino = models.CharField(
+        "URL nova", max_length=500, help_text="Caminho (/produtos/novo/) ou endereço completo https://"
+    )
+    permanente = models.BooleanField("permanente (301)", default=True)
+    ativo = models.BooleanField("ativo", default=True)
+    acessos = models.PositiveIntegerField("acessos", default=0, editable=False)
+
+    class Meta:
+        ordering = ["origem"]
+        verbose_name = "redirecionamento"
+        verbose_name_plural = "redirecionamentos"
+
+    def __str__(self):
+        return f"{self.origem} → {self.destino}"
+
+    @staticmethod
+    def normalizar(caminho: str) -> str:
+        caminho = "/" + (caminho or "").strip().lstrip("/")
+        return caminho.split("?", 1)[0].split("#", 1)[0]
+
+    def clean(self):
+        self.origem = self.normalizar(self.origem)
+        if "://" in self.origem:
+            raise ValidationError({"origem": "Informe só o caminho, sem domínio."})
+        if not (self.destino.startswith("/") or self.destino.startswith("https://")):
+            raise ValidationError({"destino": "Use um caminho começando com / ou um endereço https://."})
+        if self.destino.rstrip("/") == self.origem.rstrip("/"):
+            raise ValidationError({"destino": "O destino é igual à origem."})

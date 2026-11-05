@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from .auditoria import AuditoriaAdminMixin, RegistroAuditoriaAdmin  # noqa: F401 (registra o admin)
-from .models import Parametro
+from .models import Parametro, Redirecionamento
 
 
 @admin.register(Parametro)
@@ -15,3 +15,11 @@ class ParametroAdmin(AuditoriaAdminMixin, admin.ModelAdmin):
         if obj is not None:
             campos.append("chave")
         return campos
+
+
+@admin.register(Redirecionamento)
+class RedirecionamentoAdmin(AuditoriaAdminMixin, admin.ModelAdmin):
+    list_display = ("origem", "destino", "permanente", "ativo", "acessos", "atualizado_em")
+    list_filter = ("ativo", "permanente")
+    search_fields = ("origem", "destino")
+    readonly_fields = ("acessos", "criado_em", "criado_por", "atualizado_em", "atualizado_por")

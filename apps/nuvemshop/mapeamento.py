@@ -10,7 +10,7 @@ from html.parser import HTMLParser
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
-from apps.core.validators import cnpj_valido, so_digitos
+from apps.core.validators import cnpj_valido, cpf_valido, so_digitos
 
 # Tom aproximado de cada cor (pode ser ajustado depois no painel).
 CORES = {
@@ -141,10 +141,36 @@ def whatsapp(telefone: str) -> str:
     return ""
 
 
-def cnpj(identificacao: str) -> str:
-    """Só guardamos CNPJ (necessário para nota de PJ). CPF de pessoa física não é importado."""
+def documento(identificacao: str) -> tuple[str, str]:
+    """('PF', cpf) ou ('PJ', cnpj) só com dígitos; ('', '') se vazio ou inválido."""
     digitos = so_digitos(identificacao)
-    return digitos if len(digitos) == 14 and cnpj_valido(digitos) else ""
+    if len(digitos) == 11 and cpf_valido(digitos):
+        return "PF", digitos
+    if len(digitos) == 14 and cnpj_valido(digitos):
+        return "PJ", digitos
+    return "", ""
+
+
+def endereco(dados: dict) -> dict | None:
+    """Endereço da Nuvemshop -> campos do model Endereco. None se faltar o essencial."""
+    if not dados:
+        return None
+    cep = so_digitos(dados.get("zipcode") or "")
+    logradouro = " ".join((dados.get("address") or "").split())
+    cidade = " ".join((dados.get("city") or "").split())
+    if not (cep and logradouro and cidade):
+        return None
+    return {
+        "destinatario": " ".join((dados.get("name") or "").split())[:150],
+        "cep": cep[:8],
+        "logradouro": logradouro[:200],
+        "numero": (dados.get("number") or "").strip()[:20],
+        "complemento": " ".join((dados.get("floor") or "").split())[:120],
+        "bairro": " ".join((dados.get("locality") or "").split())[:100],
+        "cidade": cidade[:100],
+        "uf": " ".join((dados.get("province") or "").split())[:40],
+        "pais": ((dados.get("country") or "BR").strip().upper() or "BR")[:2],
+    }
 
 
 def data_hora(valor):

@@ -1,7 +1,8 @@
 """Importação da Nuvemshop para o sistema próprio.
 
 Idempotente: rodar de novo atualiza o que já existe (chave = ID da Nuvemshop).
-LGPD: importa só o necessário. CPF de pessoa física e endereço completo ficam de fora.
+LGPD: CPF/CNPJ vão cifrados e o endereço completo vai para `Endereco` (necessários para continuar
+enviando pedidos). Titulares anonimizados nunca são reimportados.
 """
 
 import json
@@ -15,7 +16,9 @@ from django.db import transaction
 from django.utils.text import slugify
 
 from apps.catalogo.models import AcabamentoArmacao, Categoria, CorLente, ImagemProduto, Produto, Variacao
-from apps.clientes.models import Cliente, Consentimento
+from apps.clientes.models import Cliente, Consentimento, Endereco
+from apps.core.crypto import hash_busca
+from apps.core.parametros import get_parametro
 from apps.historico.models import ItemPedidoHistorico, PedidoHistorico
 
 from . import mapeamento as m
@@ -113,7 +116,7 @@ class Importador:
                 "publico": self._publico(nomes_categorias),
                 "preco": preco,
                 "preco_comparativo": comparativo,
-                "peso_g": m.peso_gramas(primeira.get("weight")),
+                "peso_g": m.peso_gramas(primeira.get("weight")) or get_parametro("PESO_PADRAO_G", 50),
                 "largura_cm": m.medida_cm(primeira.get("width")),
                 "altura_cm": m.medida_cm(primeira.get("height")),
                 "comprimento_cm": m.medida_cm(primeira.get("depth")),
@@ -269,24 +272,31 @@ class Importador:
             self._clientes_por_nuvemshop[nid] = cliente
             return cliente
 
-        documento = m.cnpj(item.get("identification") or "")
+        tipo, documento = m.documento(item.get("identification") or "")
         criado = cliente is None
         cliente = cliente or Cliente()
         cliente.nuvemshop_id = cliente.nuvemshop_id or nid
         cliente.nome = (item.get("name") or email or "Cliente Nuvemshop")[:150]
         cliente.email = email
         cliente.whatsapp = m.whatsapp(item.get("phone") or "") or cliente.whatsapp
-        if documento:
-            cliente.tipo, cliente.documento = Cliente.Tipo.PESSOA_JURIDICA, documento
+        repetido = bool(documento) and (
+            Cliente.objects.filter(documento_hash=hash_busca(documento)).exclude(pk=cliente.pk).exists()
+        )
+        if documento and not repetido:
+            # CPF/CNPJ vai cifrado: necessário para a etiqueta/declaração do envio e para nota de PJ.
+            cliente.tipo, cliente.documento = tipo, documento
+        elif repetido:
+            self.relatorio.pendencia("Documentos repetidos em mais de um cliente (não importados)", cliente.nome)
         cliente.save()
         if nid:
             self._clientes_por_nuvemshop[nid] = cliente
+        self._enderecos(cliente, item)
         if contar:
             self.relatorio.conta("clientes criados" if criado else "clientes atualizados")
             if documento:
-                self.relatorio.conta("clientes PJ (CNPJ importado)")
+                self.relatorio.conta(f"clientes com {'CNPJ' if tipo == Cliente.Tipo.PESSOA_JURIDICA else 'CPF'}")
             elif m.so_digitos(item.get("identification") or ""):
-                self.relatorio.conta("CPFs descartados (minimização LGPD)")
+                self.relatorio.conta("CPF/CNPJ inválidos ignorados")
 
         if item.get("accepts_marketing") and not cliente.tem_consentimento(Consentimento.Finalidade.MARKETING_EMAIL):
             Consentimento.objects.create(
@@ -297,6 +307,28 @@ class Importador:
             )
             self.relatorio.conta("consentimentos de e-mail marketing importados")
         return cliente
+
+    def _enderecos(self, cliente: Cliente, item: dict, padrao_id=None):
+        """Endereços completos de entrega (para continuar enviando pedidos)."""
+        padrao_id = padrao_id or (item.get("default_address") or {}).get("id")
+        candidatos = list(item.get("addresses") or [])
+        if item.get("default_address"):
+            candidatos.append(item["default_address"])
+        for dados in candidatos:
+            self._endereco(cliente, dados, padrao=bool(padrao_id) and dados.get("id") == padrao_id)
+
+    def _endereco(self, cliente: Cliente, dados: dict, padrao: bool = False):
+        campos = m.endereco(dados)
+        if not campos:
+            return
+        chave = {k: campos[k] for k in ("cep", "logradouro", "numero", "complemento")}
+        endereco, criado = Endereco.objects.update_or_create(cliente=cliente, **chave, defaults=campos)
+        if padrao and not endereco.padrao:
+            cliente.enderecos.exclude(pk=endereco.pk).update(padrao=False)
+            endereco.padrao = True
+            endereco.save(update_fields=["padrao"])
+        if criado:
+            self.relatorio.conta("endereços importados")
 
     # ------------------------------------------------------------------ pedidos
     def pedidos(self):
@@ -316,6 +348,8 @@ class Importador:
             if cliente is None and (dados_cliente.get("email") or "").strip():
                 cliente = self._cliente(dados_cliente, contar=False)
                 self.relatorio.conta("clientes criados a partir de pedidos")
+        if cliente and not cliente.anonimizado_em and item.get("shipping_address"):
+            self._endereco(cliente, item["shipping_address"])
 
         cupons = [c.get("code", "") for c in item.get("coupon") or [] if isinstance(c, dict)]
         desconto = sum(

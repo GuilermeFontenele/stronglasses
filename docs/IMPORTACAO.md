@@ -69,8 +69,8 @@ python manage.py importar_metricas caminho/para/metricas-nuvemshop.json
 | Dado | Importado? | Por quê |
 |---|---|---|
 | Nome, e-mail, telefone (como WhatsApp) | Sim | Atender e falar sobre pedidos |
-| CNPJ de clientes PJ | Sim (criptografado) | Nota fiscal para empresas |
-| CPF de pessoa física | **Não** | Não é necessário hoje (minimização) |
-| Endereço completo | **Não** | Só cidade/UF do pedido, para relatórios |
+| CPF / CNPJ | Sim (criptografado) | Etiqueta/declaração de conteúdo do envio; nota fiscal para PJ |
+| Endereços de entrega (cadastro e pedidos) | Sim, completos | Continuar enviando pedidos ao cliente |
+| Peso do produto | Da Nuvemshop; se não houver, `PESO_PADRAO_G` (50 g) | Cálculo do frete |
 | Aceite de e-mail marketing | Sim, como consentimento "Importado da Nuvemshop" | Prova da base legal |
 | Cliente que pediu exclusão (anonimizado) | Nunca é reimportado | Direito do titular |

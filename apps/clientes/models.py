@@ -1,6 +1,7 @@
 import uuid
 
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models import Q
 
@@ -114,3 +115,31 @@ class Consentimento(models.Model):
     @property
     def ativo(self) -> bool:
         return self.concedido and self.revogado_em is None
+
+
+class Endereco(AuditModel):
+    """Endereço de entrega. Guardado para continuar enviando pedidos ao cliente
+    (execução de contrato); apagado na anonimização."""
+
+    CAMPOS_SENSIVEIS_AUDITORIA = ("destinatario", "cep", "logradouro", "numero", "complemento", "bairro")
+
+    cliente = models.ForeignKey(Cliente, verbose_name="cliente", on_delete=models.CASCADE, related_name="enderecos")
+    destinatario = models.CharField("destinatário", max_length=150, blank=True)
+    cep = models.CharField("CEP", max_length=8, validators=[RegexValidator(r"^\d{8}$", "CEP com 8 dígitos.")])
+    logradouro = models.CharField("logradouro", max_length=200)
+    numero = models.CharField("número", max_length=20, blank=True)
+    complemento = models.CharField("complemento", max_length=120, blank=True)
+    bairro = models.CharField("bairro", max_length=100, blank=True)
+    cidade = models.CharField("cidade", max_length=100)
+    uf = models.CharField("estado", max_length=40)
+    pais = models.CharField("país", max_length=2, default="BR")
+    padrao = models.BooleanField("endereço padrão", default=False)
+
+    class Meta:
+        ordering = ["-padrao", "-atualizado_em"]
+        verbose_name = "endereço"
+        verbose_name_plural = "endereços"
+
+    def __str__(self):
+        numero = f", {self.numero}" if self.numero else ""
+        return f"{self.logradouro}{numero} - {self.cidade}/{self.uf}"
