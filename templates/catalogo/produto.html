@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load vitrine catalogo %}
+{% block title %}{{ produto.seo_titulo|default:produto.nome }} · Strong Glasses{% endblock %}
+{% block description %}{{ produto.seo_descricao|default:produto.descricao|truncatechars:155 }}{% endblock %}
+{% block content %}
+  <article class="produto">
+    <div class="galeria">
+      {% for foto in fotos %}
+        <img src="{{ foto.imagem.url }}" alt="{{ foto.texto_alternativo }}" width="800" height="800"{% if not forloop.first %} loading="lazy"{% endif %}>
+      {% empty %}<span class="sem-foto" aria-hidden="true"></span>{% endfor %}
+    </div>
+    <div class="info">
+      <h1>{{ produto.nome }}</h1>
+      {% precos preco comparativo %}
+
+      {% if variacoes|length > 1 %}
+        <fieldset class="cores">
+          <legend>Cor: <strong>{{ selecionada.descricao_cor }}</strong></legend>
+          <ul role="radiogroup">
+            {% for v in variacoes %}
+              <li><a class="swatch-opcao{% if not v.disponivel %} esgotada{% endif %}" role="radio" aria-checked="{% if v.pk == selecionada.pk %}true{% else %}false{% endif %}" href="?cor={{ v.pk }}" title="{{ v.descricao_cor }}{% if not v.disponivel %} (esgotada){% endif %}">{% swatch v %}</a></li>
+            {% endfor %}
+          </ul>
+        </fieldset>
+      {% endif %}
+
+      {% if selecionada and selecionada.disponivel %}
+        <p class="estoque ok">Em estoque</p>
+        <button class="botao" type="button" disabled>Comprar (em breve)</button>
+      {% else %}
+        <p class="estoque esgotado">Esgotado nesta cor</p>
+      {% endif %}
+
+      {% if produto.descricao %}<div class="descricao">{{ produto.descricao|linebreaks }}</div>{% endif %}
+    </div>
+  </article>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% load vitrine catalogo %}<article class="card">
+  <a href="{{ produto.get_absolute_url }}" class="card-link">
+    <div class="card-foto">
+      {% with foto=produto.fotos|first %}
+        {% if foto %}<img src="{{ foto.imagem.url }}" alt="{{ foto.texto_alternativo }}" loading="lazy" width="400" height="400">
+        {% else %}<span class="sem-foto" aria-hidden="true"></span>{% endif %}
+      {% endwith %}
+    </div>
+    <h3 class="card-nome">{{ produto.nome }}</h3>
+  </a>
+  {% if produto.tipo != "acessorio" and produto.variacoes_ativas|length > 1 %}
+    <ul class="card-cores" aria-label="Cores disponíveis">
+      {% for v in produto.variacoes_ativas|slice:":5" %}<li><a href="{{ produto.get_absolute_url }}?cor={{ v.pk }}">{% swatch v %}</a></li>{% endfor %}
+      {% if produto.variacoes_ativas|length > 5 %}<li class="mais">+{{ produto.variacoes_ativas|length|add:"-5" }}</li>{% endif %}
+    </ul>
+  {% endif %}
+  {% precos produto.preco produto.preco_comparativo %}
+</article>

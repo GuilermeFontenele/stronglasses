@@ -1,29 +1,87 @@
 :root {
-  --cor-texto: #111;
-  --cor-fundo: #fff;
-  --cor-suave: #6b6b6b;
+  --texto: #111;
+  --fundo: #fff;
+  --suave: #6b6b6b;
+  --linha: #e6e6e6;
+  --destaque: #111;
+  --pix: #0a7d38;
   --fonte: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
-
 *, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; font-family: var(--fonte); color: var(--texto); background: var(--fundo); line-height: 1.45; }
+img { max-width: 100%; height: auto; display: block; }
+a { color: inherit; }
+h1, h2, h3 { line-height: 1.2; }
 
-body {
-  margin: 0;
-  font-family: var(--fonte);
-  color: var(--cor-texto);
-  background: var(--cor-fundo);
-}
+.pular { position: absolute; left: -999px; }
+.pular:focus { left: 16px; top: 8px; background: #fff; padding: 8px; z-index: 10; }
 
-.em-breve {
-  min-height: 100vh;
-  display: grid;
-  place-content: center;
-  text-align: center;
-  padding: 16px;
-}
+.faixa { background: var(--destaque); color: #fff; font-size: 12px; text-align: center; padding: 8px 16px; letter-spacing: .02em; }
+.topo { position: sticky; top: 0; z-index: 5; background: #fff; border-bottom: 1px solid var(--linha); padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: center; }
+.marca { font-weight: 800; letter-spacing: .18em; text-decoration: none; font-size: 15px; }
+.menu { display: flex; gap: 16px; overflow-x: auto; white-space: nowrap; font-size: 14px; scrollbar-width: none; }
+.menu a { text-decoration: none; padding: 4px 0; }
+.menu a:hover { text-decoration: underline; }
+
+main { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+.hero { text-align: center; padding: 48px 0 32px; }
+.hero h1 { font-size: clamp(26px, 6vw, 44px); margin: 0 0 8px; }
+.hero p { color: var(--suave); margin: 0 0 20px; }
+.botao { display: inline-block; background: var(--destaque); color: #fff; border: 0; border-radius: 999px; padding: 14px 28px; font-weight: 600; text-decoration: none; font-size: 15px; cursor: pointer; }
+.botao[disabled] { opacity: .5; cursor: not-allowed; }
+.botao-sec { background: #fff; border: 1px solid var(--texto); border-radius: 999px; padding: 8px 16px; cursor: pointer; }
+
+.vitrine { padding: 24px 0; }
+.vitrine h2, .categorias h2 { font-size: 20px; margin: 0 0 16px; }
+.grade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 12px; }
+@media (min-width: 720px) { .grade { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 1024px) { .grade { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 32px 20px; } }
+
+.card { display: flex; flex-direction: column; gap: 6px; }
+.card-link { text-decoration: none; }
+.card-foto { aspect-ratio: 1; background: #f6f6f6; border-radius: 12px; overflow: hidden; display: grid; place-items: center; }
+.card-foto img { width: 100%; height: 100%; object-fit: contain; }
+.sem-foto { width: 40%; aspect-ratio: 1; border-radius: 50%; background: var(--linha); display: block; }
+.card-nome { font-size: 14px; font-weight: 500; margin: 6px 0 0; }
+.card-cores { list-style: none; display: flex; gap: 4px; padding: 0; margin: 0; align-items: center; }
+.card-cores .swatch { width: 20px; height: 20px; }
+.card-cores .mais { font-size: 12px; color: var(--suave); }
+
+.precos { display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
+.preco-de { color: var(--suave); font-size: 12px; }
+.preco { font-weight: 700; font-size: 16px; }
+.preco-pix { color: var(--pix); }
+.parcelas { color: var(--suave); font-size: 12px; }
+
+.categorias ul { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.categorias a { display: block; border: 1px solid var(--linha); border-radius: 999px; padding: 10px 18px; text-decoration: none; }
+
+.produto { display: grid; gap: 24px; padding: 24px 0; }
+@media (min-width: 900px) { .produto { grid-template-columns: 1.2fr 1fr; gap: 48px; } }
+.galeria { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; }
+.galeria img { flex: 0 0 100%; scroll-snap-align: start; background: #f6f6f6; border-radius: 12px; aspect-ratio: 1; object-fit: contain; }
+@media (min-width: 900px) { .galeria { display: grid; overflow: visible; } }
+.info h1 { font-size: 24px; margin: 0 0 12px; }
+.info .precos { font-size: 16px; margin-bottom: 16px; }
+.info .preco { font-size: 24px; }
+.cores { border: 0; padding: 0; margin: 0 0 16px; }
+.cores legend { font-size: 14px; margin-bottom: 8px; }
+.cores ul { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; padding: 0; margin: 0; }
+.esgotada { opacity: .35; }
+.estoque { font-size: 14px; }
+.estoque.ok { color: var(--pix); }
+.estoque.esgotado { color: #b00020; }
+.descricao { color: #333; font-size: 15px; border-top: 1px solid var(--linha); margin-top: 24px; padding-top: 16px; }
+
+.filtros { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin-bottom: 12px; font-size: 14px; }
+.filtros label { display: flex; flex-direction: column; gap: 4px; }
+.filtros select { padding: 8px; border-radius: 8px; border: 1px solid var(--linha); }
+.contagem, .vazio { color: var(--suave); font-size: 14px; }
+.paginacao { display: flex; gap: 16px; justify-content: center; padding: 24px 0; }
+
+.rodape { border-top: 1px solid var(--linha); margin-top: 48px; padding: 24px 16px; text-align: center; color: var(--suave); font-size: 13px; }
 
 /* Seletor de cor armação | lente (ver catalogo/partials/swatch.html) */
 .swatch { width: 28px; height: 28px; display: inline-block; vertical-align: middle; }
 .swatch-opcao { border-radius: 50%; padding: 3px; display: inline-flex; }
-.swatch-opcao[aria-checked="true"],
-.swatch-opcao:focus-visible { outline: 2px solid var(--cor-texto); outline-offset: 1px; }
+.swatch-opcao[aria-checked="true"], .swatch-opcao:focus-visible { outline: 2px solid var(--texto); outline-offset: 1px; }

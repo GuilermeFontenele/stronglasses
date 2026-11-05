@@ -1,0 +1,6 @@
+{% load vitrine %}<div class="precos">
+  {% if comparativo %}<s class="preco-de">{{ comparativo|brl }}</s>{% endif %}
+  <span class="preco">{{ preco|brl }}</span>
+  <span class="preco-pix"><strong>{{ pix|brl }}</strong> no Pix</span>
+  {% if vezes > 1 %}<span class="parcelas">ou {{ vezes }}x de {{ parcela|brl }} sem juros</span>{% endif %}
+</div>

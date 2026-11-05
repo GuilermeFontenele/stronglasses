@@ -165,6 +165,9 @@ class Produto(AuditModel):
     def __str__(self):
         return self.nome
 
+    def get_absolute_url(self):
+        return f"/produtos/{self.slug}/"
+
     @property
     def pronto_para_envio(self) -> bool:
         """Sem peso e medidas a cotação de frete sai errada."""

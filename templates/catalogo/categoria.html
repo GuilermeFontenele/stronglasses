@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ categoria.nome }} · Strong Glasses{% endblock %}
+{% block content %}
+  <section class="vitrine">
+    <h1>{{ categoria.nome }}</h1>
+    <form class="filtros" method="get">
+      <label>Público
+        <select name="publico">
+          <option value="">Todos</option>
+          {% for valor, rotulo in publicos %}<option value="{{ valor }}"{% if valor == publico %} selected{% endif %}>{{ rotulo }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Ordenar
+        <select name="ordem">
+          <option value="">Nome</option>
+          <option value="menor-preco"{% if ordem == "menor-preco" %} selected{% endif %}>Menor preço</option>
+          <option value="maior-preco"{% if ordem == "maior-preco" %} selected{% endif %}>Maior preço</option>
+          <option value="novidades"{% if ordem == "novidades" %} selected{% endif %}>Novidades</option>
+        </select>
+      </label>
+      <button class="botao-sec" type="submit">Aplicar</button>
+    </form>
+    <p class="contagem">{{ pagina.paginator.count }} produto{{ pagina.paginator.count|pluralize }}</p>
+    <div class="grade">{% for produto in pagina %}{% include "catalogo/partials/card.html" %}{% empty %}<p class="vazio">Nenhum produto aqui ainda.</p>{% endfor %}</div>
+    {% if pagina.has_other_pages %}
+      <nav class="paginacao" aria-label="Páginas">
+        {% if pagina.has_previous %}<a href="?pagina={{ pagina.previous_page_number }}{% if publico %}&amp;publico={{ publico }}{% endif %}{% if ordem %}&amp;ordem={{ ordem }}{% endif %}">Anterior</a>{% endif %}
+        <span>{{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+        {% if pagina.has_next %}<a href="?pagina={{ pagina.next_page_number }}{% if publico %}&amp;publico={{ publico }}{% endif %}{% if ordem %}&amp;ordem={{ ordem }}{% endif %}">Próxima</a>{% endif %}
+      </nav>
+    {% endif %}
+  </section>
+{% endblock %}

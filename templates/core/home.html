@@ -1,7 +1,38 @@
 {% extends "base.html" %}
 {% block content %}
-  <section class="em-breve">
-    <h1>Strong Glasses</h1>
-    <p>Nossa nova loja está chegando.</p>
+  <section class="hero">
+    <h1>Óculos que acompanham o seu estilo</h1>
+    <p>Proteção UV400, modelos exclusivos e entrega para todo o Brasil.</p>
+    {% if categorias_menu %}<a class="botao" href="/{{ categorias_menu.0.slug }}/">Ver coleção</a>{% endif %}
   </section>
+
+  {% if destaques %}
+    <section class="vitrine" aria-labelledby="t-destaques">
+      <h2 id="t-destaques">Mais procurados</h2>
+      <div class="grade">{% for produto in destaques %}{% include "catalogo/partials/card.html" %}{% endfor %}</div>
+    </section>
+  {% endif %}
+
+  {% if categorias_menu %}
+    <section class="categorias" aria-labelledby="t-categorias">
+      <h2 id="t-categorias">Categorias</h2>
+      <ul>{% for cat in categorias_menu %}<li><a href="/{{ cat.slug }}/">{{ cat.nome }}</a></li>{% endfor %}</ul>
+    </section>
+  {% endif %}
+
+  {% if novidades %}
+    <section class="vitrine" aria-labelledby="t-novidades">
+      <h2 id="t-novidades">Novidades</h2>
+      <div class="grade">{% for produto in novidades %}{% include "catalogo/partials/card.html" %}{% endfor %}</div>
+    </section>
+  {% endif %}
+
+  {% if acessorios %}
+    <section class="vitrine" aria-labelledby="t-acessorios">
+      <h2 id="t-acessorios">Acessórios</h2>
+      <div class="grade">{% for produto in acessorios %}{% include "catalogo/partials/card.html" %}{% endfor %}</div>
+    </section>
+  {% endif %}
+
+  {% if not destaques %}<p class="vazio">Nenhum produto publicado ainda.</p>{% endif %}
 {% endblock %}

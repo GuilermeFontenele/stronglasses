@@ -3,15 +3,27 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Strong Glasses{% endblock %}</title>
-  <meta name="description" content="{% block description %}Óculos de sol e armações Strong Glasses.{% endblock %}">
+  <title>{% block title %}Strong Glasses · Óculos de sol e armações{% endblock %}</title>
+  <meta name="description" content="{% block description %}Óculos de sol e armações Strong Glasses. Frete para todo o Brasil e desconto no Pix.{% endblock %}">
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
   {% block head %}{% endblock %}
 </head>
 <body>
+  <a class="pular" href="#conteudo">Pular para o conteúdo</a>
+  <div class="faixa" role="note">Frete para todo o Brasil · Desconto no Pix · Parcele sem juros</div>
+  <header class="topo">
+    <a class="marca" href="/">STRONG GLASSES</a>
+    <nav class="menu" aria-label="Categorias">
+      {% for cat in categorias_menu %}<a href="/{{ cat.slug }}/">{{ cat.nome }}</a>{% endfor %}
+    </nav>
+  </header>
   <main id="conteudo">
     {% block content %}{% endblock %}
   </main>
+  <footer class="rodape">
+    <p><strong>Strong Glasses</strong> · Fortaleza/CE</p>
+    <p>Compra segura · Troca fácil · Atendimento pelo WhatsApp</p>
+  </footer>
   {% block scripts %}{% endblock %}
 </body>
 </html>

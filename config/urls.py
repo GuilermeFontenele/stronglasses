@@ -10,6 +10,7 @@ admin.site.index_title = "Administração da loja"
 urlpatterns = [
     path(settings.ADMIN_URL, admin.site.urls),
     path("", include("apps.core.urls")),
+    path("", include("apps.catalogo.urls")),
 ]
 
 if settings.DEBUG:
