@@ -138,8 +138,8 @@ class HomeTests(VitrineBase):
     def test_link_do_banner_validado(self):
         for link in ("javascript:alert(1)", "http://x.com", "//x.com"):
             with self.subTest(link=link), self.assertRaises(ValidationError):
-                Banner(titulo="X", imagem="banners/x.webp", link=link).full_clean()
-        Banner(titulo="X", imagem="banners/x.webp", link="/masculino/").full_clean()
+                Banner(titulo="X", link=link).full_clean(exclude=["imagem"])
+        Banner(titulo="X", link="/masculino/").full_clean(exclude=["imagem"])
 
     def test_rodape_e_whatsapp(self):
         resposta = self.client.get("/")
