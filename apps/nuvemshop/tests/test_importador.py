@@ -244,8 +244,12 @@ class ImportadorTests(TestCase):
         self.assertTrue(pendencias["Fotos que não puderam ser baixadas"])
         self.assertTrue(pendencias["Cores sem tom definido (cinza provisório)"])
         self.assertTrue(pendencias["Endereços (slug) alterados por conflito — revise o SEO"])
-        self.assertIn("Produtos sem peso/medidas (frete)", pendencias)
-        self.assertEqual(Produto.objects.get(nuvemshop_id=200).peso_g, 50)  # peso padrão
+        # Sem peso/medidas na Nuvemshop: usa a embalagem padrão (50 g, 5 x 10 x 18 cm).
+        nice_envio = (nice.peso_g, nice.altura_cm, nice.largura_cm, nice.comprimento_cm)
+        self.assertEqual(nice_envio, (50, Decimal("5.0"), Decimal("10.0"), Decimal("18.0")))
+        self.assertTrue(nice.pronto_para_envio)
+        self.assertEqual((roshi.altura_cm, roshi.comprimento_cm), (Decimal("6.0"), Decimal("8.0")))  # mantém o próprio
+        self.assertNotIn("Produtos sem peso/medidas (frete)", pendencias)
 
     def test_reimportar_nao_duplica_nem_baixa_fotos_de_novo(self):
         self.importar(("categorias", "produtos"))
