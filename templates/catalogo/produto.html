@@ -2,7 +2,13 @@
 {% load vitrine catalogo %}
 {% block title %}{{ produto.seo_titulo|default:produto.nome }} · Strong Glasses{% endblock %}
 {% block description %}{{ produto.seo_descricao|default:produto.descricao|truncatechars:155 }}{% endblock %}
+{% block og_tipo %}product{% endblock %}
+{% block og_titulo %}{{ produto.nome }} · Strong Glasses{% endblock %}
+{% block og_imagem %}{% with foto=fotos|first %}{% if foto %}<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{{ foto.imagem.url }}">{% endif %}{% endwith %}{% endblock %}
+{% block head %}<script type="application/ld+json" nonce="{{ csp_nonce }}">{{ dados_estruturados }}</script>{% endblock %}
+{% block whatsapp_flutuante %}{% endblock %}
 {% block content %}
+  <nav class="trilha" aria-label="Você está em"><a href="/">Início</a>{% with cat=produto.categorias.all|first %}{% if cat %} › <a href="/{{ cat.slug }}/">{{ cat.nome }}</a>{% endif %}{% endwith %}</nav>
   <article class="produto">
     <div class="galeria">
       {% for foto in fotos %}
@@ -25,10 +31,16 @@
       {% endif %}
 
       {% if selecionada and selecionada.disponivel %}
-        <p class="estoque ok">Em estoque</p>
-        <button class="botao" type="button" disabled>Comprar (em breve)</button>
+        <p class="estoque ok">Em estoque, pronto para envio</p>
+        {% if loja.whatsapp %}
+          <a class="botao botao-whatsapp" href="https://wa.me/{{ loja.whatsapp }}?text={{ mensagem_whatsapp|urlencode:"" }}" rel="noopener" target="_blank">
+            {% include "catalogo/partials/icone_whatsapp.html" %} Comprar pelo WhatsApp
+          </a>
+          <p class="ajuda">Atendimento rápido: confirmamos cor, frete e pagamento com você.</p>
+        {% endif %}
       {% else %}
         <p class="estoque esgotado">Esgotado nesta cor</p>
+        {% if loja.whatsapp %}<a class="botao-sec" href="https://wa.me/{{ loja.whatsapp }}?text={{ mensagem_whatsapp|add:" (quero ser avisado quando voltar)"|urlencode:"" }}" rel="noopener" target="_blank">Avise-me quando chegar</a>{% endif %}
       {% endif %}
 
       {% if produto.descricao %}<div class="descricao">{{ produto.descricao|linebreaks }}</div>{% endif %}

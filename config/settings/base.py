@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.humanize",
+    "django.contrib.sitemaps",
     # Apps da loja
     "apps.core",
     "apps.clientes",
@@ -67,6 +68,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "django.template.context_processors.csp",
                 "apps.catalogo.context_processors.navegacao",
+                "apps.catalogo.context_processors.loja",
             ],
         },
     },

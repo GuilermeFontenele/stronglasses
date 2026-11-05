@@ -1,12 +1,22 @@
+import io
+import tempfile
+from datetime import timedelta
 from decimal import Decimal
+from unittest import mock
 
+from django.core.exceptions import ValidationError
+from django.core.management import CommandError, call_command
 from django.db import connection
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.test.utils import CaptureQueriesContext
+from django.utils import timezone
+from PIL import Image
 
-from apps.catalogo.models import AcabamentoArmacao, Categoria, CorLente, Produto, Variacao
-from apps.catalogo.templatetags.vitrine import brl
+from apps.catalogo.models import AcabamentoArmacao, Banner, Categoria, CorLente, Produto, Variacao
+from apps.catalogo.templatetags.vitrine import brl, milhar
+from apps.catalogo.views import _json_seguro
 from apps.core.models import Parametro, Redirecionamento
+from apps.nuvemshop.imagens import ImagemInvalida
 
 
 class VitrineBase(TestCase):
@@ -96,3 +106,95 @@ class VitrineTests(VitrineBase):
         with CaptureQueriesContext(connection) as consultas:
             self.client.get("/produtos/oculos-de-sol-roshi/")
         self.assertLess(len(consultas), 12)  # sem N+1 nas variações e fotos
+
+
+class HomeTests(VitrineBase):
+    def test_contador_de_oculos_entregues(self):
+        Parametro.objects.filter(chave="OCULOS_ENTREGUES").update(valor="12345")
+        from django.core.cache import cache
+
+        cache.clear()
+        resposta = self.client.get("/")
+        self.assertContains(resposta, 'data-contador="12345"')
+        self.assertContains(resposta, "+12.345")  # sem JS o número final já aparece
+        self.assertContains(resposta, "óculos entregues em todo o Brasil")
+        self.assertContains(resposta, "js/vitrine.js")
+        self.assertEqual(milhar(10000), "10.000")
+
+    def test_banner_respeita_ativo_e_periodo(self):
+        agora = timezone.now()
+        Banner.objects.create(titulo="Mapa do Brasil", imagem="banners/mapa.webp")
+        Banner.objects.create(titulo="Desligado", imagem="banners/a.webp", ativo=False)
+        Banner.objects.create(titulo="Futuro", imagem="banners/b.webp", inicio=agora + timedelta(days=1))
+        Banner.objects.create(titulo="Vencido", imagem="banners/c.webp", fim=agora - timedelta(days=1))
+        resposta = self.client.get("/")
+        self.assertContains(resposta, 'alt="Mapa do Brasil"')
+        for titulo in ("Desligado", "Futuro", "Vencido"):
+            self.assertNotContains(resposta, titulo)
+
+    def test_sem_banner_mostra_titulo_em_texto(self):
+        self.assertContains(self.client.get("/"), "<h1>")
+
+    def test_link_do_banner_validado(self):
+        for link in ("javascript:alert(1)", "http://x.com", "//x.com"):
+            with self.subTest(link=link), self.assertRaises(ValidationError):
+                Banner(titulo="X", imagem="banners/x.webp", link=link).full_clean()
+        Banner(titulo="X", imagem="banners/x.webp", link="/masculino/").full_clean()
+
+    def test_rodape_e_whatsapp(self):
+        resposta = self.client.get("/")
+        self.assertContains(resposta, "https://wa.me/5585981809988")
+        self.assertContains(resposta, "instagram.com/stronglasses")
+
+
+class ProdutoSeoTests(VitrineBase):
+    def test_comprar_pelo_whatsapp_com_cor(self):
+        resposta = self.client.get("/produtos/oculos-de-sol-roshi/")
+        self.assertContains(resposta, "Comprar pelo WhatsApp")
+        self.assertIn("lente%20verde", resposta.content.decode())
+        self.assertIn("Roshi", resposta.context["mensagem_whatsapp"])
+
+    def test_dados_estruturados_com_nonce(self):
+        resposta = self.client.get("/produtos/oculos-de-sol-roshi/")
+        html = resposta.content.decode()
+        self.assertIn('<script type="application/ld+json" nonce="', html)
+        self.assertIn('"price": "94.90"', html)
+        self.assertIn("InStock", html)
+        self.assertIn('rel="canonical" href="http://testserver/produtos/oculos-de-sol-roshi/"', html)
+
+    def test_json_seguro_nao_fecha_script(self):
+        self.assertNotIn("</script>", _json_seguro({"nome": "</script><script>alert(1)"}))
+
+    def test_sitemap_e_robots(self):
+        sitemap = self.client.get("/sitemap.xml").content.decode()
+        self.assertIn("/produtos/oculos-de-sol-roshi/", sitemap)
+        self.assertIn("/oculos-de-sol/", sitemap)
+        self.assertNotIn("rascunho", sitemap)
+        robots = self.client.get("/robots.txt")
+        self.assertContains(robots, "Sitemap: http://testserver/sitemap.xml")
+        self.assertNotContains(robots, "painel")  # não entrega o endereço do admin
+
+
+class CriarBannerTests(TestCase):
+    def _png(self):
+        saida = io.BytesIO()
+        Image.new("RGB", (20, 10), "white").save(saida, "PNG")
+        return saida.getvalue()
+
+    def test_cria_banner_com_a_primeira_url_que_funciona(self):
+        alvo = "apps.catalogo.management.commands.criar_banner.baixar_imagem"
+        with (
+            tempfile.TemporaryDirectory() as pasta,
+            override_settings(MEDIA_ROOT=pasta),
+            mock.patch(alvo, side_effect=[ImagemInvalida("404"), (self._png(), "png")]) as baixar,
+        ):
+            call_command("criar_banner", stdout=io.StringIO())
+            banner = Banner.objects.get()
+            self.assertTrue(banner.imagem.name.startswith("banners/"))
+            self.assertEqual(baixar.call_count, 2)
+
+    def test_erro_quando_nenhuma_url_funciona(self):
+        alvo = "apps.catalogo.management.commands.criar_banner.baixar_imagem"
+        with mock.patch(alvo, side_effect=ImagemInvalida("404")), self.assertRaises(CommandError):
+            call_command("criar_banner", "--url", "https://exemplo.com/a.png", stdout=io.StringIO())
+        self.assertFalse(Banner.objects.exists())

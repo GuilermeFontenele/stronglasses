@@ -1,9 +1,10 @@
 from django.contrib import admin
 from django.template.loader import render_to_string
+from django.utils.html import format_html
 
 from apps.core.auditoria import AuditoriaAdminMixin
 
-from .models import AcabamentoArmacao, Categoria, CorLente, ImagemProduto, Produto, Variacao
+from .models import AcabamentoArmacao, Banner, Categoria, CorLente, ImagemProduto, Produto, Variacao
 from .templatetags.catalogo import dados_swatch
 
 
@@ -74,3 +75,17 @@ class ProdutoAdmin(AuditoriaAdminMixin, admin.ModelAdmin):
     @admin.display(boolean=True, description="Pronto p/ envio")
     def pronto_envio(self, obj):
         return obj.pronto_para_envio
+
+
+@admin.register(Banner)
+class BannerAdmin(AuditoriaAdminMixin, admin.ModelAdmin):
+    list_display = ("miniatura", "titulo", "ativo", "ordem", "inicio", "fim")
+    list_display_links = ("titulo",)
+    list_editable = ("ativo", "ordem")
+    list_filter = ("ativo",)
+
+    @admin.display(description="imagem")
+    def miniatura(self, obj):
+        if not obj.imagem:
+            return "—"
+        return format_html('<img src="{}" alt="" width="120" height="50" class="miniatura-banner">', obj.imagem.url)

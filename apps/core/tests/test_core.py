@@ -182,3 +182,12 @@ class SenhaTests(SimpleTestCase):
 
         with self.assertRaises(ValidationError):
             validate_password("curta123")
+
+
+class GetParametrosTests(TestCase):
+    def test_varios_de_uma_vez(self):
+        from apps.core.parametros import get_parametros
+
+        with self.assertNumQueries(1):
+            valores = get_parametros("PARCELAS_SEM_JUROS", "NAO_EXISTE", padroes={"NAO_EXISTE": "x"})
+        self.assertEqual(valores, {"PARCELAS_SEM_JUROS": 3, "NAO_EXISTE": "x"})

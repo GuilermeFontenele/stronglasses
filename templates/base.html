@@ -4,26 +4,65 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Strong Glasses · Óculos de sol e armações{% endblock %}</title>
-  <meta name="description" content="{% block description %}Óculos de sol e armações Strong Glasses. Frete para todo o Brasil e desconto no Pix.{% endblock %}">
+  <meta name="description" content="{% block description %}Óculos de sol e armações Strong Glasses. Envio para todo o Brasil e desconto no Pix.{% endblock %}">
+  <link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
+  <meta name="theme-color" content="#111111">
+  <meta property="og:site_name" content="Strong Glasses">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:type" content="{% block og_tipo %}website{% endblock %}">
+  <meta property="og:title" content="{% block og_titulo %}Strong Glasses · Óculos de sol e armações{% endblock %}">
+  <meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
+  {% block og_imagem %}{% endblock %}
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
   {% block head %}{% endblock %}
 </head>
 <body>
   <a class="pular" href="#conteudo">Pular para o conteúdo</a>
-  <div class="faixa" role="note">Frete para todo o Brasil · Desconto no Pix · Parcele sem juros</div>
+  <div class="faixa" role="note">Envio para todo o Brasil · {% if loja.pix_percentual %}{{ loja.pix_percentual }}% off no Pix · {% endif %}{% if loja.parcelas > 1 %}Até {{ loja.parcelas }}x sem juros{% endif %}</div>
   <header class="topo">
     <a class="marca" href="/">STRONG GLASSES</a>
     <nav class="menu" aria-label="Categorias">
-      {% for cat in categorias_menu %}<a href="/{{ cat.slug }}/">{{ cat.nome }}</a>{% endfor %}
+      {% for cat in categorias_menu %}<a href="/{{ cat.slug }}/"{% if request.path == "/"|add:cat.slug|add:"/" %} aria-current="page"{% endif %}>{{ cat.nome }}</a>{% endfor %}
     </nav>
   </header>
+  {% block topo_pagina %}{% endblock %}
   <main id="conteudo">
     {% block content %}{% endblock %}
   </main>
   <footer class="rodape">
-    <p><strong>Strong Glasses</strong> · Fortaleza/CE</p>
-    <p>Compra segura · Troca fácil · Atendimento pelo WhatsApp</p>
+    <div class="rodape-colunas">
+      <section>
+        <h2>Atendimento</h2>
+        <ul>
+          {% if loja.whatsapp %}<li><a href="https://wa.me/{{ loja.whatsapp }}" rel="noopener" target="_blank">WhatsApp</a></li>{% endif %}
+          {% if loja.instagram %}<li><a href="https://instagram.com/{{ loja.instagram }}" rel="noopener" target="_blank">Instagram @{{ loja.instagram }}</a></li>{% endif %}
+        </ul>
+      </section>
+      <section>
+        <h2>Compra segura</h2>
+        <ul>
+          {% if loja.pix_percentual %}<li>{{ loja.pix_percentual }}% de desconto no Pix</li>{% endif %}
+          {% if loja.parcelas > 1 %}<li>Até {{ loja.parcelas }}x sem juros no cartão</li>{% endif %}
+          <li>7 dias para devolver (direito de arrependimento)</li>
+        </ul>
+      </section>
+      <section>
+        <h2>Categorias</h2>
+        <ul>{% for cat in categorias_menu %}<li><a href="/{{ cat.slug }}/">{{ cat.nome }}</a></li>{% endfor %}</ul>
+      </section>
+    </div>
+    <p class="rodape-legal">
+      © {% now "Y" %} Strong Glasses{% if loja.cnpj %} · CNPJ {{ loja.cnpj }}{% endif %}{% if loja.endereco %} · {{ loja.endereco }}{% endif %}
+    </p>
   </footer>
+  {% block whatsapp_flutuante %}
+    {% if loja.whatsapp %}
+      <a class="whatsapp-flutuante" href="https://wa.me/{{ loja.whatsapp }}?text={{ "Olá! Vim pelo site da Strong Glasses."|urlencode:"" }}" rel="noopener" target="_blank" aria-label="Falar no WhatsApp">
+        {% include "catalogo/partials/icone_whatsapp.html" %}
+      </a>
+    {% endif %}
+  {% endblock %}
+  <script src="{% static 'js/vitrine.js' %}" defer></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -1,10 +1,65 @@
 {% extends "base.html" %}
+{% load vitrine %}
+{% block topo_pagina %}
+  {% if banners %}
+    <section class="banners" aria-label="Destaques da loja">
+      <div class="banners-trilho">
+        {% for banner in banners %}
+          <figure class="banner">
+            {% if banner.link %}<a href="{{ banner.link }}">{% endif %}
+            <picture>
+              {% if banner.imagem_mobile %}<source media="(max-width: 719px)" srcset="{{ banner.imagem_mobile.url }}">{% endif %}
+              <img src="{{ banner.imagem.url }}" alt="{{ banner.titulo }}"{% if forloop.first %} fetchpriority="high"{% else %} loading="lazy"{% endif %}>
+            </picture>
+            {% if banner.link %}</a>{% endif %}
+          </figure>
+        {% endfor %}
+      </div>
+    </section>
+  {% else %}
+    <section class="hero">
+      <h1>Óculos que acompanham o seu estilo</h1>
+      <p>Modelos exclusivos com entrega para todo o Brasil.</p>
+      {% if categorias_menu %}<a class="botao" href="/{{ categorias_menu.0.slug }}/">Ver coleção</a>{% endif %}
+    </section>
+  {% endif %}
+{% endblock %}
+
 {% block content %}
-  <section class="hero">
-    <h1>Óculos que acompanham o seu estilo</h1>
-    <p>Proteção UV400, modelos exclusivos e entrega para todo o Brasil.</p>
-    {% if categorias_menu %}<a class="botao" href="/{{ categorias_menu.0.slug }}/">Ver coleção</a>{% endif %}
-  </section>
+  {% if banners %}<h1 class="visualmente-oculto">Strong Glasses · Óculos de sol e armações</h1>{% endif %}
+
+  <ul class="beneficios" aria-label="Vantagens">
+    <li>
+      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M3 7h11v9H3zM14 10h4l3 3v3h-7zM6.5 18.5a1.5 1.5 0 1 0 0-.01M17.5 18.5a1.5 1.5 0 1 0 0-.01"/></svg>
+      <span><strong>Envio para todo o Brasil</strong> com rastreio</span>
+    </li>
+    {% if loja.pix_percentual %}
+    <li>
+      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M12 2.5 21.5 12 12 21.5 2.5 12z"/></svg>
+      <span><strong>{{ loja.pix_percentual }}% off no Pix</strong> em qualquer pedido</span>
+    </li>
+    {% endif %}
+    {% if loja.parcelas > 1 %}
+    <li>
+      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" d="M3 6h18v12H3zM3 10h18M7 15h3"/></svg>
+      <span><strong>Até {{ loja.parcelas }}x sem juros</strong> no cartão</span>
+    </li>
+    {% endif %}
+    <li>
+      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6zM8.5 12l2.5 2.5 4.5-5"/></svg>
+      <span><strong>Compra segura</strong> e 7 dias para devolver</span>
+    </li>
+  </ul>
+
+  {% if oculos_entregues %}
+    <section class="contador" aria-labelledby="t-contador">
+      <p class="contador-numero">
+        <span class="visualmente-oculto" id="t-contador">Mais de {{ oculos_entregues|milhar }} óculos entregues em todo o Brasil</span>
+        <span aria-hidden="true" data-contador="{{ oculos_entregues }}">+{{ oculos_entregues|milhar }}</span>
+      </p>
+      <p class="contador-legenda" aria-hidden="true">óculos entregues em todo o Brasil</p>
+    </section>
+  {% endif %}
 
   {% if destaques %}
     <section class="vitrine" aria-labelledby="t-destaques">

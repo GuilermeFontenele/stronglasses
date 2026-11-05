@@ -30,3 +30,22 @@ def _limpa_cache(sender, instance, **kwargs):
     chave = _PREFIXO + instance.pk
     cache.delete(chave)
     transaction.on_commit(lambda: cache.delete(chave))
+
+
+def get_parametros(*chaves: str, padroes: dict | None = None) -> dict:
+    """Vários parâmetros com uma consulta só (o que já está no cache não vai ao banco)."""
+    padroes = padroes or {}
+    resultado, faltando = {}, []
+    for chave in chaves:
+        valor = cache.get(_PREFIXO + chave, _AUSENTE)
+        if valor is _AUSENTE:
+            faltando.append(chave)
+        else:
+            resultado[chave] = valor
+    if faltando:
+        guardar = not connection.in_atomic_block
+        for parametro in Parametro.objects.filter(pk__in=faltando):
+            resultado[parametro.pk] = parametro.valor_tipado()
+            if guardar:
+                cache.set(_PREFIXO + parametro.pk, resultado[parametro.pk], timeout=300)
+    return {chave: resultado.get(chave, padroes.get(chave)) for chave in chaves}

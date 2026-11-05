@@ -31,3 +31,12 @@ def precos(preco, comparativo=None):
         "vezes": vezes,
         "parcela": valor_parcela,
     }
+
+
+@register.filter
+def milhar(valor) -> str:
+    """10000 -> '10.000'."""
+    try:
+        return f"{int(valor):,}".replace(",", ".")
+    except (TypeError, ValueError):
+        return ""

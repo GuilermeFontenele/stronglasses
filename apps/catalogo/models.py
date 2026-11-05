@@ -33,6 +33,16 @@ def caminho_textura(instance, filename: str) -> str:
     return _nome_aleatorio("texturas", filename)
 
 
+def caminho_banner(instance, filename: str) -> str:
+    return _nome_aleatorio("banners", filename)
+
+
+def validar_link_banner(valor: str) -> None:
+    """Só caminhos internos (/masculino/) ou https: nada de javascript: ou http."""
+    if not (valor.startswith("/") and not valor.startswith("//")) and not valor.startswith("https://"):
+        raise ValidationError("Use um caminho do site (ex.: /masculino/) ou um endereço https://.")
+
+
 class Categoria(AuditModel):
     nome = models.CharField("nome", max_length=80)
     slug = models.SlugField("endereço (slug)", max_length=100, unique=True)
@@ -269,3 +279,50 @@ class ImagemProduto(models.Model):
 
     def __str__(self):
         return self.texto_alternativo
+
+
+class Banner(AuditModel):
+    """Banner principal da home. Vários ativos viram um carrossel (arrastar no celular)."""
+
+    titulo = models.CharField(
+        "descrição da imagem", max_length=150, help_text="O que aparece na imagem (acessibilidade e Google)."
+    )
+    imagem = models.ImageField(
+        "imagem (computador)",
+        upload_to=caminho_banner,
+        validators=[FileExtensionValidator(EXTENSOES_IMAGEM), validar_tamanho_imagem],
+        help_text="Sugestão: 1920 x 800 px.",
+    )
+    imagem_mobile = models.ImageField(
+        "imagem (celular)",
+        upload_to=caminho_banner,
+        blank=True,
+        validators=[FileExtensionValidator(EXTENSOES_IMAGEM), validar_tamanho_imagem],
+        help_text="Opcional. Sugestão: 1080 x 1350 px. Vazio = usa a do computador.",
+    )
+    link = models.CharField(
+        "link", max_length=300, blank=True, validators=[validar_link_banner], help_text="Ex.: /masculino/"
+    )
+    ativo = models.BooleanField("ativo", default=True)
+    inicio = models.DateTimeField("mostrar a partir de", null=True, blank=True)
+    fim = models.DateTimeField("mostrar até", null=True, blank=True)
+    ordem = models.PositiveSmallIntegerField("ordem", default=0)
+
+    class Meta:
+        ordering = ["ordem", "-id"]
+        verbose_name = "banner"
+        verbose_name_plural = "banners"
+
+    def __str__(self):
+        return self.titulo
+
+    @classmethod
+    def no_ar(cls):
+        from django.utils import timezone
+
+        agora = timezone.now()
+        return cls.objects.filter(
+            Q(ativo=True),
+            Q(inicio__isnull=True) | Q(inicio__lte=agora),
+            Q(fim__isnull=True) | Q(fim__gt=agora),
+        )
