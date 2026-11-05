@@ -22,6 +22,8 @@ ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS")
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
 
 INSTALLED_APPS = [
+    # Primeiro para o runserver dela (porta 8080) ter prioridade sobre o do Django.
+    "apps.core",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -31,7 +33,6 @@ INSTALLED_APPS = [
     "django.contrib.humanize",
     "django.contrib.sitemaps",
     # Apps da loja
-    "apps.core",
     "apps.clientes",
     "apps.catalogo",
     "apps.historico",

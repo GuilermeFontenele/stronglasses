@@ -184,6 +184,16 @@ class SenhaTests(SimpleTestCase):
             validate_password("curta123")
 
 
+class RunserverTests(SimpleTestCase):
+    def test_porta_padrao_8080(self):
+        from django.core.management import load_command_class
+
+        self.assertEqual(load_command_class("apps.core", "runserver").default_port, "8080")
+        from django.core.management import get_commands
+
+        self.assertEqual(get_commands()["runserver"], "apps.core")
+
+
 class GetParametrosTests(TestCase):
     def test_varios_de_uma_vez(self):
         from apps.core.parametros import get_parametros
