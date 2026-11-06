@@ -1,0 +1,7 @@
+{% load gestao %}<tr data-linha data-item{% if f.errors %} class="linha-erro"{% endif %}>
+  <td class="col-oculos">{{ f.variacao }}{% for e in f.variacao.errors %}<small class="campo-mensagem">{{ e }}</small>{% endfor %}<small class="item-estoque texto-aviso" data-item-aviso hidden></small></td>
+  <td class="num col-qtd">{{ f.quantidade }}{% for e in f.quantidade.errors %}<small class="campo-mensagem">{{ e }}</small>{% endfor %}</td>
+  <td class="num col-preco">{{ f.preco_unitario }}{% for e in f.preco_unitario.errors %}<small class="campo-mensagem">{{ e }}</small>{% endfor %}</td>
+  <td class="num col-subtotal" data-item-subtotal>—</td>
+  <td class="col-remover"><button type="button" class="remover" data-descartar title="Tirar este item">{% icone "lixeira" %}<span class="oculto">Tirar item</span></button></td>
+</tr>

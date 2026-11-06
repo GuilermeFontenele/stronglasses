@@ -7,9 +7,12 @@
       <h1>Olá, {{ user.first_name|default:user.get_username }}</h1>
       <p class="subtitulo">Resumo da loja · {{ periodo_rotulo|lower }}</p>
     </div>
-    <nav class="abas" aria-label="Período">
-      {% for chave, info in periodos.items %}<a href="?periodo={{ chave }}"{% if chave == periodo %} aria-current="true"{% endif %}>{{ info.0 }}</a>{% endfor %}
-    </nav>
+    <div class="acoes">
+      <nav class="abas" aria-label="Período">
+        {% for chave, info in periodos.items %}<a href="?periodo={{ chave }}"{% if chave == periodo %} aria-current="true"{% endif %}>{{ info.0 }}</a>{% endfor %}
+      </nav>
+      {% if perms.vendas.add_pedido %}<a class="botao botao-primario" href="{% url 'gestao:venda_nova' %}">{% icone "mais" %} Lançar venda</a>{% endif %}
+    </div>
   </div>
 
   <section class="cartoes" aria-label="Números do período">
@@ -90,6 +93,20 @@
       {% else %}<p class="vazio">Sem vendas no período.</p>{% endif %}
     </section>
 
+    <section class="bloco" aria-labelledby="t-canal">
+      <div class="bloco-topo"><h2 id="t-canal">Vendas por canal</h2><span class="dica">{{ periodo_rotulo }}</span></div>
+      {% if canais %}
+        <ol class="ranking">
+          {% for c in canais %}
+            <li>
+              <div class="ranking-linha"><span>{{ c.canal }}</span><span class="ranking-valor">{{ c.pedidos }} venda{{ c.pedidos|pluralize }} · {{ c.valor|brl }}</span></div>
+              <meter min="0" max="100" value="{{ c.percentual }}"></meter>
+            </li>
+          {% endfor %}
+        </ol>
+      {% else %}<p class="vazio">Sem vendas no período.</p>{% endif %}
+    </section>
+
     {% if grafico_visitas %}
       <section class="bloco" aria-labelledby="t-visitas">
         <div class="bloco-topo"><h2 id="t-visitas">Visitas no site</h2><span class="dica">Dados da Nuvemshop</span></div>
@@ -98,20 +115,21 @@
     {% endif %}
 
     <section class="bloco bloco-largo" aria-labelledby="t-ultimos">
-      <div class="bloco-topo"><h2 id="t-ultimos">Últimos pedidos</h2><a class="link" href="{% url 'gestao:pedidos' %}">Ver todos {% icone "seta" %}</a></div>
+      <div class="bloco-topo"><h2 id="t-ultimos">Últimos pedidos</h2><span class="acoes"><a class="link" href="{% url 'gestao:vendas' %}">Vendas {% icone "seta" %}</a><a class="link" href="{% url 'gestao:pedidos' %}">Histórico {% icone "seta" %}</a></span></div>
       <div class="tabela-rolagem">
         <table class="tabela">
-          <thead><tr><th>Pedido</th><th>Cliente</th><th>Data</th><th>Situação</th><th class="num">Total</th></tr></thead>
+          <thead><tr><th>Pedido</th><th>Cliente</th><th>Origem</th><th>Data</th><th>Situação</th><th class="num">Total</th></tr></thead>
           <tbody>
             {% for p in ultimos %}
               <tr>
-                <td><a href="{% url 'gestao:pedido' p.pk %}">#{{ p.numero }}</a></td>
-                <td>{{ p.cliente.nome|default:"—" }}</td>
-                <td>{{ p.realizado_em|date:"d/m/Y" }}</td>
+                <td><a href="{{ p.url }}"><b>{{ p.codigo }}</b></a></td>
+                <td>{{ p.cliente|default:"—" }}</td>
+                <td class="texto-suave">{{ p.origem }}</td>
+                <td>{{ p.data|date:"d/m/Y" }}</td>
                 <td><span class="selo selo-{{ p.situacao.tom }}">{{ p.situacao.rotulo }}</span></td>
                 <td class="num">{{ p.total|brl }}</td>
               </tr>
-            {% empty %}<tr><td colspan="5" class="vazio">Nenhum pedido ainda.</td></tr>{% endfor %}
+            {% empty %}<tr><td colspan="6" class="vazio">Nenhum pedido ainda.</td></tr>{% endfor %}
           </tbody>
         </table>
       </div>

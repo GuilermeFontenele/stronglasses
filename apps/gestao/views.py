@@ -9,7 +9,19 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.core.files.base import ContentFile
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Count, Max, OuterRef, Prefetch, Q, Subquery, Sum
+from django.db.models import (
+    Count,
+    DecimalField,
+    IntegerField,
+    Max,
+    OuterRef,
+    Prefetch,
+    Q,
+    Subquery,
+    Sum,
+    Value,
+)
+from django.db.models.functions import Coalesce, Greatest
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -25,6 +37,7 @@ from apps.core.crypto import hash_busca
 from apps.core.models import Pagina, RegistroAuditoria
 from apps.core.validators import so_digitos
 from apps.historico.models import STATUS_PAGOS, ItemPedidoHistorico, PedidoHistorico
+from apps.vendas.models import ItemPedido, Pedido
 
 from . import graficos, metricas
 from .acesso import bloqueado, equipe, limpar_falhas, registrar_falha
@@ -114,6 +127,45 @@ def _status_pedido(pedido) -> dict:
     return {"rotulo": rotulo, "tom": tom}
 
 
+def _por_cliente(qs, agregado, campo):
+    """Subconsulta com o agregado (contagem/soma) das linhas do cliente; zero quando não há nenhuma."""
+    return Coalesce(Subquery(qs.annotate(v=agregado).values("v")[:1], output_field=campo), Value(0), output_field=campo)
+
+
+def _itens_venda_com_foto():
+    fotos = Prefetch("produto__imagens", queryset=ImagemProduto.objects.order_by("ordem", "id"), to_attr="fotos")
+    return ItemPedido.objects.select_related("produto").prefetch_related(fotos)
+
+
+def _ultimos_pedidos(quantidade: int) -> list[dict]:
+    """Últimos pedidos das duas fontes (histórico da Nuvemshop e vendas novas) numa lista só."""
+    linhas = [
+        {
+            "codigo": f"#{p.numero}",
+            "url": reverse("gestao:pedido", args=[p.pk]),
+            "cliente": p.cliente.nome if p.cliente else "",
+            "data": p.realizado_em,
+            "situacao": _status_pedido(p),
+            "total": p.total,
+            "origem": "Nuvemshop",
+        }
+        for p in PedidoHistorico.objects.select_related("cliente").order_by("-realizado_em")[:quantidade]
+    ]
+    linhas += [
+        {
+            "codigo": v.codigo,
+            "url": reverse("gestao:venda", args=[v.pk]),
+            "cliente": v.cliente.nome if v.cliente else "",
+            "data": v.realizado_em,
+            "situacao": {"rotulo": v.get_situacao_display(), "tom": v.tom},
+            "total": v.total,
+            "origem": v.get_canal_display(),
+        }
+        for v in Pedido.objects.select_related("cliente").order_by("-realizado_em", "-numero")[:quantidade]
+    ]
+    return sorted(linhas, key=lambda linha: linha["data"], reverse=True)[:quantidade]
+
+
 # ---------------------------------------------------------------- acesso
 
 
@@ -164,9 +216,7 @@ def dashboard(request):
     dados = metricas.periodo(chave)
     mensal = metricas.faturamento_mensal(12)
     visitas = metricas.visitas_mensais(12)
-    ultimos = list(PedidoHistorico.objects.select_related("cliente").order_by("-realizado_em")[:6])
-    for pedido in ultimos:
-        pedido.situacao = _status_pedido(pedido)
+    ultimos = _ultimos_pedidos(6)
     return render(
         request,
         "gestao/dashboard.html",
@@ -179,8 +229,9 @@ def dashboard(request):
             "grafico_faturamento": graficos.barras([(m["rotulo"], m["valor"]) for m in mensal]),
             "grafico_pedidos": graficos.linha([(m["rotulo"], m["pedidos"]) for m in mensal]),
             "grafico_visitas": graficos.linha([(v["rotulo"], v["visitas"]) for v in visitas]) if visitas else None,
-            "mais_vendidos": metricas.mais_vendidos(dados["qs"]),
-            "estados": metricas.vendas_por_estado(dados["qs"]),
+            "mais_vendidos": metricas.mais_vendidos(dados["qs"], vendas=dados["vendas"]),
+            "estados": metricas.vendas_por_estado(dados["qs"], vendas=dados["vendas"]),
+            "canais": metricas.vendas_por_canal(dados["qs"], dados["vendas"]),
             "ultimos": ultimos,
             "alertas": metricas.alertas(),
         },
@@ -374,11 +425,22 @@ def estoque(request):
 
 @equipe(permissao="clientes.view_cliente")
 def clientes(request):
-    pagos = PedidoHistorico.objects.filter(status_pagamento__in=STATUS_PAGOS).exclude(status="cancelled")
+    # Totais por subconsulta: somar duas tabelas por JOIN multiplicaria as linhas.
+    historico = (
+        PedidoHistorico.objects.filter(cliente=OuterRef("pk"), status_pagamento__in=STATUS_PAGOS)
+        .exclude(status="cancelled")
+        .order_by()
+        .values("cliente")
+    )
+    novas = Pedido.objects.filter(cliente=OuterRef("pk"), situacao__in=Pedido.PAGOS).order_by().values("cliente")
+    dinheiro, inteiro = DecimalField(max_digits=12, decimal_places=2), IntegerField()
+
+    ultimo_hist = Subquery(historico.annotate(v=Max("realizado_em")).values("v")[:1])
+    ultima_venda = Subquery(novas.annotate(v=Max("realizado_em")).values("v")[:1])
     qs = Cliente.objects.annotate(
-        n_pedidos=Count("pedidos_historicos", filter=Q(pedidos_historicos__in=pagos), distinct=True),
-        total_gasto=Sum("pedidos_historicos__total", filter=Q(pedidos_historicos__in=pagos)),
-        ultimo_pedido=Max("pedidos_historicos__realizado_em"),
+        n_pedidos=_por_cliente(historico, Count("id"), inteiro) + _por_cliente(novas, Count("id"), inteiro),
+        total_gasto=_por_cliente(historico, Sum("total"), dinheiro) + _por_cliente(novas, Sum("total"), dinheiro),
+        ultimo_pedido=Greatest(Coalesce(ultimo_hist, ultima_venda), Coalesce(ultima_venda, ultimo_hist)),
         cidade=Subquery(
             Endereco.objects.filter(cliente=OuterRef("pk")).order_by("-padrao", "-id").values("cidade")[:1]
         ),
@@ -394,8 +456,10 @@ def clientes(request):
         qs = qs.filter(filtro)
     ordem = request.GET.get("ordem", "")
     ordens = {"gasto": "-total_gasto", "pedidos": "-n_pedidos", "recentes": "-ultimo_pedido"}
-    if ordem in ordens:
-        qs = qs.order_by(f"{ordens[ordem]}", "nome").exclude(**{ordens[ordem].lstrip("-") + "__isnull": True})
+    if ordem == "recentes":
+        qs = qs.exclude(ultimo_pedido__isnull=True).order_by("-ultimo_pedido", "nome")
+    elif ordem in ordens:
+        qs = qs.filter(**{ordens[ordem].lstrip("-") + "__gt": 0}).order_by(ordens[ordem], "nome")
     return render(
         request,
         "gestao/clientes.html",
@@ -427,16 +491,9 @@ def cliente(request, pk):
         form = ClienteForm(instance=obj)
     # Abrir a ficha é acesso a dado pessoal: fica registrado (LGPD).
     registrar(RegistroAuditoria.Acao.ACESSO, obj, None, None, request.user)
-    pedidos = list(
-        obj.pedidos_historicos.prefetch_related(Prefetch("itens", queryset=_itens_com_foto())).order_by("-realizado_em")
-    )
-    for pedido in pedidos:
-        for item in pedido.itens.all():
-            item.foto = _foto_do_item(item)
-    for pedido in pedidos:
-        pedido.situacao = _status_pedido(pedido)
-    pagos = [p for p in pedidos if p.pago]
-    total_gasto = sum((p.total for p in pagos), start=metricas.ZERO)
+    pedidos = _pedidos_do_cliente(obj)
+    pagos = [p for p in pedidos if p["pago"]]
+    total_gasto = sum((p["total"] for p in pagos), start=metricas.ZERO)
     return render(
         request,
         "gestao/cliente.html",
@@ -454,6 +511,42 @@ def cliente(request, pk):
             "documento": request.session.pop(f"documento_{obj.pk}", None),
         },
     )
+
+
+def _pedidos_do_cliente(cliente: Cliente) -> list[dict]:
+    """Pedidos da Nuvemshop e vendas novas do cliente, juntos e do mais recente para o mais antigo."""
+    linhas = []
+    for p in cliente.pedidos_historicos.prefetch_related(Prefetch("itens", queryset=_itens_com_foto())):
+        itens = list(p.itens.all())
+        for item in itens:
+            item.foto = _foto_do_item(item)
+        linhas.append(
+            {
+                "codigo": f"#{p.numero}",
+                "url": reverse("gestao:pedido", args=[p.pk]),
+                "data": p.realizado_em,
+                "situacao": _status_pedido(p),
+                "total": p.total,
+                "pago": p.pago,
+                "itens": [(item, item.variante) for item in itens],
+            }
+        )
+    for v in cliente.vendas.prefetch_related(Prefetch("itens", queryset=_itens_venda_com_foto())):
+        itens = list(v.itens.all())
+        for item in itens:
+            item.foto = _foto_do_item(item)
+        linhas.append(
+            {
+                "codigo": v.codigo,
+                "url": reverse("gestao:venda", args=[v.pk]),
+                "data": v.realizado_em,
+                "situacao": {"rotulo": v.get_situacao_display(), "tom": v.tom},
+                "total": v.total,
+                "pago": v.pago,
+                "itens": [(item, item.cor) for item in itens],
+            }
+        )
+    return sorted(linhas, key=lambda linha: linha["data"], reverse=True)
 
 
 @require_POST

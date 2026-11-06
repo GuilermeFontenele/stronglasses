@@ -114,7 +114,10 @@ document.addEventListener("click", (evento) => {
     else if (campo.tagName === "SELECT") campo.selectedIndex = 0;
     else campo.value = campo.defaultValue;
   });
-  linha.hidden = true;
+  // A última linha visível só é limpa (some a linha, some o lugar de escolher).
+  const visiveis = [...linha.parentElement.querySelectorAll(":scope > [data-linha]")].filter((l) => !l.hidden);
+  if (visiveis.length > 1) linha.hidden = true;
+  linha.dispatchEvent(new Event("input", { bubbles: true }));
 });
 
 // Envio de arquivos: mostra o nome escolhido e aceita arrastar e soltar.
@@ -141,3 +144,77 @@ document.querySelectorAll(".soltar-arquivos").forEach((zona) => {
     entrada.dispatchEvent(new Event("change"));
   });
 });
+
+// Página de impressão (etiqueta e declaração).
+document.querySelectorAll("[data-imprimir]").forEach((botao) => botao.addEventListener("click", () => window.print()));
+
+// Lançar venda: mostra só os campos que fazem sentido e calcula o resumo enquanto digita.
+// É só uma prévia: o servidor recalcula tudo ao salvar (preço -> desconto -> Pix -> frete).
+document.querySelectorAll("form[data-venda]").forEach((form) => {
+  const real = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+  const numero = (campo) => {
+    const valor = parseFloat(String(campo?.value || "").replace(",", "."));
+    return Number.isFinite(valor) && valor > 0 ? valor : 0;
+  };
+  const centavos = (valor) => Math.round(valor * 100) / 100;
+  const pixPercentual = parseFloat(form.dataset.pix || "0") || 0;
+  const forma = form.querySelector("[data-venda-forma]");
+  const pix = form.querySelector("[data-venda-pix]");
+  const entrega = form.querySelector("[data-venda-entrega]");
+  const endereco = form.querySelector("[data-endereco]");
+  const escrever = (chave, texto) => {
+    const alvo = form.querySelector(`[data-resumo="${chave}"]`);
+    if (alvo) alvo.textContent = texto;
+  };
+
+  const atualizar = () => {
+    let subtotal = 0;
+    form.querySelectorAll("[data-item]").forEach((linha) => {
+      const opcao = linha.querySelector("[data-item-variacao]")?.selectedOptions[0];
+      const quantidade = parseInt(linha.querySelector("[data-item-quantidade]")?.value || "0", 10) || 0;
+      const precoCampo = linha.querySelector("[data-item-preco]");
+      const precoLoja = parseFloat(opcao?.dataset.preco || "0") || 0;
+      if (precoCampo) precoCampo.placeholder = precoLoja ? precoLoja.toFixed(2).replace(".", ",") : "Da loja";
+      const preco = precoCampo && precoCampo.value !== "" ? numero(precoCampo) : precoLoja;
+      const valor = linha.hidden || !opcao?.value ? 0 : centavos(preco * quantidade);
+      const celula = linha.querySelector("[data-item-subtotal]");
+      if (celula) celula.textContent = valor ? real.format(valor) : "—";
+      const aviso = linha.querySelector("[data-item-aviso]");
+      const estoque = parseInt(opcao?.dataset.estoque ?? "", 10);
+      if (aviso) {
+        const falta = opcao?.value && Number.isFinite(estoque) && quantidade > estoque;
+        aviso.hidden = !falta;
+        aviso.textContent = falta ? `Só ${Math.max(estoque, 0)} em estoque` : "";
+      }
+      subtotal += valor;
+    });
+    const desconto = Math.min(numero(form.querySelector("[data-venda-desconto]")), subtotal);
+    const base = subtotal - desconto;
+    const usaPix = forma?.value === "pix" && pix?.checked && pixPercentual > 0;
+    const descontoPix = usaPix ? centavos((base * pixPercentual) / 100) : 0;
+    const frete = numero(form.querySelector("[data-venda-frete]"));
+    escrever("subtotal", real.format(subtotal));
+    escrever("desconto", `− ${real.format(desconto)}`);
+    escrever("pix", `− ${real.format(descontoPix)}`);
+    escrever("frete", real.format(frete));
+    escrever("total", real.format(centavos(base - descontoPix + frete)));
+    const linhaPix = form.querySelector('[data-resumo-linha="pix"]');
+    if (linhaPix) linhaPix.hidden = !usaPix;
+    form.querySelectorAll("[data-so-pix]").forEach((bloco) => (bloco.hidden = forma?.value !== "pix" || !pixPercentual));
+    form.querySelectorAll("[data-so-credito]").forEach((bloco) => (bloco.hidden = forma?.value !== "credito"));
+    if (endereco && entrega) endereco.hidden = entrega.value === "maos";
+  };
+
+  form.addEventListener("input", atualizar);
+  form.addEventListener("change", atualizar);
+  form.querySelector("[data-adicionar]")?.addEventListener("click", () => requestAnimationFrame(atualizar));
+  atualizar();
+});
+
+// CEP: 60000000 vira 60000-000 enquanto digita.
+document.querySelectorAll('input[name="cep"]').forEach((campo) =>
+  campo.addEventListener("input", () => {
+    const d = campo.value.replace(/\D/g, "").slice(0, 8);
+    campo.value = d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
+  }),
+);

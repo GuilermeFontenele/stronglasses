@@ -92,7 +92,29 @@ def exportar_dados(cliente: Cliente, usuario=None) -> dict:
             }
             for p in cliente.pedidos_historicos.prefetch_related("itens")
         ],
-        # Quando existirem pedidos da loja nova, inclua-os aqui.
+        "compras": [
+            {
+                "codigo": v.codigo,
+                "data": v.realizado_em.isoformat(),
+                "situacao": v.get_situacao_display(),
+                "canal": v.get_canal_display(),
+                "forma_pagamento": v.get_forma_pagamento_display(),
+                "total": str(v.total),
+                "entrega": v.get_entrega_display(),
+                "destinatario": v.destinatario,
+                "endereco": ", ".join(
+                    parte
+                    for parte in (v.logradouro, v.numero_endereco, v.complemento, v.bairro, v.cidade, v.uf, v.cep)
+                    if parte
+                ),
+                "codigo_rastreio": v.codigo_rastreio,
+                "itens": [
+                    {"produto": i.nome, "cor": i.cor, "quantidade": i.quantidade, "preco": str(i.preco_unitario)}
+                    for i in v.itens.all()
+                ],
+            }
+            for v in cliente.vendas.prefetch_related("itens")
+        ],
     }
     registrar(RegistroAuditoria.Acao.EXPORTACAO, cliente, None, None, usuario)
     return dados
@@ -110,6 +132,17 @@ def anonimizar(cliente: Cliente, usuario=None) -> Cliente:
     cliente.anonimizado_em = timezone.now()
     cliente.save()
     cliente.enderecos.all().delete()
+    # Vendas ficam (obrigação fiscal), mas sem o endereço de entrega; cidade/UF bastam para as estatísticas.
+    cliente.vendas.update(
+        destinatario="",
+        cep="",
+        logradouro="",
+        numero_endereco="",
+        complemento="",
+        bairro="",
+        codigo_rastreio="",
+        observacoes="",
+    )
     cliente.consentimentos.filter(revogado_em__isnull=True).update(revogado_em=timezone.now())
     cliente.consentimentos.update(ip=None, user_agent="")
     registrar(RegistroAuditoria.Acao.ANONIMIZACAO, cliente, None, None, usuario)

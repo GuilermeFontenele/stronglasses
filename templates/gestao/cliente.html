@@ -8,7 +8,10 @@
       <span class="avatar" aria-hidden="true">{{ cliente.nome|slice:":1"|upper }}</span>
       <div><h1>{{ cliente.nome }}</h1><p class="subtitulo">{{ cliente.get_tipo_display }}{% if cliente.anonimizado_em %} · <span class="selo selo-neutro">Anonimizado em {{ cliente.anonimizado_em|date:"d/m/Y" }}</span>{% endif %}</p></div>
     </div>
-    {% if cliente.whatsapp %}<a class="botao botao-whatsapp" href="https://wa.me/{{ cliente.whatsapp|digitos }}" target="_blank" rel="noopener">{% icone "whatsapp" %} Chamar no WhatsApp</a>{% endif %}
+    <div class="acoes">
+      {% if perms.vendas.add_pedido and not cliente.anonimizado_em %}<a class="botao botao-primario" href="{% url 'gestao:venda_nova' %}?cliente={{ cliente.pk }}">{% icone "mais" %} Lançar venda</a>{% endif %}
+      {% if cliente.whatsapp %}<a class="botao botao-whatsapp" href="https://wa.me/{{ cliente.whatsapp|digitos }}" target="_blank" rel="noopener">{% icone "whatsapp" %} Chamar no WhatsApp</a>{% endif %}
+    </div>
   </div>
 
   <section class="cartoes cartoes-3">
@@ -24,18 +27,18 @@
         <ul class="lista-pedidos">
           {% for p in pedidos %}
             <li>
-              <a class="lista-pedidos-topo" href="{% url 'gestao:pedido' p.pk %}">
-                <b>#{{ p.numero }}</b>
-                <span class="texto-suave">{{ p.realizado_em|date:"d/m/Y" }}</span>
+              <a class="lista-pedidos-topo" href="{{ p.url }}">
+                <b>{{ p.codigo }}</b>
+                <span class="texto-suave">{{ p.data|date:"d/m/Y" }}</span>
                 <span class="selo selo-{{ p.situacao.tom }}">{{ p.situacao.rotulo }}</span>
                 <strong class="lista-pedidos-total">{{ p.total|brl }}</strong>
               </a>
               <ul class="lista-itens">
-                {% for item in p.itens.all %}
+                {% for item, variante in p.itens %}
                   <li>
                     {% if item.foto %}<img src="{{ item.foto.imagem.url }}" alt="" width="36" height="36" loading="lazy">{% else %}<span class="sem-imagem sem-imagem-mini">{% icone "banners" "icone icone-mini" %}</span>{% endif %}
                     <span class="qtd">{{ item.quantidade }}×</span>
-                    <span>{{ item.nome }}{% if item.variante %} <small class="texto-suave">· {{ item.variante }}</small>{% endif %}</span>
+                    <span>{{ item.nome }}{% if variante %} <small class="texto-suave">· {{ variante }}</small>{% endif %}</span>
                   </li>
                 {% endfor %}
               </ul>

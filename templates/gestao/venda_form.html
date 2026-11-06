@@ -1,0 +1,115 @@
+{% extends "gestao/base.html" %}
+{% load gestao l10n paginas %}
+{% block titulo %}Lançar venda{% endblock %}
+{% block conteudo %}
+  <a class="voltar" href="{% url 'gestao:vendas' %}">{% icone "voltar" %} Vendas</a>
+  <div class="cabecalho">
+    <div><h1>Lançar venda</h1><p class="subtitulo">Venda feita fora do site. Baixa o estoque e entra no dashboard.</p></div>
+  </div>
+
+  <section class="bloco bloco-cliente" aria-labelledby="t-cliente">
+    <div class="bloco-topo"><h2 id="t-cliente">Cliente</h2><span class="dica">Opcional · venda de balcão pode ficar sem cadastro</span></div>
+    {% if cliente %}
+      <div class="cliente-escolhido">
+        <span class="pessoa"><span class="avatar" aria-hidden="true">{{ cliente.nome|slice:":1"|upper }}</span><span><b>{{ cliente.nome }}</b><br><small class="texto-suave">{% if cliente.whatsapp %}{{ cliente.whatsapp|telefone }}{% else %}{{ cliente.email }}{% endif %}</small></span></span>
+        <a class="botao" href="{% url 'gestao:venda_nova' %}">{% icone "fechar" %} Trocar</a>
+      </div>
+    {% else %}
+      <form class="busca-cliente" method="get" role="search">
+        <label class="filtro-busca">{% icone "busca" %}<span class="oculto">Buscar cliente</span><input type="search" name="busca_cliente" value="{{ busca }}" placeholder="Nome, WhatsApp, e-mail ou CPF/CNPJ" autocomplete="off"></label>
+        <button class="botao" type="submit">Buscar</button>
+        {% if perms.clientes.add_cliente %}<a class="botao" href="{% url 'gestao:cliente_novo' %}?para=venda{% if busca %}&amp;nome={{ busca|urlencode }}{% endif %}">{% icone "mais" %} Cadastrar cliente</a>{% endif %}
+      </form>
+      {% if busca %}
+        <ul class="resultado-clientes">
+          {% for c in resultados %}
+            <li><a href="?cliente={{ c.pk }}"><span class="avatar" aria-hidden="true">{{ c.nome|slice:":1"|upper }}</span><span><b>{{ c.nome }}</b>{% if c.razao_social %} <small class="texto-suave">· {{ c.razao_social }}</small>{% endif %}<br><small class="texto-suave">{% if c.whatsapp %}{{ c.whatsapp|telefone }}{% else %}{{ c.email }}{% endif %}</small></span><span class="link">Escolher {% icone "seta" "icone icone-mini" %}</span></a></li>
+          {% empty %}<li class="vazio">Ninguém encontrado com “{{ busca }}”.</li>{% endfor %}
+        </ul>
+      {% endif %}
+    {% endif %}
+  </section>
+
+  <form method="post" class="formulario" data-venda data-pix="{{ pix_percentual|unlocalize }}" novalidate>
+    {% csrf_token %}
+    {% if cliente %}<input type="hidden" name="cliente" value="{{ cliente.pk }}">{% endif %}
+    {% if form.non_field_errors %}<div class="mensagem mensagem-error">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="duas-colunas">
+      <div class="coluna-principal">
+        <section class="bloco" aria-labelledby="t-itens">
+          <div class="bloco-topo"><h2 id="t-itens">Itens</h2><span class="dica">Preço vazio = preço atual da loja</span></div>
+          {{ itens.management_form }}
+          {% if itens.non_form_errors %}<div class="mensagem mensagem-error">{% for e in itens.non_form_errors %}{{ e }} {% endfor %}</div>{% endif %}
+          <div class="tabela-rolagem">
+            <table class="tabela tabela-form tabela-itens" data-formset="itens">
+              <thead><tr><th>Óculos</th><th class="num">Qtd.</th><th class="num">Preço unit.</th><th class="num">Subtotal</th><th><span class="oculto">Tirar</span></th></tr></thead>
+              <tbody data-linhas>
+                {% for f in itens %}{% include "gestao/partials/linha_item_venda.html" %}{% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <template data-modelo="itens">{% include "gestao/partials/linha_item_venda.html" with f=itens.empty_form %}</template>
+          <button type="button" class="botao botao-adicionar" data-adicionar="itens">{% icone "mais" %} Adicionar outro óculos</button>
+        </section>
+
+        <section class="bloco" aria-labelledby="t-entrega">
+          <div class="bloco-topo"><h2 id="t-entrega">Entrega</h2><span class="dica">Correios ou transportadora: o endereço vai para a etiqueta</span></div>
+          <div class="campos">
+            {% include "gestao/partials/campo.html" with campo=form.entrega largo=True %}
+          </div>
+          <div class="campos endereco-venda" data-endereco>
+            {% include "gestao/partials/campo.html" with campo=form.destinatario largo=True %}
+            {% include "gestao/partials/campo.html" with campo=form.cep %}
+            {% include "gestao/partials/campo.html" with campo=form.uf %}
+            {% include "gestao/partials/campo.html" with campo=form.logradouro largo=True %}
+            {% include "gestao/partials/campo.html" with campo=form.numero_endereco %}
+            {% include "gestao/partials/campo.html" with campo=form.complemento %}
+            {% include "gestao/partials/campo.html" with campo=form.bairro %}
+            {% include "gestao/partials/campo.html" with campo=form.cidade %}
+            {% include "gestao/partials/campo.html" with campo=form.peso_g %}
+            {% if cliente %}{% include "gestao/partials/campo.html" with campo=form.salvar_endereco largo=True %}{% endif %}
+          </div>
+        </section>
+      </div>
+
+      <div class="coluna-lateral">
+        <section class="bloco" aria-labelledby="t-pagamento">
+          <h2 id="t-pagamento">Pagamento</h2>
+          <div class="pilha">
+            {% include "gestao/partials/campo.html" with campo=form.realizado_em %}
+            {% include "gestao/partials/campo.html" with campo=form.situacao %}
+            {% include "gestao/partials/campo.html" with campo=form.forma_pagamento %}
+            <div data-so-credito>{% include "gestao/partials/campo.html" with campo=form.parcelas %}</div>
+            <div data-so-pix>{% include "gestao/partials/campo.html" with campo=form.aplicar_pix %}</div>
+            {% include "gestao/partials/campo.html" with campo=form.desconto %}
+            {% include "gestao/partials/campo.html" with campo=form.cupom %}
+            {% include "gestao/partials/campo.html" with campo=form.frete %}
+          </div>
+        </section>
+
+        <section class="bloco" aria-labelledby="t-origem">
+          <h2 id="t-origem">Origem</h2>
+          <div class="pilha">
+            {% include "gestao/partials/campo.html" with campo=form.canal %}
+            {% include "gestao/partials/campo.html" with campo=form.parceiro %}
+            {% include "gestao/partials/campo.html" with campo=form.observacoes %}
+          </div>
+        </section>
+
+        <section class="bloco resumo-venda" aria-labelledby="t-resumo">
+          <h2 id="t-resumo">Resumo</h2>
+          <dl class="totais totais-resumo" aria-live="polite">
+            <div><dt>Subtotal</dt><dd data-resumo="subtotal">R$ 0,00</dd></div>
+            <div><dt>Desconto</dt><dd data-resumo="desconto">− R$ 0,00</dd></div>
+            <div data-resumo-linha="pix"><dt>Desconto Pix</dt><dd data-resumo="pix">− R$ 0,00</dd></div>
+            <div><dt>Frete</dt><dd data-resumo="frete">R$ 0,00</dd></div>
+            <div class="total"><dt>Total</dt><dd data-resumo="total">R$ 0,00</dd></div>
+          </dl>
+          {% include "gestao/partials/campo.html" with campo=form.baixar_estoque %}
+          <button class="botao botao-primario botao-largo" type="submit">{% icone "venda" %} Registrar venda</button>
+          <p class="campo-ajuda centro">O total é conferido de novo no servidor ao salvar.</p>
+        </section>
+      </div>
+    </div>
+  </form>
+{% endblock %}

@@ -406,3 +406,41 @@ tr:has(.remover input:checked) td.col-sku input { text-decoration: line-through;
 .tabela-variacoes .col-estoque input { width: 64px; }
 .tabela-variacoes .col-ativa, .tabela-variacoes .col-remover { width: 48px; }
 .foto-cartao img { background: #fff; border: 1px solid var(--linha); }
+
+/* Vendas */
+.faixa-aviso { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding: 12px 16px; border-radius: 12px; background: var(--aviso-fundo); color: var(--aviso); text-decoration: none; font-weight: 500; }
+.faixa-aviso > span { flex: 1; }
+.faixa-aviso:hover { filter: brightness(.98); }
+.bloco-cliente { margin-bottom: 16px; }
+.busca-cliente { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.busca-cliente .filtro-busca { max-width: none; }
+.resultado-clientes { list-style: none; margin: 12px 0 0; padding: 0; border: 1px solid var(--linha); border-radius: 12px; overflow: hidden; }
+.resultado-clientes li + li { border-top: 1px solid var(--linha); }
+.resultado-clientes a { display: flex; align-items: center; gap: 12px; padding: 10px 14px; text-decoration: none; }
+.resultado-clientes a > span:nth-child(2) { flex: 1; min-width: 0; }
+.resultado-clientes a:hover { background: #fafbfc; }
+.resultado-clientes .vazio { padding: 16px; }
+.cliente-escolhido { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid var(--linha); border-radius: 12px; background: #fafbfc; }
+.pilha { display: flex; flex-direction: column; margin-top: 12px; }
+.pilha .campo { margin-bottom: 12px; }
+.centro { display: block; text-align: center; margin-top: 8px; }
+.tabela-itens .col-oculos { min-width: 260px; }
+.tabela-itens .col-qtd input { max-width: 72px; }
+.tabela-itens .col-preco input { max-width: 110px; }
+.tabela-itens .col-subtotal { min-width: 96px; font-weight: 600; }
+.tabela-itens .col-remover { width: 56px; text-align: center; }
+.tabela-itens select { min-width: 220px; }
+.item-estoque { display: block; margin-top: 4px; font-size: 12px; }
+.tabela-form .campo-mensagem { display: block; margin-top: 4px; }
+.endereco-venda { margin-top: 14px; }
+.resumo-venda { position: sticky; top: 80px; }
+.resumo-venda .totais { max-width: none; margin: 12px 0 16px; }
+.totais-resumo .total dd { font-size: 20px; }
+.resumo-venda .campo-checkbox { margin-bottom: 12px; }
+.formulario-estreito { max-width: 560px; }
+.texto-livre { margin: 8px 0 0; white-space: normal; }
+@media (max-width: 1100px) { .resumo-venda { position: static; } }
+@media (max-width: 640px) {
+  .tabela-itens .col-oculos, .tabela-itens select { min-width: 180px; }
+  .busca-cliente .botao { flex: 1; }
+}

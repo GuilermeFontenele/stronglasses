@@ -1,0 +1,20 @@
+{% extends "gestao/base.html" %}
+{% load gestao %}
+{% block titulo %}Novo cliente{% endblock %}
+{% block conteudo %}
+  {% if para_venda %}<a class="voltar" href="{% url 'gestao:venda_nova' %}">{% icone "voltar" %} Lançar venda</a>
+  {% else %}<a class="voltar" href="{% url 'gestao:clientes' %}">{% icone "voltar" %} Clientes</a>{% endif %}
+  <div class="cabecalho"><div><h1>Novo cliente</h1><p class="subtitulo">Só o necessário: nome e um contato. O resto é opcional.</p></div></div>
+  <form method="post" class="formulario formulario-estreito">
+    {% csrf_token %}
+    {% if para_venda %}<input type="hidden" name="para" value="venda">{% endif %}
+    <section class="bloco">
+      {% if form.non_field_errors %}<div class="mensagem mensagem-error">{{ form.non_field_errors }}</div>{% endif %}
+      {% for campo in form %}
+        {% if campo.name == "razao_social" %}<div data-so-pj{% if form.tipo.value != "PJ" %} hidden{% endif %}>{% include "gestao/partials/campo.html" %}</div>
+        {% else %}{% include "gestao/partials/campo.html" %}{% endif %}
+      {% endfor %}
+      <button class="botao botao-primario botao-largo" type="submit">{% if para_venda %}Cadastrar e voltar para a venda{% else %}Cadastrar cliente{% endif %}</button>
+    </section>
+  </form>
+{% endblock %}

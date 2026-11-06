@@ -29,7 +29,10 @@ from apps.catalogo.models import (  # noqa: E402
     Variacao,
 )
 from apps.clientes.models import Cliente, Endereco  # noqa: E402
+from apps.core.models import Parametro  # noqa: E402
 from apps.historico.models import ItemPedidoHistorico, MetricaMensal, PedidoHistorico  # noqa: E402
+from apps.vendas.models import Pedido  # noqa: E402
+from apps.vendas.servicos import ItemNovo, mudar_situacao, registrar_venda  # noqa: E402
 
 saida = Path(sys.argv[1] if len(sys.argv) > 1 else "previa")
 saida.mkdir(parents=True, exist_ok=True)
@@ -121,6 +124,38 @@ for k in range(3):
     )
 Banner.objects.create(titulo="Mapa do Brasil", imagem="banners/demo.webp", imagem_mobile="banners/demo-cel.webp")
 
+# Vendas lançadas no painel (hotel, barbearia, WhatsApp)
+Parametro.objects.filter(chave="REMETENTE_ENDERECO").update(valor="Rua Exemplo, 100, sala 2")
+Parametro.objects.filter(chave="REMETENTE_CEP").update(valor="60000000")
+canais = ["hotel", "barbearia", "whatsapp", "whatsapp", "presencial"]
+for n in range(14):
+    cliente = clientes[n % len(clientes)]
+    entrega = "correios" if n % 3 == 0 else "maos"
+    venda = Pedido(
+        cliente=cliente,
+        realizado_em=agora - timedelta(days=n * 2, hours=n),
+        canal=canais[n % len(canais)],
+        parceiro="Hotel Praia Mar" if canais[n % len(canais)] == "hotel" else "",
+        forma_pagamento="pix" if n % 2 == 0 else "credito",
+        parcelas=1 if n % 2 == 0 else 3,
+        entrega=entrega,
+        frete=Decimal("22.50") if entrega == "correios" else Decimal("0"),
+        destinatario=cliente.nome if entrega == "correios" else "",
+        cep="01310100" if entrega == "correios" else "",
+        logradouro="Avenida Paulista" if entrega == "correios" else "",
+        numero_endereco="1000" if entrega == "correios" else "",
+        bairro="Bela Vista" if entrega == "correios" else "",
+        cidade="São Paulo" if entrega == "correios" else "Fortaleza",
+        uf="SP" if entrega == "correios" else "CE",
+    )
+    itens = [ItemNovo(produtos[n % 7].variacoes.first(), 1 + n % 2)]
+    venda = registrar_venda(venda, itens, baixar_estoque=False, aplicar_pix=n % 2 == 0, usuario=dono)
+    if n == 5:
+        mudar_situacao(venda, "cancelado")
+    elif entrega == "correios" and n > 3:
+        mudar_situacao(venda, "enviado", codigo_rastreio="AA123456789BR")
+venda_correios = Pedido.objects.filter(entrega="correios").order_by("numero").first()
+
 navegador = Client()
 navegador.force_login(dono)
 telas = {
@@ -134,6 +169,12 @@ telas = {
     "pedido": f"/gestao/pedidos/{PedidoHistorico.objects.first().pk}/",
     "banners": "/gestao/banners/",
     "configuracoes": "/gestao/configuracoes/",
+    "vendas": "/gestao/vendas/",
+    "venda_nova": f"/gestao/vendas/nova/?cliente={clientes[1].pk}",
+    "venda_nova_busca": "/gestao/vendas/nova/?busca_cliente=a",
+    "venda": f"/gestao/vendas/{venda_correios.pk}/",
+    "etiqueta": f"/gestao/vendas/{venda_correios.pk}/etiqueta/",
+    "cliente_novo": "/gestao/clientes/novo/?para=venda",
 }
 for nome, url in telas.items():
     html = navegador.get(url).content.decode()

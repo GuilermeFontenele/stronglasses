@@ -17,6 +17,7 @@ Revise com um contador ou advogado: isto é um ponto de partida técnico, não p
 | Contato para ofertas | `Consentimento` | Marketing por e-mail ou WhatsApp | Consentimento (I) | Até revogação |
 | IP e navegador do aceite | `Consentimento.ip/user_agent` | Provar o consentimento; segurança | Legítimo interesse (IX) / Marco Civil | 180 dias (`lgpd_expurgar`) |
 | Pedidos anteriores (Nuvemshop): itens, valores, cidade/UF | `PedidoHistorico` | Histórico de vendas, limite do MEI, atendimento | Execução de contrato (V) / obrigação legal (II) | 5 anos após a venda; depois, desvincular do cliente |
+| Vendas lançadas no painel: itens, valores, canal, parceiro, endereço de entrega, rastreio, observações | `vendas.Pedido` | Registrar a venda, entregar, emitir etiqueta e declaração de conteúdo, limite do MEI | Execução de contrato (V) / obrigação legal (II) | Valores: 5 anos após a venda. Endereço, rastreio e observações apagados na anonimização (fica só cidade/UF) |
 | Aceite de e-mail marketing vindo da Nuvemshop | `Consentimento` (origem "importacao") | Continuar enviando ofertas a quem já tinha aceitado | Consentimento (I) | Até revogação |
 | Usuário do painel | `RegistroAuditoria` | Rastrear alterações e acessos | Legítimo interesse (IX) | Indefinida (não contém dados de clientes em claro) |
 
@@ -49,7 +50,11 @@ Prazo de resposta recomendado: até 15 dias.
 | Revogar consentimento | `lgpd.revogar_consentimento` (o histórico do aceite é mantido) |
 | Eliminação | `lgpd_anonimizar --confirmar` (mantém valores de vendas por obrigação legal, sem identificar a pessoa) |
 
-Toda exportação e anonimização fica registrada em `RegistroAuditoria`.
+Toda exportação e anonimização fica registrada em `RegistroAuditoria`. Abrir uma venda no painel e imprimir a
+etiqueta/declaração (que mostra o CPF/CNPJ do destinatário) também registram acesso.
+
+**Observações das vendas:** escreva só o que for preciso para a entrega. Não anote saúde (ex.: grau), opiniões
+ou outros dados que não precisam estar ali.
 
 ## Medidas de segurança (art. 46)
 

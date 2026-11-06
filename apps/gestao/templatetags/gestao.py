@@ -37,6 +37,14 @@ ICONES = {
     'c-.9-.4-1.6-1.1-2-2l.8-1-1-1.8z"/>',
     "lixeira": '<path d="M4.5 7h15M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v5M14 11v5"/>',
     "baixar": '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
+    "venda": '<path d="M4 5h2l2.2 10.2a1 1 0 0 0 1 .8h8.1a1 1 0 0 0 1-.8L20 8H7"/>'
+    '<circle cx="10" cy="19.5" r="1.2"/><circle cx="17" cy="19.5" r="1.2"/>',
+    "historico": '<path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3.5 4v4h4M12 8v4l3 2"/>',
+    "imprimir": '<path d="M7 9V3.5h10V9"/><rect x="3.5" y="9" width="17" height="8" rx="2"/>'
+    '<path d="M7 14h10v6.5H7z"/>',
+    "envio": '<path d="M3 6.5h11v9H3zM14 9.5h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8"/>'
+    '<circle cx="17.5" cy="17.5" r="1.8"/>',
+    "fechar": '<path d="M6 6l12 12M18 6 6 18"/>',
 }
 
 
@@ -72,3 +80,20 @@ def inteiro(valor) -> str:
 def digitos(valor) -> str:
     """+55 85 99999-8888 -> 5585999998888 (o wa.me não aceita +, espaço nem traço)."""
     return "".join(c for c in str(valor or "") if c.isdigit())
+
+
+@register.filter
+def documento(valor) -> str:
+    """12345678901 -> 123.456.789-01; 12345678000199 -> 12.345.678/0001-99."""
+    d = digitos(valor)
+    if len(d) == 11:
+        return f"{d[:3]}.{d[3:6]}.{d[6:9]}-{d[9:]}"
+    if len(d) == 14:
+        return f"{d[:2]}.{d[2:5]}.{d[5:8]}/{d[8:12]}-{d[12:]}"
+    return d
+
+
+@register.filter
+def cep(valor) -> str:
+    d = digitos(valor)
+    return f"{d[:5]}-{d[5:]}" if len(d) == 8 else d

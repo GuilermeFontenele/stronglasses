@@ -1,0 +1,126 @@
+{% extends "gestao/base.html" %}
+{% load gestao paginas %}
+{% block titulo %}Venda {{ pedido.codigo }}{% endblock %}
+{% block conteudo %}
+  <a class="voltar" href="{% url 'gestao:vendas' %}">{% icone "voltar" %} Vendas</a>
+  <div class="cabecalho">
+    <div>
+      <h1>Venda {{ pedido.codigo }}</h1>
+      <p class="subtitulo">{{ pedido.realizado_em|date:"d/m/Y \à\s H:i" }} · <span class="selo selo-{{ pedido.tom }}">{{ pedido.get_situacao_display }}</span> · {{ pedido.get_canal_display }}{% if pedido.parceiro %} ({{ pedido.parceiro }}){% endif %}</p>
+    </div>
+    <div class="acoes">
+      {% if perms.vendas.imprimir_etiqueta and pedido.situacao != "cancelado" %}
+        <a class="botao{% if pedido.vai_por_envio %} botao-primario{% endif %}" href="{% url 'gestao:venda_etiqueta' pedido.pk %}" target="_blank" rel="noopener">{% icone "imprimir" %} Etiqueta e declaração</a>
+      {% endif %}
+      {% if pedido.cliente and pedido.cliente.whatsapp %}<a class="botao botao-whatsapp" href="https://wa.me/{{ pedido.cliente.whatsapp|digitos }}" target="_blank" rel="noopener">{% icone "whatsapp" %} WhatsApp</a>{% endif %}
+    </div>
+  </div>
+
+  <div class="duas-colunas">
+    <div class="coluna-principal">
+      <section class="bloco">
+        <h2>Itens</h2>
+        <div class="tabela-rolagem">
+          <table class="tabela">
+            <thead><tr><th>Produto</th><th>Cor</th><th>SKU</th><th class="num">Qtd.</th><th class="num">Unitário</th><th class="num">Subtotal</th></tr></thead>
+            <tbody>
+              {% for item in itens %}
+                <tr>
+                  <td>
+                    <span class="item-pedido">
+                      {% if item.foto %}<img src="{{ item.foto.imagem.url }}" alt="" width="48" height="48" loading="lazy">{% else %}<span class="sem-imagem">{% icone "banners" %}</span>{% endif %}
+                      {% if item.produto %}<a href="{% url 'gestao:produto' item.produto_id %}">{{ item.nome }}</a>{% else %}<span>{{ item.nome }}</span>{% endif %}
+                    </span>
+                  </td>
+                  <td class="texto-suave">{{ item.cor|default:"—" }}</td>
+                  <td class="texto-suave">{{ item.sku|default:"—" }}</td>
+                  <td class="num">{{ item.quantidade }}</td>
+                  <td class="num">{{ item.preco_unitario|brl }}</td>
+                  <td class="num">{{ item.subtotal|brl }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <dl class="totais">
+          <div><dt>Subtotal</dt><dd>{{ pedido.subtotal|brl }}</dd></div>
+          {% if pedido.desconto %}<div><dt>Desconto{% if pedido.cupom %} (cupom {{ pedido.cupom }}){% endif %}</dt><dd>− {{ pedido.desconto|brl }}</dd></div>{% endif %}
+          {% if pedido.desconto_pix %}<div><dt>Desconto Pix</dt><dd>− {{ pedido.desconto_pix|brl }}</dd></div>{% endif %}
+          <div><dt>Frete</dt><dd>{{ pedido.frete|brl }}</dd></div>
+          <div class="total"><dt>Total</dt><dd>{{ pedido.total|brl }}</dd></div>
+        </dl>
+        <p class="campo-ajuda">{% if pedido.estoque_baixado %}Estes itens saíram do estoque.{% elif pedido.situacao == "cancelado" %}Venda cancelada: nada fica baixado do estoque.{% else %}Esta venda não mexeu no estoque.{% endif %}</p>
+      </section>
+
+      {% if pedido.observacoes %}
+        <section class="bloco"><h2>Observações</h2><p class="texto-livre">{{ pedido.observacoes|linebreaksbr }}</p></section>
+      {% endif %}
+    </div>
+
+    <div class="coluna-lateral">
+      {% if pode_editar and pedido.situacao != "cancelado" %}
+        <section class="bloco">
+          <h2>Andamento</h2>
+          <form method="post" class="formulario pilha">
+            {% csrf_token %}
+            <input type="hidden" name="acao" value="situacao">
+            {% include "gestao/partials/campo.html" with campo=form.situacao %}
+            {% include "gestao/partials/campo.html" with campo=form.codigo_rastreio %}
+            <button class="botao botao-primario botao-largo" type="submit">Salvar andamento</button>
+          </form>
+          <dl class="dados">
+            <dt>Pago em</dt><dd>{{ pedido.pago_em|date:"d/m/Y H:i"|default:"—" }}</dd>
+            <dt>Enviado em</dt><dd>{{ pedido.enviado_em|date:"d/m/Y H:i"|default:"—" }}</dd>
+          </dl>
+        </section>
+      {% elif pedido.situacao == "cancelado" %}
+        <section class="bloco"><h2>Andamento</h2><p><span class="selo selo-erro">Cancelada em {{ pedido.cancelado_em|date:"d/m/Y H:i" }}</span></p></section>
+      {% endif %}
+
+      <section class="bloco">
+        <h2>Cliente</h2>
+        {% if pedido.cliente %}
+          <a class="pessoa" href="{% url 'gestao:cliente' pedido.cliente_id %}"><span class="avatar" aria-hidden="true">{{ pedido.cliente.nome|slice:":1"|upper }}</span><b>{{ pedido.cliente.nome }}</b></a>
+        {% else %}<p class="texto-suave">Venda sem cadastro de cliente.</p>{% endif %}
+      </section>
+
+      <section class="bloco">
+        <h2>Entrega</h2>
+        <dl class="dados">
+          <dt>Forma</dt><dd>{{ pedido.get_entrega_display }}</dd>
+          {% if pedido.codigo_rastreio %}<dt>Rastreio</dt><dd><a class="link" href="https://rastreamento.correios.com.br/app/index.php?objetos={{ pedido.codigo_rastreio|urlencode }}" target="_blank" rel="noopener">{{ pedido.codigo_rastreio }}</a></dd>{% endif %}
+        </dl>
+        {% if pedido.tem_endereco %}
+          <address class="endereco">
+            {% if pedido.destinatario %}<b>{{ pedido.destinatario }}</b><br>{% endif %}
+            {{ pedido.logradouro }}{% if pedido.numero_endereco %}, {{ pedido.numero_endereco }}{% endif %}{% if pedido.complemento %} — {{ pedido.complemento }}{% endif %}<br>
+            {% if pedido.bairro %}{{ pedido.bairro }} · {% endif %}{{ pedido.cidade }}/{{ pedido.uf }} · CEP {{ pedido.cep|slice:":5" }}-{{ pedido.cep|slice:"5:" }}
+          </address>
+        {% elif pedido.cidade %}<p>{{ pedido.cidade }}/{{ pedido.uf }}</p>{% endif %}
+      </section>
+
+      <section class="bloco">
+        <h2>Pagamento</h2>
+        <dl class="dados">
+          <dt>Forma</dt><dd>{{ pedido.get_forma_pagamento_display }}{% if pedido.parcelas > 1 %} em {{ pedido.parcelas }}x{% endif %}</dd>
+          <dt>Canal</dt><dd>{{ pedido.get_canal_display }}</dd>
+          {% if pedido.parceiro %}<dt>Parceiro</dt><dd>{{ pedido.parceiro }}</dd>{% endif %}
+          {% if pedido.cupom %}<dt>Cupom</dt><dd><span class="etiqueta">{{ pedido.cupom }}</span></dd>{% endif %}
+          <dt>Lançada por</dt><dd>{{ pedido.criado_por.get_full_name|default:pedido.criado_por.get_username|default:"—" }}</dd>
+        </dl>
+      </section>
+
+      {% if pode_editar and pedido.situacao != "cancelado" %}
+        <details class="perigo">
+          <summary>Cancelar venda</summary>
+          <form method="post" class="formulario">
+            {% csrf_token %}
+            <input type="hidden" name="acao" value="cancelar">
+            <p class="campo-ajuda">A venda sai do faturamento{% if pedido.estoque_baixado %} e os itens <b>voltam para o estoque</b>{% endif %}. Não dá para desfazer.</p>
+            <button class="botao botao-perigo botao-largo" type="submit">Cancelar a venda {{ pedido.codigo }}</button>
+          </form>
+        </details>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,107 @@
+{% load static gestao l10n %}<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Etiqueta {{ pedido.codigo }} · Strong Glasses</title>
+  <link rel="icon" href="{% static 'favicon.ico' %}" sizes="any">
+  <link rel="stylesheet" href="{% static 'gestao/impressao.css' %}">
+</head>
+<body class="impressao{% if folha %} so-{{ folha }}{% endif %}">
+  <header class="ferramentas">
+    <a class="ferramentas-voltar" href="{% url 'gestao:venda' pedido.pk %}">← Venda {{ pedido.codigo }}</a>
+    <nav class="ferramentas-abas" aria-label="O que imprimir">
+      <a href="?"{% if not folha %} aria-current="true"{% endif %}>Etiqueta + declaração</a>
+      <a href="?folha=etiqueta"{% if folha == "etiqueta" %} aria-current="true"{% endif %}>Só etiqueta</a>
+      <a href="?folha=declaracao"{% if folha == "declaracao" %} aria-current="true"{% endif %}>Só declaração</a>
+    </nav>
+    <button class="ferramentas-imprimir" type="button" data-imprimir>Imprimir</button>
+    <div class="ferramentas-avisos">
+      {% if not pedido.tem_endereco %}<p class="alerta">Esta venda não tem endereço completo (CEP, rua e cidade). Corrija lançando o endereço na venda antes de postar.</p>{% endif %}
+      {% if not remetente.completo %}<p class="alerta">Endereço do remetente incompleto. Preencha em <a href="{% url 'gestao:configuracoes' %}">Configurações → Remetente</a>.</p>{% endif %}
+      {% if pedido.cliente and pedido.cliente.tipo == "PJ" %}<p class="alerta">Venda para empresa: o envio deve seguir com a <b>nota fiscal</b>, não com a declaração de conteúdo.</p>{% endif %}
+      <p class="dica">Etiqueta em 10×15 cm (impressora térmica ou A4 recortada). A declaração sai em A4: imprima, assine e cole por fora do pacote. Confira o peso na balança da agência.</p>
+    </div>
+  </header>
+
+  {# ------------------------------------------------ etiqueta 10x15 #}
+  <section class="folha folha-etiqueta" aria-label="Etiqueta de envio">
+    <div class="etq-topo">
+      <span class="etq-marca"><img src="{% static 'img/logo-simbolo.png' %}" alt="" width="18" height="28">STRONG GLASSES</span>
+      <span class="etq-pedido">{{ pedido.codigo }}<small>{{ peso_kg|floatformat:3 }} kg · {{ quantidade_itens }} ite{{ quantidade_itens|pluralize:"m,ns" }}</small></span>
+    </div>
+    <div class="etq-destinatario">
+      <p class="etq-rotulo">Destinatário</p>
+      <p class="etq-nome">{{ pedido.destinatario|default:pedido.cliente.nome|upper }}</p>
+      <p>{{ pedido.logradouro }}{% if pedido.numero_endereco %}, {{ pedido.numero_endereco }}{% else %}, S/N{% endif %}</p>
+      {% if pedido.complemento %}<p>{{ pedido.complemento }}</p>{% endif %}
+      {% if pedido.bairro %}<p>{{ pedido.bairro }}</p>{% endif %}
+      <p class="etq-cep"><b>{{ pedido.cep|cep }}</b> {{ pedido.cidade }}/{{ pedido.uf }}</p>
+    </div>
+    <div class="etq-correios">Espaço para a etiqueta de postagem dos Correios</div>
+    <div class="etq-remetente">
+      <p class="etq-rotulo">Remetente</p>
+      <p><b>{{ remetente.nome }}</b></p>
+      <p>{{ remetente.endereco }}{% if remetente.bairro %} · {{ remetente.bairro }}{% endif %}</p>
+      <p>{{ remetente.cep|cep }} {{ remetente.cidade }}/{{ remetente.uf }}</p>
+    </div>
+  </section>
+
+  {# ------------------------------------------------ declaração de conteúdo (A4) #}
+  <section class="folha folha-declaracao" aria-label="Declaração de conteúdo">
+    <h1 class="dc-titulo">Declaração de conteúdo</h1>
+    <div class="dc-partes">
+      <table class="dc-tabela">
+        <thead><tr><th colspan="2">Remetente</th></tr></thead>
+        <tbody>
+          <tr><th>Nome</th><td>{{ remetente.nome }}</td></tr>
+          <tr><th>Endereço</th><td>{{ remetente.endereco }}{% if remetente.bairro %}, {{ remetente.bairro }}{% endif %}</td></tr>
+          <tr><th>Cidade</th><td>{{ remetente.cidade }}</td></tr>
+          <tr><th>UF / CEP</th><td>{{ remetente.uf }} · {{ remetente.cep|cep }}</td></tr>
+          <tr><th>CPF/CNPJ</th><td>{{ remetente.documento|documento }}</td></tr>
+        </tbody>
+      </table>
+      <table class="dc-tabela">
+        <thead><tr><th colspan="2">Destinatário</th></tr></thead>
+        <tbody>
+          <tr><th>Nome</th><td>{{ pedido.destinatario|default:pedido.cliente.nome }}</td></tr>
+          <tr><th>Endereço</th><td>{{ pedido.logradouro }}{% if pedido.numero_endereco %}, {{ pedido.numero_endereco }}{% endif %}{% if pedido.complemento %}, {{ pedido.complemento }}{% endif %}{% if pedido.bairro %}, {{ pedido.bairro }}{% endif %}</td></tr>
+          <tr><th>Cidade</th><td>{{ pedido.cidade }}</td></tr>
+          <tr><th>UF / CEP</th><td>{{ pedido.uf }} · {{ pedido.cep|cep }}</td></tr>
+          <tr><th>CPF/CNPJ</th><td>{{ documento|documento }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <table class="dc-tabela dc-bens">
+      <thead>
+        <tr><th colspan="4">Identificação dos bens</th></tr>
+        <tr><th class="dc-item">Item</th><th>Conteúdo</th><th class="dc-num">Quant.</th><th class="dc-num">Valor (R$)</th></tr>
+      </thead>
+      <tbody>
+        {% for item in itens %}
+          <tr><td class="dc-item">{{ forloop.counter }}</td><td>{{ item.nome }}{% if item.cor %} ({{ item.cor|lower }}){% endif %}</td><td class="dc-num">{{ item.quantidade }}</td><td class="dc-num">{{ item.subtotal|floatformat:2 }}</td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr><th colspan="2" class="dc-direita">Totais</th><td class="dc-num">{{ quantidade_itens }}</td><td class="dc-num">{{ valor_itens|floatformat:2 }}</td></tr>
+        <tr><th colspan="3" class="dc-direita">Peso total (kg)</th><td class="dc-num">{{ peso_kg|floatformat:3 }}</td></tr>
+      </tfoot>
+    </table>
+
+    <div class="dc-declaracao">
+      <h2>Declaração</h2>
+      <p>Declaro que não me enquadro no conceito de contribuinte previsto no art. 4º da Lei Complementar nº 87/1996, uma vez que não realizo, com habitualidade ou em volume que caracterize intuito comercial, operações de circulação de mercadoria, ainda que se iniciem no exterior, ou estou dispensado da emissão da nota fiscal por força da legislação tributária vigente, responsabilizando-me, nos termos da lei e a quem de direito, por informações inverídicas.</p>
+      <p>Declaro ainda que não estou postando conteúdo inflamável, explosivo, causador de combustão espontânea, tóxico, corrosivo, gás ou qualquer outro conteúdo que constitua perigo, conforme o art. 13 da Lei Postal nº 6.538/78.</p>
+      <div class="dc-assinatura">
+        <p>{{ remetente.cidade|default:"________________" }}, {{ hoje|date:"j \d\e F \d\e Y" }}</p>
+        <p class="dc-linha">Assinatura do declarante/remetente</p>
+      </div>
+    </div>
+    <p class="dc-observacao"><b>Atenção:</b> o declarante/remetente é responsável exclusivamente pelas informações declaradas.</p>
+    <p class="dc-observacao"><b>Observações:</b> I. É contribuinte de ICMS qualquer pessoa física ou jurídica que realize, com habitualidade ou em volume que caracterize intuito comercial, operações de circulação de mercadoria ou prestações de serviços de transportes interestadual e intermunicipal e de comunicação, ainda que as operações e prestações se iniciem no exterior (Lei Complementar nº 87/96, art. 4º). II. Constitui crime contra a ordem tributária suprimir ou reduzir tributo, ou contribuição social e qualquer acessório: quando negar ou deixar de fornecer, quando obrigatório, nota fiscal ou documento equivalente, relativa a venda de mercadoria ou prestação de serviço, efetivamente realizada, ou fornecê-la em desacordo com a legislação (Lei 8.137/90, art. 1º, V).</p>
+  </section>
+  <script src="{% static 'gestao/gestao.js' %}" defer></script>
+</body>
+</html>

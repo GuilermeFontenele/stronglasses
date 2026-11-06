@@ -1,7 +1,8 @@
 {% load gestao %}<nav class="menu-gestao" aria-label="Painel">
   <a href="{% url 'gestao:dashboard' %}"{% if secao == "dashboard" %} aria-current="page"{% endif %}>{% icone "painel" %}<span>Dashboard</span></a>
   <p class="menu-grupo">Vendas</p>
-  <a href="{% url 'gestao:pedidos' %}"{% if secao == "pedidos" %} aria-current="page"{% endif %}>{% icone "pedidos" %}<span>Pedidos</span></a>
+  <a href="{% url 'gestao:vendas' %}"{% if secao == "vendas" %} aria-current="page"{% endif %}>{% icone "venda" %}<span>Vendas</span></a>
+  <a href="{% url 'gestao:pedidos' %}"{% if secao == "pedidos" %} aria-current="page"{% endif %}>{% icone "historico" %}<span>Histórico Nuvemshop</span></a>
   <a href="{% url 'gestao:clientes' %}"{% if secao == "clientes" %} aria-current="page"{% endif %}>{% icone "clientes" %}<span>Clientes</span></a>
   <p class="menu-grupo">Catálogo</p>
   <a href="{% url 'gestao:produtos' %}"{% if secao == "produtos" %} aria-current="page"{% endif %}>{% icone "produtos" %}<span>Produtos</span></a>

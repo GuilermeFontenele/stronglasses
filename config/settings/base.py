@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "apps.clientes",
     "apps.catalogo",
     "apps.carrinho",
+    "apps.vendas",
     "apps.gestao",
     "apps.historico",
     "apps.nuvemshop",

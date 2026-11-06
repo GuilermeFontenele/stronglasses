@@ -1,0 +1,53 @@
+{% extends "gestao/base.html" %}
+{% load gestao %}
+{% block titulo %}Vendas{% endblock %}
+{% block conteudo %}
+  <div class="cabecalho">
+    <div><h1>Vendas</h1><p class="subtitulo">Vendas lançadas no painel: WhatsApp, hotéis, barbearias e pessoalmente</p></div>
+    {% if perms.vendas.add_pedido %}<a class="botao botao-primario" href="{% url 'gestao:venda_nova' %}">{% icone "mais" %} Lançar venda</a>{% endif %}
+  </div>
+  {% if a_enviar %}
+    <a class="faixa-aviso" href="?situacao=a-enviar">{% icone "envio" %}<span><b>{{ a_enviar }} venda{{ a_enviar|pluralize }}</b> paga{{ a_enviar|pluralize }} aguardando envio</span>{% icone "seta" %}</a>
+  {% endif %}
+  <form class="filtros" method="get" data-filtros>
+    <label class="filtro-busca">{% icone "busca" %}<span class="oculto">Buscar</span><input type="search" name="q" value="{{ termo }}" placeholder="SG00012, cliente, parceiro ou rastreio"></label>
+    <label><span class="oculto">Situação</span><select name="situacao">
+      <option value="">Todas as situações</option>
+      <option value="pagas"{% if situacao == "pagas" %} selected{% endif %}>Pagas (inclui enviadas e entregues)</option>
+      <option value="a-enviar"{% if situacao == "a-enviar" %} selected{% endif %}>Aguardando envio</option>
+      {% for valor, rotulo in situacoes %}<option value="{{ valor }}"{% if situacao == valor %} selected{% endif %}>{{ rotulo }}</option>{% endfor %}
+    </select></label>
+    <label><span class="oculto">Canal</span><select name="canal">
+      <option value="">Todos os canais</option>
+      {% for valor, rotulo in canais %}<option value="{{ valor }}"{% if canal == valor %} selected{% endif %}>{{ rotulo }}</option>{% endfor %}
+    </select></label>
+    <label><span class="oculto">Período</span><select name="periodo">
+      <option value="">Qualquer data</option>
+      {% for chave, info in periodos.items %}{% if chave != "tudo" %}<option value="{{ chave }}"{% if periodo == chave %} selected{% endif %}>{{ info.0 }}</option>{% endif %}{% endfor %}
+    </select></label>
+    <button class="botao" type="submit" data-sem-js>Filtrar</button>
+  </form>
+  <p class="resumo-lista">{{ pagina.paginator.count }} venda{{ pagina.paginator.count|pluralize }} · <b>{{ soma_pagas|brl }}</b> em vendas pagas</p>
+  <div class="tabela-rolagem">
+    <table class="tabela">
+      <thead><tr><th>Venda</th><th>Data</th><th>Cliente</th><th>Canal</th><th class="num">Itens</th><th>Pagamento</th><th>Situação</th><th class="num">Total</th></tr></thead>
+      <tbody>
+        {% for v in pagina %}
+          <tr>
+            <td><a href="{% url 'gestao:venda' v.pk %}"><b>{{ v.codigo }}</b></a></td>
+            <td>{{ v.realizado_em|date:"d/m/Y H:i" }}</td>
+            <td>{% if v.cliente %}<a href="{% url 'gestao:cliente' v.cliente_id %}">{{ v.cliente.nome }}</a>{% else %}<span class="texto-suave">Sem cadastro</span>{% endif %}</td>
+            <td>{{ v.get_canal_display }}{% if v.parceiro %}<br><small class="texto-suave">{{ v.parceiro }}</small>{% endif %}</td>
+            <td class="num">{{ v.n_itens|default:0 }}</td>
+            <td class="texto-suave">{{ v.get_forma_pagamento_display }}{% if v.parcelas > 1 %} {{ v.parcelas }}x{% endif %}</td>
+            <td><span class="selo selo-{{ v.tom }}">{{ v.get_situacao_display }}</span></td>
+            <td class="num"><b>{{ v.total|brl }}</b></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="8" class="vazio">{% if termo or situacao or canal or periodo %}Nenhuma venda encontrada com esses filtros.{% else %}Nenhuma venda lançada ainda. Use “Lançar venda” para registrar as vendas do WhatsApp, hotéis e barbearias.{% endif %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "gestao/partials/paginacao.html" %}
+{% endblock %}

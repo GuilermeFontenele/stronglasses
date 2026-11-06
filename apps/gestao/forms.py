@@ -1,8 +1,10 @@
+from datetime import timedelta
 from decimal import Decimal
 
 from django import forms
 from django.core.validators import FileExtensionValidator
-from django.forms import inlineformset_factory, modelformset_factory
+from django.forms import formset_factory, inlineformset_factory, modelformset_factory
+from django.utils import timezone
 
 from apps.catalogo.models import (
     EXTENSOES_IMAGEM,
@@ -14,7 +16,10 @@ from apps.catalogo.models import (
     validar_tamanho_imagem,
 )
 from apps.clientes.models import Cliente
+from apps.core.crypto import hash_busca
 from apps.core.models import Pagina, Parametro
+from apps.core.validators import so_digitos
+from apps.vendas.models import Pedido
 
 
 class EstiloPainel:
@@ -189,6 +194,17 @@ GRUPOS_CONFIGURACAO = [
         "Envio (padrão dos produtos)",
         ["PESO_PADRAO_G", "EMBALAGEM_ALTURA_CM", "EMBALAGEM_LARGURA_CM", "EMBALAGEM_COMPRIMENTO_CM"],
     ),
+    (
+        "Remetente (etiqueta e declaração de conteúdo)",
+        [
+            "REMETENTE_NOME",
+            "REMETENTE_ENDERECO",
+            "REMETENTE_BAIRRO",
+            "REMETENTE_CIDADE",
+            "REMETENTE_UF",
+            "REMETENTE_CEP",
+        ],
+    ),
     ("Página inicial", ["OCULOS_ENTREGUES"]),
 ]
 
@@ -240,3 +256,195 @@ class ConfiguracoesForm(EstiloPainel, forms.Form):
             if texto != parametro.valor:
                 mudancas.append((parametro, texto))
         return mudancas
+
+
+# ---------------------------------------------------------------- clientes e vendas
+
+
+class ClienteNovoForm(ClienteForm):
+    class Meta(ClienteForm.Meta):
+        fields = ["tipo", "nome", "razao_social", "whatsapp", "email", "documento"]
+        widgets = {
+            "whatsapp": forms.TextInput(attrs={"placeholder": "+55 85 99999-9999", "inputmode": "tel"}),
+            "documento": forms.TextInput(attrs={"inputmode": "numeric", "autocomplete": "off"}),
+        }
+        help_texts = {
+            "razao_social": "Só para pessoa jurídica (ex.: hotéis).",
+            "whatsapp": "Com DDI e DDD, começando com +55.",
+            "documento": "Opcional. Peça só se precisar: nota fiscal para empresa ou declaração de conteúdo. "
+            "Fica guardado criptografado.",
+        }
+
+    def clean_documento(self):
+        documento = so_digitos(self.cleaned_data.get("documento") or "")
+        if documento and Cliente.objects.filter(documento_hash=hash_busca(documento)).exists():
+            raise forms.ValidationError("Já existe um cliente com este CPF/CNPJ.")
+        return documento
+
+
+class SelectVariacao(forms.Select):
+    """Lista de óculos agrupada por produto; cada opção leva preço e estoque para o resumo ao vivo."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.dados: dict[str, tuple[str, int]] = {}
+
+    def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+        opcao = super().create_option(name, value, label, selected, index, subindex, attrs)
+        info = self.dados.get(str(value))
+        if info:
+            opcao["attrs"].update({"data-preco": info[0], "data-estoque": info[1]})
+        return opcao
+
+
+def opcoes_variacoes() -> tuple[list, dict]:
+    """(opções agrupadas por produto, {pk: (preço, estoque)}). Uma consulta para o formulário inteiro."""
+    grupos: dict[str, list] = {}
+    dados = {}
+    variacoes = (
+        Variacao.objects.filter(produto__isnull=False)
+        .select_related("produto", "armacao", "lente")
+        .order_by("produto__nome", "ordem", "id")
+    )
+    for v in variacoes:
+        situacao = "sem estoque" if v.estoque <= 0 else f"{v.estoque} em estoque"
+        inativo = "" if v.ativa and v.produto.ativo else " · fora da loja"
+        grupos.setdefault(v.produto.nome, []).append((v.pk, f"{v.descricao_cor} ({situacao}{inativo})"))
+        dados[str(v.pk)] = (format(v.preco_final, "f"), v.estoque)
+    return [("", "Escolha o óculos"), *grupos.items()], dados
+
+
+class ItemVendaForm(forms.Form):
+    variacao = forms.ModelChoiceField(
+        queryset=Variacao.objects.filter(produto__isnull=False).select_related("produto", "armacao", "lente"),
+        label="Óculos",
+        widget=SelectVariacao(attrs={"data-item-variacao": ""}),
+        error_messages={"required": "Escolha o óculos.", "invalid_choice": "Óculos não encontrado."},
+    )
+    quantidade = forms.IntegerField(
+        label="Qtd.",
+        min_value=1,
+        max_value=999,
+        initial=1,
+        widget=forms.NumberInput(attrs={"min": "1", "data-item-quantidade": "", "inputmode": "numeric"}),
+    )
+    preco_unitario = forms.DecimalField(
+        label="Preço unitário",
+        required=False,
+        min_value=0,
+        max_digits=10,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={"step": "0.01", "min": "0", "placeholder": "Da loja", "data-item-preco": ""}),
+    )
+
+    def __init__(self, *args, opcoes=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if opcoes is not None:
+            escolhas, dados = opcoes
+            self.fields["variacao"].choices = escolhas
+            self.fields["variacao"].widget.dados = dados
+
+
+ItemVendaFormSet = formset_factory(ItemVendaForm, extra=0, min_num=1, validate_min=True)
+
+
+class VendaForm(EstiloPainel, forms.ModelForm):
+    aplicar_pix = forms.BooleanField(label="Dar o desconto do Pix", required=False, initial=True)
+    baixar_estoque = forms.BooleanField(
+        label="Baixar do estoque",
+        required=False,
+        initial=True,
+        help_text="Desligue só se o óculos já saiu do estoque antes (ex.: consignado no hotel).",
+    )
+    salvar_endereco = forms.BooleanField(label="Salvar este endereço no cadastro do cliente", required=False)
+
+    rotulos_vazios = {"uf": "Estado"}
+
+    class Meta:
+        model = Pedido
+        fields = [
+            "realizado_em",
+            "situacao",
+            "forma_pagamento",
+            "parcelas",
+            "desconto",
+            "cupom",
+            "frete",
+            "canal",
+            "parceiro",
+            "entrega",
+            "destinatario",
+            "cep",
+            "logradouro",
+            "numero_endereco",
+            "complemento",
+            "bairro",
+            "cidade",
+            "uf",
+            "peso_g",
+            "observacoes",
+        ]
+        widgets = {
+            "realizado_em": forms.DateTimeInput(attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"),
+            "desconto": forms.NumberInput(attrs={"step": "0.01", "min": "0", "data-venda-desconto": ""}),
+            "frete": forms.NumberInput(attrs={"step": "0.01", "min": "0", "data-venda-frete": ""}),
+            "parcelas": forms.NumberInput(attrs={"min": "1", "max": "12"}),
+            "cep": forms.TextInput(attrs={"inputmode": "numeric", "placeholder": "00000-000", "maxlength": "9"}),
+            "peso_g": forms.NumberInput(attrs={"min": "1", "placeholder": "Automático"}),
+            "observacoes": forms.Textarea(attrs={"rows": 3}),
+            "parceiro": forms.TextInput(attrs={"placeholder": "Ex.: Hotel Praia Mar, Barbearia do Zé"}),
+        }
+        labels = {"desconto": "Desconto (R$)", "frete": "Frete cobrado (R$)", "numero_endereco": "Número"}
+        help_texts = {
+            "desconto": "Promoção ou cupom, em reais. O Pix entra depois e nunca sobre o frete.",
+            "peso_g": "Vazio = soma do peso cadastrado dos produtos.",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["forma_pagamento"].widget.attrs["data-venda-forma"] = ""
+        self.fields["aplicar_pix"].widget.attrs["data-venda-pix"] = ""
+        self.fields["entrega"].widget.attrs["data-venda-entrega"] = ""
+        self.fields["situacao"].choices = [c for c in Pedido.Situacao.choices if c[0] != Pedido.Situacao.CANCELADO]
+        for campo in ("desconto", "frete"):
+            self.fields[campo].required = False  # vazio = zero
+
+    def clean_desconto(self):
+        return self.cleaned_data.get("desconto") or Decimal("0.00")
+
+    def clean_frete(self):
+        return self.cleaned_data.get("frete") or Decimal("0.00")
+
+    def clean_cep(self):
+        return so_digitos(self.cleaned_data.get("cep") or "")
+
+    def clean_realizado_em(self):
+        quando = self.cleaned_data["realizado_em"]
+        if quando and quando > timezone.now() + timedelta(minutes=10):
+            raise forms.ValidationError("A data da venda não pode estar no futuro.")
+        return quando
+
+    def clean(self):
+        dados = super().clean()
+        forma = dados.get("forma_pagamento")
+        dados["aplicar_pix"] = bool(dados.get("aplicar_pix")) and forma == Pedido.FormaPagamento.PIX
+        if forma != Pedido.FormaPagamento.CREDITO:
+            dados["parcelas"] = 1
+            self.instance.parcelas = 1
+        if dados.get("entrega") in (Pedido.Entrega.CORREIOS, Pedido.Entrega.TRANSPORTADORA):
+            for campo in ("destinatario", "cep", "logradouro", "cidade", "uf"):
+                if not dados.get(campo) and campo not in self.errors:
+                    self.add_error(campo, "Obrigatório para envio.")
+        return dados
+
+
+class SituacaoVendaForm(EstiloPainel, forms.Form):
+    situacao = forms.ChoiceField(
+        label="Situação", choices=[c for c in Pedido.Situacao.choices if c[0] != Pedido.Situacao.CANCELADO]
+    )
+    codigo_rastreio = forms.CharField(
+        label="Código de rastreio",
+        required=False,
+        max_length=40,
+        widget=forms.TextInput(attrs={"placeholder": "AA123456789BR", "autocomplete": "off"}),
+    )
