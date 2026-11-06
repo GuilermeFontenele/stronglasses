@@ -134,6 +134,8 @@ h2 { font-size: 15px; }
 .grafico { width: 100%; height: auto; display: block; overflow: visible; }
 .grafico-grade { stroke: var(--linha); stroke-width: 1; }
 .grafico-eixo { fill: var(--suave); font-size: 11px; font-family: var(--fonte); }
+.bloco-largo .grafico-eixo { font-size: 7px; }
+@media (max-width: 960px) { .bloco-largo .grafico-eixo { font-size: 11px; } }
 .grafico-barra rect { fill: #c9ccd3; transition: fill .15s; }
 .grafico-barra.destaque rect, .grafico-barra:hover rect { fill: var(--primaria); }
 .grafico-traco { fill: none; stroke: var(--destaque); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
