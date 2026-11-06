@@ -1,0 +1,134 @@
+"""Gera o HTML das telas do painel com dados fictícios, para conferir o visual fora da máquina local.
+
+Uso (CI): DJANGO_SETTINGS_MODULE=config.settings.test python scripts/previa_gestao.py saida/
+Nunca rode contra o banco real: cria dados de demonstração.
+"""
+
+import random
+import sys
+from datetime import date, timedelta
+from decimal import Decimal
+from pathlib import Path
+
+import django
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+django.setup()
+
+from django.contrib.auth import get_user_model  # noqa: E402
+from django.test import Client  # noqa: E402
+from django.utils import timezone  # noqa: E402
+
+from apps.catalogo.models import AcabamentoArmacao, Banner, Categoria, CorLente, Produto, Variacao  # noqa: E402
+from apps.clientes.models import Cliente, Endereco  # noqa: E402
+from apps.historico.models import ItemPedidoHistorico, MetricaMensal, PedidoHistorico  # noqa: E402
+
+saida = Path(sys.argv[1] if len(sys.argv) > 1 else "previa")
+saida.mkdir(parents=True, exist_ok=True)
+aleatorio = random.Random(42)  # noqa: S311 (dados fictícios, não é criptografia)
+
+dono = get_user_model().objects.create_superuser("guilherme", "dono@exemplo.com", "x")
+dono.first_name = "Guilherme"
+dono.save()
+categorias = [
+    Categoria.objects.create(nome=n, slug=n.lower().replace(" ", "-"))
+    for n in ("Feminino", "Masculino", "Infantil", "Outlet")
+]
+armacoes = [
+    AcabamentoArmacao.objects.create(nome=n, cor_hex=c)
+    for n, c in (("Preta", "#111111"), ("Tartaruga", "#6B3E1F"), ("Dourada", "#C9A54C"))
+]
+lentes = [
+    CorLente.objects.create(nome=n, cor_hex=c)
+    for n, c in (("Verde", "#55704A"), ("Marrom", "#6A4A2E"), ("Laranja", "#D9822B"))
+]
+produtos = []
+for i, nome in enumerate(["Zaik", "Roshi", "Ohana", "Laguna", "Noruega", "Aviador Clássico", "Mauritius", "Stark"]):
+    p = Produto.objects.create(
+        nome=f"Óculos de Sol {nome}",
+        slug=f"oculos-{i}",
+        preco=Decimal("85.90") + i * 10,
+        preco_comparativo=Decimal("189.90") if i % 2 == 0 else None,
+        ativo=i != 7,
+        destaque=i < 3,
+    )
+    p.categorias.add(categorias[i % 4])
+    for j in range(1 + i % 3):
+        Variacao.objects.create(
+            produto=p, armacao=armacoes[j], lente=lentes[(i + j) % 3], sku=f"SG{i}{j}", estoque=(i * 3 + j) % 6
+        )
+    produtos.append(p)
+nomes = ["Ana Lima", "Bruno Costa", "Carla Dias", "Diego Rocha", "Elisa Prado", "Fábio Nunes", "Gabi Melo", "Hugo Reis"]
+clientes = []
+for i, nome in enumerate(nomes):
+    c = Cliente.objects.create(nome=nome, email=f"cliente{i}@exemplo.com", whatsapp=f"55859999900{i:02d}")
+    Endereco.objects.create(
+        cliente=c,
+        cep="60000000",
+        logradouro="Rua Exemplo",
+        numero=str(10 + i),
+        cidade="Fortaleza",
+        uf="CE",
+        padrao=True,
+    )
+    clientes.append(c)
+agora = timezone.now()
+ufs = ["CE", "CE", "CE", "SP", "RJ", "PE", "BA", "MG"]
+for n in range(140):
+    dias = aleatorio.randint(0, 360)
+    p = aleatorio.choice(produtos)
+    qtd = aleatorio.choice([1, 1, 1, 2])
+    pago = aleatorio.random() > 0.12
+    pedido = PedidoHistorico.objects.create(
+        nuvemshop_id=1000 + n,
+        numero=200 + n,
+        cliente=aleatorio.choice(clientes),
+        realizado_em=agora - timedelta(days=dias, hours=n),
+        status="open" if pago else "cancelled",
+        status_pagamento="paid" if pago else "voided",
+        status_envio="shipped",
+        total=p.preco * qtd,
+        subtotal=p.preco * qtd,
+        uf=aleatorio.choice(ufs),
+        cidade="Fortaleza",
+        cupom="VOLTA10" if n % 9 == 0 else "",
+        forma_pagamento="Pix",
+    )
+    ItemPedidoHistorico.objects.create(
+        pedido=pedido,
+        produto=p,
+        nome=p.nome,
+        variante="Preta / Verde",
+        sku="SG",
+        quantidade=qtd,
+        preco_unitario=p.preco,
+    )
+hoje = date.today()
+for m in range(12):
+    mes = date(hoje.year - (1 if hoje.month - m <= 0 else 0), (hoje.month - m - 1) % 12 + 1, 1)
+    MetricaMensal.objects.create(mes=mes, visitas=900 + aleatorio.randint(0, 900), vendas=aleatorio.randint(5, 20))
+Banner.objects.create(titulo="Mapa do Brasil", imagem="banners/demo.webp", imagem_mobile="banners/demo-cel.webp")
+
+navegador = Client()
+navegador.force_login(dono)
+telas = {
+    "dashboard": "/gestao/",
+    "produtos": "/gestao/produtos/",
+    "produto": f"/gestao/produtos/{produtos[0].pk}/",
+    "estoque": "/gestao/estoque/",
+    "clientes": "/gestao/clientes/",
+    "cliente": f"/gestao/clientes/{clientes[0].pk}/",
+    "pedidos": "/gestao/pedidos/",
+    "pedido": f"/gestao/pedidos/{PedidoHistorico.objects.first().pk}/",
+    "banners": "/gestao/banners/",
+    "configuracoes": "/gestao/configuracoes/",
+}
+for nome, url in telas.items():
+    html = navegador.get(url).content.decode()
+    (saida / f"{nome}.html").write_text(
+        html.replace('"/static/', '"static/').replace('"/media/', '"media/'), encoding="utf-8"
+    )
+(saida / "entrar.html").write_text(
+    Client().get("/gestao/entrar/").content.decode().replace('"/static/', '"static/'), encoding="utf-8"
+)
+print("Prévia gerada em", saida)

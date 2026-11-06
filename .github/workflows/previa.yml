@@ -1,0 +1,40 @@
+name: Prévia do painel
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  previa:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: loja
+          POSTGRES_USER: loja
+          POSTGRES_PASSWORD: previa
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U loja" --health-interval 5s --health-retries 10
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.test
+      DB_NAME: loja
+      DB_USER: loja
+      DB_PASSWORD: previa
+      DB_HOST: localhost
+      DB_SSLMODE: disable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -r requirements/dev.txt
+      - run: python manage.py migrate --noinput
+      - run: python scripts/previa_gestao.py previa
+      - uses: actions/upload-artifact@v4
+        with:
+          name: previa-gestao
+          path: previa/
+          retention-days: 3
