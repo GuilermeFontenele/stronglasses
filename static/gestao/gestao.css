@@ -488,3 +488,7 @@ tr:has(.remover input:checked) td.col-sku input { text-decoration: line-through;
 .passos h3 { font-size: 14px; margin-bottom: 8px; }
 .passos ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; line-height: 1.5; }
 code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; background: var(--neutro-fundo); padding: 2px 6px; border-radius: 6px; word-break: break-all; }
+.cotacao-venda { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--linha); }
+.cotacao-venda .opcoes-frete:empty { display: none; }
+.frete-cobrado { margin: 0 0 14px; color: var(--suave); }
+.frete-cobrado b { color: var(--texto); }

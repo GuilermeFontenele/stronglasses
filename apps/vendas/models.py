@@ -91,6 +91,9 @@ class Pedido(AuditModel):
         "frete", max_digits=10, decimal_places=2, default=ZERO, validators=[MinValueValidator(ZERO)]
     )
     total = models.DecimalField("total", max_digits=10, decimal_places=2, default=ZERO)
+    # Opção de frete escolhida na cotação do lançamento (vem marcada na compra da etiqueta)
+    frete_servico_id = models.PositiveIntegerField("serviço de frete (ID)", null=True, blank=True)
+    frete_servico = models.CharField("serviço de frete", max_length=80, blank=True)
     # Entrega (cópia do endereço no momento da venda)
     entrega = models.CharField("entrega", max_length=16, choices=Entrega.choices, default=Entrega.MAOS)
     destinatario = models.CharField("destinatário", max_length=150, blank=True)

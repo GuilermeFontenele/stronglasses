@@ -2,17 +2,19 @@
 
 import secrets
 from decimal import Decimal
+from types import SimpleNamespace
 from urllib.parse import urlsplit
 
 from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from apps.catalogo.models import Variacao
 from apps.catalogo.templatetags.vitrine import brl
 from apps.clientes.models import Cliente
 from apps.core.auditoria import registrar
@@ -119,6 +121,32 @@ def melhorenvio_desconectar(request):
 
 
 # ---------------------------------------------------------------- etiquetas da venda
+
+
+@require_POST
+@equipe(permissao="vendas.add_pedido")
+def frete_simular(request):
+    """Cotação na tela de lançar venda (antes de a venda existir): devolve as opções em JSON."""
+    quantidades: dict[int, int] = {}
+    for pk, qtd in zip(request.POST.getlist("variacao"), request.POST.getlist("quantidade"), strict=False):
+        if pk.isdigit() and qtd.isdigit() and 0 < int(qtd) < 1000:
+            quantidades[int(pk)] = quantidades.get(int(pk), 0) + int(qtd)
+    variacoes = Variacao.objects.select_related("produto").filter(pk__in=quantidades, produto__isnull=False)
+    itens = [
+        SimpleNamespace(produto=v.produto, produto_id=v.produto_id, quantidade=quantidades[v.pk], preco=v.preco_final)
+        for v in variacoes
+    ]
+    peso = request.POST.get("peso_g", "")
+    try:
+        opcoes = servicos.simular(
+            request.POST.get("cep", ""),
+            itens,
+            sum((i.preco * i.quantidade for i in itens), Decimal("0.00")),
+            peso_g=int(peso) if peso.isdigit() and int(peso) > 0 else None,
+        )
+    except ErroMelhorEnvio as erro:
+        return JsonResponse({"erro": str(erro)}, status=400)
+    return JsonResponse({"opcoes": opcoes})
 
 
 @require_POST

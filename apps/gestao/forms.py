@@ -39,6 +39,22 @@ class EstiloPainel:
                 campo.choices = [("", rotulo), *list(campo.choices)[1:]]
 
 
+# Máscaras aplicadas pelo gestao.js (data-mascara). O servidor sempre limpa e valida de novo.
+TELEFONE = {"data-mascara": "telefone", "inputmode": "tel", "maxlength": "19", "placeholder": "+55 (85) 99999-9999"}
+DOCUMENTO = {"data-mascara": "documento", "inputmode": "numeric", "maxlength": "18", "autocomplete": "off"}
+CEP = {"data-mascara": "cep", "inputmode": "numeric", "maxlength": "9", "placeholder": "00000-000"}
+
+
+def whatsapp_internacional(valor: str) -> str:
+    """'+55 (85) 98888-7777' ou '85988887777' -> '+5585988887777' (formato que o modelo guarda)."""
+    digitos = so_digitos(valor or "")
+    if not digitos:
+        return ""
+    if len(digitos) in (10, 11):  # sem o 55 do Brasil
+        digitos = "55" + digitos
+    return "+" + digitos
+
+
 class ArquivoAtual(forms.ClearableFileInput):
     """Mostra o arquivo atual com prévia e um botão de trocar, sem o "Atualmente/Limpar/Modificar" do Django."""
 
@@ -178,6 +194,16 @@ class ClienteForm(EstiloPainel, forms.ModelForm):
         model = Cliente
         fields = ["tipo", "nome", "razao_social", "email", "whatsapp"]
         help_texts = {"razao_social": "Só para pessoa jurídica (ex.: hotéis)."}
+        widgets = {"whatsapp": forms.TextInput(attrs=TELEFONE)}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Aceita com máscara; o modelo guarda só "+dígitos" e valida de novo ao salvar.
+        self.fields["whatsapp"].validators = []
+        self.fields["whatsapp"].widget.attrs["maxlength"] = "19"
+
+    def clean_whatsapp(self):
+        return whatsapp_internacional(self.cleaned_data.get("whatsapp"))
 
     def clean(self):
         dados = super().clean()
@@ -228,6 +254,9 @@ class ConfiguracoesForm(EstiloPainel, forms.Form):
             if nomes:
                 self.grupos.append((titulo, nomes))
 
+    MASCARAS = {"WHATSAPP_LOJA": TELEFONE, "CNPJ_LOJA": DOCUMENTO, "REMETENTE_CEP": CEP}
+    SO_DIGITOS = {"WHATSAPP_LOJA", "REMETENTE_CEP"}
+
     @staticmethod
     def _campo(parametro: Parametro) -> forms.Field:
         rotulo = parametro.chave.replace("_", " ").capitalize()
@@ -238,7 +267,8 @@ class ConfiguracoesForm(EstiloPainel, forms.Form):
             return forms.DecimalField(initial=parametro.valor_tipado(), decimal_places=2, **comum)
         if parametro.tipo == Parametro.Tipo.BOOLEANO:
             return forms.BooleanField(initial=parametro.valor_tipado(), required=False, **comum)
-        return forms.CharField(initial=parametro.valor, required=False, max_length=255, **comum)
+        widget = forms.TextInput(attrs=ConfiguracoesForm.MASCARAS.get(parametro.chave, {}))
+        return forms.CharField(initial=parametro.valor, required=False, max_length=255, widget=widget, **comum)
 
     def grupos_com_campos(self):
         return [(titulo, [self[nome] for nome in nomes]) for titulo, nomes in self.grupos]
@@ -255,6 +285,8 @@ class ConfiguracoesForm(EstiloPainel, forms.Form):
                 texto = format(valor.normalize(), "f")
             else:
                 texto = "" if valor is None else str(valor).strip()
+                if chave in self.SO_DIGITOS:
+                    texto = so_digitos(texto)
             if texto != parametro.valor:
                 mudancas.append((parametro, texto))
         return mudancas
@@ -266,13 +298,10 @@ class ConfiguracoesForm(EstiloPainel, forms.Form):
 class ClienteNovoForm(ClienteForm):
     class Meta(ClienteForm.Meta):
         fields = ["tipo", "nome", "razao_social", "whatsapp", "email", "documento"]
-        widgets = {
-            "whatsapp": forms.TextInput(attrs={"placeholder": "+55 85 99999-9999", "inputmode": "tel"}),
-            "documento": forms.TextInput(attrs={"inputmode": "numeric", "autocomplete": "off"}),
-        }
+        widgets = {"whatsapp": forms.TextInput(attrs=TELEFONE), "documento": forms.TextInput(attrs=DOCUMENTO)}
         help_texts = {
             "razao_social": "Só para pessoa jurídica (ex.: hotéis).",
-            "whatsapp": "Com DDI e DDD, começando com +55.",
+            "whatsapp": "Com DDD. O +55 entra sozinho.",
             "documento": "Opcional. Peça só se precisar: nota fiscal para empresa ou declaração de conteúdo. "
             "Fica guardado criptografado.",
         }
@@ -300,21 +329,18 @@ class SelectVariacao(forms.Select):
 
 
 def opcoes_variacoes() -> tuple[list, dict]:
-    """(opções agrupadas por produto, {pk: (preço, estoque)}). Uma consulta para o formulário inteiro."""
-    grupos: dict[str, list] = {}
-    dados = {}
+    """(opções com estoque, {pk: (preço, estoque)}). Uma consulta para o formulário inteiro."""
+    escolhas, dados = [("", "Escolha o óculos")], {}
     variacoes = (
-        Variacao.objects.filter(produto__isnull=False)
+        Variacao.objects.filter(produto__isnull=False, estoque__gt=0)
         .select_related("produto", "armacao", "lente")
         .order_by("produto__nome", "ordem", "id")
     )
     for v in variacoes:
-        situacao = "sem estoque" if v.estoque <= 0 else f"{v.estoque} em estoque"
-        inativo = "" if v.ativa and v.produto.ativo else " · fora da loja"
-        rotulo = f"{v.produto.nome} · {v.descricao_cor.lower()} ({situacao}{inativo})"
-        grupos.setdefault(v.produto.nome, []).append((v.pk, rotulo))
+        fora = "" if v.ativa and v.produto.ativo else " · fora da loja"
+        escolhas.append((v.pk, f"{v.produto.nome} · {v.descricao_cor.lower()} ({v.estoque} em estoque{fora})"))
         dados[str(v.pk)] = (format(v.preco_final, "f"), v.estoque)
-    return [("", "Escolha o óculos"), *grupos.items()], dados
+    return escolhas, dados
 
 
 class ItemVendaForm(forms.Form):
@@ -361,12 +387,7 @@ class VendaForm(EstiloPainel, forms.ModelForm):
     )
     salvar_endereco = forms.BooleanField(label="Salvar este endereço no cadastro do cliente", required=False)
     # Aceita "60000-000" (9 caracteres); clean_cep deixa só os 8 dígitos que o modelo guarda.
-    cep = forms.CharField(
-        label="CEP",
-        required=False,
-        max_length=9,
-        widget=forms.TextInput(attrs={"inputmode": "numeric", "placeholder": "00000-000", "maxlength": "9"}),
-    )
+    cep = forms.CharField(label="CEP", required=False, max_length=9, widget=forms.TextInput(attrs=CEP))
 
     rotulos_vazios = {"uf": "Estado"}
 
@@ -393,6 +414,8 @@ class VendaForm(EstiloPainel, forms.ModelForm):
             "uf",
             "peso_g",
             "observacoes",
+            "frete_servico_id",
+            "frete_servico",
         ]
         widgets = {
             "realizado_em": forms.DateTimeInput(attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"),
@@ -401,6 +424,8 @@ class VendaForm(EstiloPainel, forms.ModelForm):
             "parcelas": forms.NumberInput(attrs={"min": "1", "max": "12"}),
             "peso_g": forms.NumberInput(attrs={"min": "1", "placeholder": "Automático"}),
             "observacoes": forms.Textarea(attrs={"rows": 3}),
+            "frete_servico_id": forms.HiddenInput(attrs={"data-frete-servico-id": ""}),
+            "frete_servico": forms.HiddenInput(attrs={"data-frete-servico": ""}),
             "parceiro": forms.TextInput(attrs={"placeholder": "Ex.: Hotel Praia Mar, Barbearia do Zé"}),
         }
         labels = {"desconto": "Desconto (R$)", "frete": "Frete cobrado (R$)", "numero_endereco": "Número"}

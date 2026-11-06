@@ -109,22 +109,23 @@
                       <div class="opcao-frete indisponivel"><span><b>{{ o.transportadora }} · {{ o.servico }}</b><br><small>{{ o.erro }}</small></span></div>
                     {% else %}
                       <label class="opcao-frete">
-                        <input type="radio" name="servico" value="{{ o.id }}" required{% if forloop.first %} checked{% endif %}>
+                        <input type="radio" name="servico" value="{{ o.id }}" required{% if pedido.frete_servico_id %}{% if o.id == pedido.frete_servico_id %} checked{% endif %}{% elif forloop.first %} checked{% endif %}>
                         <span><b>{{ o.transportadora }} · {{ o.servico }}</b><br><small class="texto-suave">{% if o.prazo_min and o.prazo_max and o.prazo_min != o.prazo_max %}{{ o.prazo_min }} a {{ o.prazo_max }} dias úteis{% elif o.prazo %}{{ o.prazo }} dia{{ o.prazo|pluralize }} úte{{ o.prazo|pluralize:"il,is" }}{% endif %}</small></span>
                         <strong>{{ o.preco|brl }}</strong>
                       </label>
                     {% endif %}
                   {% endfor %}
                 </fieldset>
+                <p class="frete-cobrado">Frete cobrado do cliente: <b>{{ pedido.frete|brl }}</b>{% if pedido.frete_servico %} · escolhido no lançamento: {{ pedido.frete_servico }}{% endif %}</p>
                 <div class="campos">
                   <div class="campo">
                     <label class="campo-rotulo" for="documento">CPF/CNPJ do destinatário</label>
-                    <input id="documento" name="documento" inputmode="numeric" autocomplete="off" placeholder="{% if documento_no_cadastro %}Usar o do cadastro{% else %}Obrigatório na declaração{% endif %}">
+                    <input id="documento" name="documento" data-mascara="documento" maxlength="18" inputmode="numeric" autocomplete="off" placeholder="{% if documento_no_cadastro %}Usar o do cadastro{% else %}Obrigatório na declaração{% endif %}">
                     <small class="campo-ajuda">{% if documento_no_cadastro %}Vazio = usa o do cadastro (fica registrado o acesso).{% else %}A transportadora exige na declaração de conteúdo.{% endif %}</small>
                   </div>
                   <div class="campo">
                     <label class="campo-rotulo" for="chave_nfe">Chave da nota fiscal</label>
-                    <input id="chave_nfe" name="chave_nfe" inputmode="numeric" autocomplete="off" placeholder="Só se tiver nota (44 números)">
+                    <input id="chave_nfe" name="chave_nfe" maxlength="54" inputmode="numeric" autocomplete="off" placeholder="Só se tiver nota (44 números)">
                     <small class="campo-ajuda">Vazio = vai com declaração de conteúdo eletrônica.</small>
                   </div>
                   {% if pedido.cliente and not documento_no_cadastro %}

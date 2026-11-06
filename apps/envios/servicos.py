@@ -7,6 +7,7 @@ Regras:
 """
 
 from decimal import Decimal
+from types import SimpleNamespace
 
 from django.utils import timezone
 
@@ -55,8 +56,11 @@ def remetente() -> dict:
     return dados
 
 
-def volume(pedido: Pedido, itens) -> dict:
-    """Um pacote: medidas do produto (se for um só e tiver medidas) ou da embalagem padrão; peso somado."""
+def volume(pedido: Pedido | None, itens, peso_g: int | None = None) -> dict:
+    """Um pacote: medidas do produto (se for um só e tiver medidas) ou da embalagem padrão; peso somado.
+
+    `itens` são objetos com `produto`, `produto_id` e `quantidade` (itens da venda ou da simulação).
+    """
     p = get_parametros(
         "EMBALAGEM_ALTURA_CM",
         "EMBALAGEM_LARGURA_CM",
@@ -75,7 +79,8 @@ def volume(pedido: Pedido, itens) -> dict:
         produto = next(iter(produtos.values()))
         if produto.pronto_para_envio:
             medidas = (produto.altura_cm, produto.largura_cm, produto.comprimento_cm)
-    gramas = peso_do_pacote(pedido, itens, int(p["PESO_PADRAO_G"] or PESO_PADRAO_G))
+    padrao = int(p["PESO_PADRAO_G"] or PESO_PADRAO_G)
+    gramas = peso_do_pacote(pedido or SimpleNamespace(peso_g=peso_g), itens, padrao)
     altura, largura, comprimento = (max(1, int(Decimal(str(m or 1)))) for m in medidas)
     return {"height": altura, "width": largura, "length": comprimento, "weight": round(max(gramas, 1) / 1000, 3)}
 
@@ -99,6 +104,11 @@ def pode_enviar(pedido: Pedido) -> str:
     return ""
 
 
+def _ordenar(opcoes: list[dict]) -> list[dict]:
+    disponiveis = sorted((o for o in opcoes if not o["erro"] and o["preco"]), key=lambda o: Decimal(o["preco"]))
+    return disponiveis + [o for o in opcoes if o["erro"] or not o["preco"]]
+
+
 def cotar(pedido: Pedido, api: MelhorEnvio | None = None) -> list[dict]:
     motivo = pode_enviar(pedido)
     if motivo:
@@ -106,8 +116,21 @@ def cotar(pedido: Pedido, api: MelhorEnvio | None = None) -> list[dict]:
     api = api or MelhorEnvio()
     itens = _itens(pedido)
     opcoes = api.calcular(remetente()["cep"], pedido.cep, volume(pedido, itens), valor_dos_itens(itens))
-    disponiveis = sorted((o for o in opcoes if not o["erro"] and o["preco"]), key=lambda o: Decimal(o["preco"]))
-    return disponiveis + [o for o in opcoes if o["erro"] or not o["preco"]]
+    return _ordenar(opcoes)
+
+
+def simular(cep: str, itens, valor: Decimal, peso_g: int | None = None, api: MelhorEnvio | None = None) -> list[dict]:
+    """Cotação antes de a venda existir (tela de lançar venda): quanto cobrar de frete do cliente."""
+    cep = so_digitos(cep)
+    if len(cep) != 8:
+        raise ErroMelhorEnvio("Informe o CEP de entrega com 8 números.")
+    if not itens:
+        raise ErroMelhorEnvio("Escolha os óculos antes de cotar.")
+    r = remetente()
+    if not r["completo"]:
+        raise ErroMelhorEnvio("Preencha o endereço do remetente em Configurações → Remetente.")
+    api = api or MelhorEnvio()
+    return _ordenar(api.calcular(r["cep"], cep, volume(None, itens, peso_g), valor))
 
 
 def montar_carrinho(pedido: Pedido, servico_id: int, documento: str, chave_nfe: str) -> dict:

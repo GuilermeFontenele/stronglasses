@@ -22,6 +22,7 @@ urlpatterns = [
     path("vendas/nova/", views_vendas.venda_nova, name="venda_nova"),
     path("vendas/<int:pk>/", views_vendas.venda, name="venda"),
     path("vendas/<int:pk>/etiqueta/", views_vendas.venda_etiqueta, name="venda_etiqueta"),
+    path("vendas/frete/simular/", views_envios.frete_simular, name="frete_simular"),
     path("vendas/<int:pk>/frete/cotar/", views_envios.frete_cotar, name="frete_cotar"),
     path("vendas/<int:pk>/frete/comprar/", views_envios.frete_comprar, name="frete_comprar"),
     path("envios/<int:pk>/imprimir/", views_envios.envio_imprimir, name="envio_imprimir"),

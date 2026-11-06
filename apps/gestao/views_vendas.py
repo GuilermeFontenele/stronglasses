@@ -210,6 +210,7 @@ def venda_nova(request):
             "busca": busca,
             "resultados": resultados,
             "pix_percentual": pix,
+            "melhorenvio_conectado": bool((c := melhorenvio.conexao_atual()) and c.conectada),
         },
     )
 

@@ -327,3 +327,37 @@ class TelasEnvioTests(BaseEnvios):
         call_command("atualizar_rastreios", stdout=saida)
         self.assertIn("1 etiqueta(s) conferida(s)", saida.getvalue())
         self.assertEqual(Envio.objects.get().status, "postado")
+
+
+class SimularFreteTests(BaseEnvios):
+    def test_simula_no_lancamento(self):
+        self.entrar()
+        falsa = self.api()
+        resposta = self.client.post(
+            "/gestao/vendas/frete/simular/",
+            {"cep": "01310-100", "variacao": [self.variacao.pk], "quantidade": ["2"]},
+        )
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual([o["servico"] for o in resposta.json()["opcoes"]], ["PAC", "SEDEX", ".Package"])
+        corpo = falsa.chamadas[0][2]
+        self.assertEqual(corpo["to"]["postal_code"], "01310100")
+        self.assertEqual(corpo["volumes"][0]["weight"], 0.1)  # 2 x 50 g
+
+    def test_simular_sem_cep_ou_sem_itens(self):
+        self.entrar()
+        self.api()
+        url = "/gestao/vendas/frete/simular/"
+        sem_cep = self.client.post(url, {"variacao": [self.variacao.pk], "quantidade": ["1"]})
+        self.assertEqual(sem_cep.status_code, 400)
+        self.assertIn("CEP", sem_cep.json()["erro"])
+        sem_itens = self.client.post(url, {"cep": "01310100"})
+        self.assertIn("óculos", sem_itens.json()["erro"])
+
+    def test_servico_escolhido_vem_marcado_na_compra(self):
+        self.entrar()
+        self.api()
+        Pedido.objects.filter(pk=self.venda.pk).update(frete_servico_id=2, frete_servico="Correios · SEDEX")
+        self.client.post(f"/gestao/vendas/{self.venda.pk}/frete/cotar/")
+        html = self.client.get(f"/gestao/vendas/{self.venda.pk}/").content.decode()
+        self.assertIn('value="2" required checked', html)
+        self.assertNotIn('value="1" required checked', html)

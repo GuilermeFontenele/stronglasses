@@ -211,10 +211,128 @@ document.querySelectorAll("form[data-venda]").forEach((form) => {
   atualizar();
 });
 
-// CEP: 60000000 vira 60000-000 enquanto digita.
-document.querySelectorAll('input[name="cep"]').forEach((campo) =>
-  campo.addEventListener("input", () => {
-    const d = campo.value.replace(/\D/g, "").slice(0, 8);
-    campo.value = d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
-  }),
-);
+// Máscaras (data-mascara). Só ajudam a digitar: o servidor limpa e valida tudo de novo.
+const MASCARAS = {
+  cep: (d) => {
+    d = d.slice(0, 8);
+    return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
+  },
+  documento: (d) => {
+    d = d.slice(0, 14);
+    if (d.length <= 11) {
+      return d
+        .replace(/^(\d{3})(\d)/, "$1.$2")
+        .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+        .replace(/\.(\d{3})(\d{1,2})$/, ".$1-$2");
+    }
+    return d
+      .replace(/^(\d{2})(\d)/, "$1.$2")
+      .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+      .replace(/\.(\d{3})(\d)/, ".$1/$2")
+      .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+  },
+  // Recebe os dígitos já com o código do país (55...).
+  telefone: (d) => {
+    if (!d.startsWith("55")) return `+${d.slice(0, 15)}`;
+    d = d.slice(0, 13);
+    const ddd = d.slice(2, 4);
+    const numero = d.slice(4);
+    if (!ddd) return "+55";
+    if (!numero) return `+55 (${ddd}`;
+    const corte = numero.length > 8 ? 5 : 4;
+    return numero.length > 4 ? `+55 (${ddd}) ${numero.slice(0, corte)}-${numero.slice(corte)}` : `+55 (${ddd}) ${numero}`;
+  },
+};
+document.querySelectorAll("input[data-mascara]").forEach((campo) => {
+  const mascara = MASCARAS[campo.dataset.mascara];
+  if (!mascara) return;
+  const aplicar = () => {
+    let digitos = campo.value.replace(/\D/g, "");
+    // Telefone digitado sem "+": é do Brasil (o +55 entra sozinho), a não ser que já venha com 55 + DDD + número.
+    const comPais = campo.value.trim().startsWith("+") || (digitos.length >= 12 && digitos.startsWith("55"));
+    if (campo.dataset.mascara === "telefone" && digitos && !comPais) digitos = `55${digitos}`;
+    campo.value = digitos ? mascara(digitos) : "";
+  };
+  campo.addEventListener("input", aplicar);
+  if (campo.value) aplicar();
+});
+
+// Lançar venda: cotar o frete antes de cobrar. A escolha preenche "Frete cobrado".
+document.querySelectorAll("[data-cotacao]").forEach((bloco) => {
+  const form = bloco.closest("form");
+  const botao = bloco.querySelector("[data-cotar]");
+  const status = bloco.querySelector("[data-cotacao-status]");
+  const lista = bloco.querySelector("[data-cotacao-opcoes]");
+  const ajuda = bloco.querySelector("[data-cotacao-ajuda]");
+  const entrega = form?.querySelector("[data-venda-entrega]");
+  const real = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+  const mostrar = () => (bloco.hidden = !["correios", "transportadora"].includes(entrega?.value));
+  entrega?.addEventListener("change", mostrar);
+  mostrar();
+  if (!botao || !form) return;
+
+  const escolher = (opcao) => {
+    const frete = form.querySelector("[data-venda-frete]");
+    if (frete) frete.value = Number(opcao.preco).toFixed(2);
+    form.querySelector("[data-frete-servico-id]").value = opcao.id;
+    form.querySelector("[data-frete-servico]").value = `${opcao.transportadora} · ${opcao.servico}`;
+    frete?.dispatchEvent(new Event("input", { bubbles: true }));
+  };
+
+  botao.addEventListener("click", async () => {
+    const dados = new FormData();
+    dados.append("csrfmiddlewaretoken", form.querySelector("[name=csrfmiddlewaretoken]").value);
+    dados.append("cep", form.querySelector('[name="cep"]')?.value || "");
+    dados.append("peso_g", form.querySelector('[name="peso_g"]')?.value || "");
+    form.querySelectorAll("[data-item]").forEach((linha) => {
+      const variacao = linha.querySelector("[data-item-variacao]")?.value;
+      if (linha.hidden || !variacao) return;
+      dados.append("variacao", variacao);
+      dados.append("quantidade", linha.querySelector("[data-item-quantidade]")?.value || "1");
+    });
+    botao.disabled = true;
+    status.textContent = "Cotando…";
+    lista.replaceChildren();
+    try {
+      const resposta = await fetch(bloco.dataset.url, { method: "POST", body: dados, credentials: "same-origin" });
+      const json = await resposta.json();
+      if (!resposta.ok) throw new Error(json.erro || "Não foi possível cotar agora.");
+      const escolhido = form.querySelector("[data-frete-servico-id]").value;
+      json.opcoes.forEach((opcao) => {
+        const item = document.createElement(opcao.erro ? "div" : "label");
+        item.className = opcao.erro ? "opcao-frete indisponivel" : "opcao-frete";
+        const texto = document.createElement("span");
+        const nome = document.createElement("b");
+        nome.textContent = `${opcao.transportadora} · ${opcao.servico}`;
+        const detalhe = document.createElement("small");
+        detalhe.className = opcao.erro ? "" : "texto-suave";
+        const prazo =
+          opcao.prazo_min && opcao.prazo_max && opcao.prazo_min !== opcao.prazo_max
+            ? `${opcao.prazo_min} a ${opcao.prazo_max} dias úteis`
+            : opcao.prazo
+              ? `${opcao.prazo} dia(s) úteis`
+              : "";
+        detalhe.textContent = opcao.erro || prazo;
+        texto.append(nome, document.createElement("br"), detalhe);
+        if (!opcao.erro) {
+          const radio = document.createElement("input");
+          radio.type = "radio";
+          radio.name = "_opcao_frete";
+          radio.checked = String(opcao.id) === escolhido;
+          radio.addEventListener("change", () => escolher(opcao));
+          const preco = document.createElement("strong");
+          preco.textContent = real.format(Number(opcao.preco));
+          item.append(radio, texto, preco);
+        } else item.append(texto);
+        lista.append(item);
+      });
+      const disponiveis = json.opcoes.filter((o) => !o.erro).length;
+      status.textContent = disponiveis ? `${disponiveis} opção(ões) para este CEP. Escolha uma:` : "Nenhuma transportadora atende esse CEP.";
+      if (ajuda) ajuda.hidden = !disponiveis;
+    } catch (erro) {
+      status.textContent = erro.message;
+    } finally {
+      botao.disabled = false;
+    }
+  });
+});

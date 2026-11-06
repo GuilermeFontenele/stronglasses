@@ -69,6 +69,19 @@
             {% include "gestao/partials/campo.html" with campo=form.peso_g %}
             {% if cliente %}{% include "gestao/partials/campo.html" with campo=form.salvar_endereco largo=True %}{% endif %}
           </div>
+          <div class="cotacao-venda" data-cotacao data-url="{% url 'gestao:frete_simular' %}">
+            {{ form.frete_servico_id }}{{ form.frete_servico }}
+            {% if melhorenvio_conectado %}
+              <div class="cotar">
+                <button type="button" class="botao" data-cotar>{% icone "busca" %} Cotar frete</button>
+                <span class="dica" data-cotacao-status>Com o CEP e os óculos escolhidos, veja quanto cada transportadora cobra.</span>
+              </div>
+              <div class="opcoes-frete" data-cotacao-opcoes role="radiogroup" aria-label="Opções de frete"></div>
+              <p class="campo-ajuda" data-cotacao-ajuda hidden>A opção escolhida preenche "Frete cobrado". Pode mudar o valor (ex.: frete grátis); na hora de comprar a etiqueta, ela já vem marcada.</p>
+            {% else %}
+              <p class="campo-ajuda">Conecte o Melhor Envio em <a class="link" href="{% url 'gestao:integracoes' %}">Integrações</a> para cotar o frete aqui antes de cobrar.</p>
+            {% endif %}
+          </div>
         </section>
       </div>
 

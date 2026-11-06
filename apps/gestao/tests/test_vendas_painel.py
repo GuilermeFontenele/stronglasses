@@ -276,3 +276,34 @@ class LgpdVendasTests(BaseVendasPainel):
         venda.refresh_from_db()
         self.assertEqual((venda.logradouro, venda.cep, venda.destinatario), ("", "", ""))
         self.assertEqual((venda.cidade, venda.uf, venda.total), ("Fortaleza", "CE", Decimal("81.60")))
+
+
+class MascarasTests(BaseVendasPainel):
+    def test_whatsapp_e_cpf_com_mascara(self):
+        self.entrar()
+        self.client.post(
+            "/gestao/clientes/novo/",
+            {"tipo": "PF", "nome": "Ana", "whatsapp": "+55 (85) 98888-7777", "documento": "111.444.777-35"},
+        )
+        ana = Cliente.objects.get(nome="Ana")
+        self.assertEqual((ana.whatsapp, ana.documento), ("+5585988887777", "11144477735"))
+        self.client.post("/gestao/clientes/novo/", {"tipo": "PF", "nome": "Bia", "whatsapp": "(85) 97777-6666"})
+        self.assertEqual(Cliente.objects.get(nome="Bia").whatsapp, "+5585977776666")
+
+    def test_lista_so_tem_oculos_com_estoque(self):
+        self.entrar()
+        self.variacao.estoque = 0
+        self.variacao.save()
+        resposta = self.client.get("/gestao/vendas/nova/")
+        self.assertNotContains(resposta, f'value="{self.variacao.pk}"')
+
+    def test_configuracoes_guardam_so_digitos_no_whatsapp(self):
+        from apps.gestao.forms import ConfiguracoesForm
+
+        form = ConfiguracoesForm()
+        dados = {nome: (campo.initial if campo.initial is not None else "") for nome, campo in form.fields.items()}
+        dados = {k: ("on" if v is True else v) for k, v in dados.items() if v is not False}
+        dados["WHATSAPP_LOJA"] = "+55 (85) 98180-9988"
+        self.entrar()
+        self.client.post("/gestao/configuracoes/", dados)
+        self.assertEqual(Parametro.objects.get(chave="WHATSAPP_LOJA").valor, "5585981809988")
