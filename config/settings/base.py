@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "apps.clientes",
     "apps.catalogo",
     "apps.carrinho",
+    "apps.gestao",
     "apps.historico",
     "apps.nuvemshop",
 ]
@@ -127,6 +128,9 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # URL do painel administrativo vem do ambiente, para não ficar no padrão /admin/.
 ADMIN_URL = env_str("DJANGO_ADMIN_URL", "painel/").strip("/") + "/"
+# Painel de gestão da loja (o admin acima fica como bastidor técnico).
+GESTAO_URL = env_str("DJANGO_GESTAO_URL", "gestao/").strip("/") + "/"
+LOGIN_URL = "gestao:entrar"
 
 # ---------------------------------------------------------------------------
 # Sessão, cookies e cabeçalhos de segurança

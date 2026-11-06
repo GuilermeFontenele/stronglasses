@@ -1,0 +1,109 @@
+{% extends "gestao/base.html" %}
+{% load gestao paginas %}
+{% block titulo %}{{ cliente.nome }}{% endblock %}
+{% block conteudo %}
+  <a class="voltar" href="{% url 'gestao:clientes' %}">{% icone "voltar" %} Clientes</a>
+  <div class="cabecalho">
+    <div class="pessoa pessoa-grande">
+      <span class="avatar" aria-hidden="true">{{ cliente.nome|slice:":1"|upper }}</span>
+      <div><h1>{{ cliente.nome }}</h1><p class="subtitulo">{{ cliente.get_tipo_display }}{% if cliente.anonimizado_em %} · <span class="selo selo-neutro">Anonimizado em {{ cliente.anonimizado_em|date:"d/m/Y" }}</span>{% endif %}</p></div>
+    </div>
+    {% if cliente.whatsapp %}<a class="botao botao-whatsapp" href="https://wa.me/{{ cliente.whatsapp }}" target="_blank" rel="noopener">{% icone "whatsapp" %} Chamar no WhatsApp</a>{% endif %}
+  </div>
+
+  <section class="cartoes cartoes-3">
+    <article class="cartao-numero"><p>Total gasto</p><strong>{{ total_gasto|brl }}</strong></article>
+    <article class="cartao-numero"><p>Pedidos pagos</p><strong>{{ n_pagos }}</strong></article>
+    <article class="cartao-numero"><p>Ticket médio</p><strong>{% if ticket %}{{ ticket|brl }}{% else %}—{% endif %}</strong></article>
+  </section>
+
+  <div class="duas-colunas">
+    <div class="coluna-principal">
+      <section class="bloco">
+        <div class="bloco-topo"><h2>Pedidos</h2></div>
+        <div class="tabela-rolagem">
+          <table class="tabela">
+            <thead><tr><th>Pedido</th><th>Data</th><th>Itens</th><th>Situação</th><th class="num">Total</th></tr></thead>
+            <tbody>
+              {% for p in pedidos %}
+                <tr>
+                  <td><a href="{% url 'gestao:pedido' p.pk %}">#{{ p.numero }}</a></td>
+                  <td>{{ p.realizado_em|date:"d/m/Y" }}</td>
+                  <td class="texto-suave">{% for item in p.itens.all %}{{ item.quantidade }}× {{ item.nome }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+                  <td><span class="selo selo-{{ p.situacao.tom }}">{{ p.situacao.rotulo }}</span></td>
+                  <td class="num">{{ p.total|brl }}</td>
+                </tr>
+              {% empty %}<tr><td colspan="5" class="vazio">Nenhum pedido.</td></tr>{% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="bloco">
+        <h2>Endereços</h2>
+        {% for e in enderecos %}
+          <address class="endereco">
+            {% if e.padrao %}<span class="selo selo-ok">Padrão</span>{% endif %}
+            {% if e.destinatario %}<b>{{ e.destinatario }}</b><br>{% endif %}
+            {{ e.logradouro }}{% if e.numero %}, {{ e.numero }}{% endif %}{% if e.complemento %} — {{ e.complemento }}{% endif %}<br>
+            {% if e.bairro %}{{ e.bairro }} · {% endif %}{{ e.cidade }}/{{ e.uf }} · CEP {{ e.cep|slice:":5" }}-{{ e.cep|slice:"5:" }}
+          </address>
+        {% empty %}<p class="vazio">Nenhum endereço salvo.</p>{% endfor %}
+      </section>
+    </div>
+
+    <div class="coluna-lateral">
+      <section class="bloco">
+        <h2>Dados</h2>
+        {% if pode_editar and not cliente.anonimizado_em %}
+          <form method="post" class="formulario">
+            {% csrf_token %}
+            {% for campo in form %}{% include "gestao/partials/campo.html" %}{% endfor %}
+            <button class="botao botao-primario botao-largo" type="submit">Salvar dados</button>
+          </form>
+        {% else %}
+          <dl class="dados">
+            <dt>E-mail</dt><dd>{{ cliente.email|default:"—" }}</dd>
+            <dt>WhatsApp</dt><dd>{{ cliente.whatsapp|telefone|default:"—" }}</dd>
+          </dl>
+        {% endif %}
+        <dl class="dados">
+          <dt>CPF/CNPJ</dt>
+          <dd>
+            {% if documento %}<b>{{ documento }}</b> <small class="texto-suave">(acesso registrado)</small>
+            {% elif cliente.documento %}{{ cliente.documento_mascarado }}
+              {% if pode_editar %}<form method="post" action="{% url 'gestao:cliente_documento' cliente.pk %}" class="em-linha">{% csrf_token %}<button class="link-botao" type="submit">{% icone "olho" "icone icone-mini" %} Mostrar</button></form>{% endif %}
+            {% else %}—{% endif %}
+          </dd>
+          <dt>Cliente desde</dt><dd>{{ cliente.criado_em|date:"d/m/Y" }}</dd>
+        </dl>
+      </section>
+
+      <section class="bloco">
+        <h2>Consentimentos</h2>
+        {% for c in consentimentos %}
+          <p class="consentimento"><span class="selo {% if c.ativo %}selo-ok{% else %}selo-neutro{% endif %}">{{ c.get_finalidade_display }}</span> <small class="texto-suave">{{ c.get_origem_display }} · {{ c.registrado_em|date:"d/m/Y" }}{% if c.revogado_em %} · revogado {{ c.revogado_em|date:"d/m/Y" }}{% endif %}</small></p>
+        {% empty %}<p class="vazio">Nenhum registrado.</p>{% endfor %}
+      </section>
+
+      {% if pode_editar %}
+        <section class="bloco bloco-lgpd">
+          <h2>LGPD</h2>
+          <p class="campo-ajuda">Pedido do titular: entregue uma cópia dos dados ou apague o que o identifica.</p>
+          <form method="post" action="{% url 'gestao:cliente_exportar' cliente.pk %}">{% csrf_token %}<button class="botao botao-largo" type="submit">{% icone "baixar" %} Exportar dados (JSON)</button></form>
+          {% if perms.clientes.delete_cliente and not cliente.anonimizado_em %}
+            <details class="perigo">
+              <summary>Anonimizar cliente</summary>
+              <form method="post" action="{% url 'gestao:cliente_anonimizar' cliente.pk %}" class="formulario">
+                {% csrf_token %}
+                <p class="campo-ajuda">Apaga nome, contatos, documento e endereços. O histórico de vendas fica, sem identificação. <b>Não dá para desfazer.</b></p>
+                <label class="campo"><span class="campo-rotulo">Digite ANONIMIZAR</span><input name="confirmacao" autocomplete="off" required></label>
+                <button class="botao botao-perigo botao-largo" type="submit">Anonimizar</button>
+              </form>
+            </details>
+          {% endif %}
+        </section>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

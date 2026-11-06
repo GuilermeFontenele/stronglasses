@@ -1,0 +1,44 @@
+{% extends "gestao/base.html" %}
+{% load gestao %}
+{% block titulo %}Pedidos{% endblock %}
+{% block conteudo %}
+  <div class="cabecalho">
+    <div><h1>Pedidos</h1><p class="subtitulo">Histórico importado da Nuvemshop · os pedidos do site novo aparecem aqui quando o checkout entrar</p></div>
+  </div>
+  <form class="filtros" method="get" data-filtros>
+    <label class="filtro-busca">{% icone "busca" %}<span class="oculto">Buscar</span><input type="search" name="q" value="{{ termo }}" placeholder="Nº do pedido, cliente ou cupom"></label>
+    <label><span class="oculto">Situação</span><select name="situacao">
+      <option value="">Todas as situações</option>
+      <option value="pagos"{% if situacao == "pagos" %} selected{% endif %}>Pagos</option>
+      <option value="pendentes"{% if situacao == "pendentes" %} selected{% endif %}>Pendentes</option>
+      <option value="cancelados"{% if situacao == "cancelados" %} selected{% endif %}>Cancelados/reembolsados</option>
+    </select></label>
+    <label><span class="oculto">Período</span><select name="periodo">
+      <option value="">Qualquer data</option>
+      {% for chave, info in periodos.items %}{% if chave != "tudo" %}<option value="{{ chave }}"{% if periodo == chave %} selected{% endif %}>{{ info.0 }}</option>{% endif %}{% endfor %}
+    </select></label>
+    <label class="filtro-check"><input type="checkbox" name="cupom" value="1"{% if cupom == "1" %} checked{% endif %}> Com cupom</label>
+    <button class="botao" type="submit" data-sem-js>Filtrar</button>
+  </form>
+  <p class="resumo-lista">{{ pagina.paginator.count }} pedido{{ pagina.paginator.count|pluralize }} · <b>{{ soma_pagos|brl }}</b> em pedidos pagos</p>
+  <div class="tabela-rolagem">
+    <table class="tabela">
+      <thead><tr><th>Pedido</th><th>Data</th><th>Cliente</th><th class="num">Itens</th><th>Pagamento</th><th>Envio</th><th>Cupom</th><th class="num">Total</th></tr></thead>
+      <tbody>
+        {% for p in pagina %}
+          <tr>
+            <td><a href="{% url 'gestao:pedido' p.pk %}"><b>#{{ p.numero }}</b></a></td>
+            <td>{{ p.realizado_em|date:"d/m/Y H:i" }}</td>
+            <td>{% if p.cliente %}<a href="{% url 'gestao:cliente' p.cliente_id %}">{{ p.cliente.nome }}</a>{% else %}—{% endif %}</td>
+            <td class="num">{{ p.n_itens|default:0 }}</td>
+            <td><span class="selo selo-{{ p.situacao.tom }}">{{ p.situacao.rotulo }}</span></td>
+            <td class="texto-suave">{{ p.envio }}</td>
+            <td>{% if p.cupom %}<span class="etiqueta">{{ p.cupom }}</span>{% endif %}</td>
+            <td class="num"><b>{{ p.total|brl }}</b></td>
+          </tr>
+        {% empty %}<tr><td colspan="8" class="vazio">Nenhum pedido encontrado.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "gestao/partials/paginacao.html" %}
+{% endblock %}

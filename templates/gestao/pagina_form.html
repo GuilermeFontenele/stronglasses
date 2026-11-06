@@ -1,0 +1,32 @@
+{% extends "gestao/base.html" %}
+{% load gestao %}
+{% block titulo %}{% if pagina.pk %}{{ pagina.titulo }}{% else %}Nova página{% endif %}{% endblock %}
+{% block conteudo %}
+  <a class="voltar" href="{% url 'gestao:paginas' %}">{% icone "voltar" %} Páginas</a>
+  <form method="post" class="formulario" novalidate>
+    {% csrf_token %}
+    <div class="cabecalho">
+      <h1>{% if pagina.pk %}{{ pagina.titulo }}{% else %}Nova página{% endif %}</h1>
+      <div class="acoes">
+        {% if pagina.pk %}<a class="botao" href="{{ pagina.get_absolute_url }}" target="_blank" rel="noopener">Ver na loja</a>{% endif %}
+        {% if pode_editar %}<button class="botao botao-primario" type="submit">Salvar</button>{% endif %}
+      </div>
+    </div>
+    <div class="duas-colunas">
+      <div class="coluna-principal">
+        <section class="bloco">
+          {% include "gestao/partials/campo.html" with campo=form.titulo largo=1 %}
+          {% include "gestao/partials/campo.html" with campo=form.conteudo largo=1 %}
+        </section>
+      </div>
+      <div class="coluna-lateral">
+        <section class="bloco">
+          <h2>Publicação</h2>
+          {% include "gestao/partials/campo.html" with campo=form.publicada %}
+          {% include "gestao/partials/campo.html" with campo=form.slug %}
+          {% include "gestao/partials/campo.html" with campo=form.seo_descricao %}
+        </section>
+      </div>
+    </div>
+  </form>
+{% endblock %}

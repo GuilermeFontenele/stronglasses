@@ -1,0 +1,17 @@
+{% load gestao %}<nav class="menu-gestao" aria-label="Painel">
+  <a href="{% url 'gestao:dashboard' %}"{% if secao == "dashboard" %} aria-current="page"{% endif %}>{% icone "painel" %}<span>Dashboard</span></a>
+  <p class="menu-grupo">Vendas</p>
+  <a href="{% url 'gestao:pedidos' %}"{% if secao == "pedidos" %} aria-current="page"{% endif %}>{% icone "pedidos" %}<span>Pedidos</span></a>
+  <a href="{% url 'gestao:clientes' %}"{% if secao == "clientes" %} aria-current="page"{% endif %}>{% icone "clientes" %}<span>Clientes</span></a>
+  <p class="menu-grupo">Catálogo</p>
+  <a href="{% url 'gestao:produtos' %}"{% if secao == "produtos" %} aria-current="page"{% endif %}>{% icone "produtos" %}<span>Produtos</span></a>
+  <a href="{% url 'gestao:estoque' %}"{% if secao == "estoque" %} aria-current="page"{% endif %}>{% icone "estoque" %}<span>Estoque</span></a>
+  <p class="menu-grupo">Loja</p>
+  <a href="{% url 'gestao:banners' %}"{% if secao == "banners" %} aria-current="page"{% endif %}>{% icone "banners" %}<span>Banners</span></a>
+  <a href="{% url 'gestao:paginas' %}"{% if secao == "paginas" %} aria-current="page"{% endif %}>{% icone "paginas" %}<span>Páginas</span></a>
+  <a href="{% url 'gestao:configuracoes' %}"{% if secao == "configuracoes" %} aria-current="page"{% endif %}>{% icone "configuracoes" %}<span>Configurações</span></a>
+  <div class="menu-rodape">
+    <a href="/" target="_blank" rel="noopener">{% icone "loja" %}<span>Ver a loja</span></a>
+    {% if user.is_superuser %}<a href="{% url 'admin:index' %}">{% icone "configuracoes" %}<span>Admin técnico</span></a>{% endif %}
+  </div>
+</nav>

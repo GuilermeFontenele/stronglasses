@@ -1,0 +1,85 @@
+{% extends "gestao/base.html" %}
+{% load gestao %}
+{% block titulo %}Produtos{% endblock %}
+{% block conteudo %}
+  <div class="cabecalho">
+    <div><h1>Produtos</h1><p class="subtitulo">{{ total }} cadastrados</p></div>
+    {% if perms.catalogo.add_produto %}<a class="botao botao-primario" href="{% url 'gestao:produto_novo' %}">{% icone "mais" %} Novo produto</a>{% endif %}
+  </div>
+
+  <form class="filtros" method="get" data-filtros>
+    <label class="filtro-busca">{% icone "busca" %}<span class="oculto">Buscar</span><input type="search" name="q" value="{{ termo }}" placeholder="Nome, SKU ou endereço"></label>
+    <label><span class="oculto">Situação</span><select name="status">
+      <option value="">Todos</option>
+      <option value="publicados"{% if filtros.status == "publicados" %} selected{% endif %}>Publicados</option>
+      <option value="rascunhos"{% if filtros.status == "rascunhos" %} selected{% endif %}>Rascunhos</option>
+    </select></label>
+    <label><span class="oculto">Categoria</span><select name="categoria">
+      <option value="">Todas as categorias</option>
+      {% for c in categorias %}<option value="{{ c.pk }}"{% if filtros.categoria == c.pk|stringformat:"s" %} selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select></label>
+    <label><span class="oculto">Estoque</span><select name="estoque">
+      <option value="">Qualquer estoque</option>
+      <option value="baixo"{% if filtros.estoque == "baixo" %} selected{% endif %}>Estoque baixo (1–2)</option>
+      <option value="zerado"{% if filtros.estoque == "zerado" %} selected{% endif %}>Sem estoque</option>
+    </select></label>
+    <label><span class="oculto">Pendências</span><select name="pendencia">
+      <option value="">Sem filtro de cadastro</option>
+      <option value="sem-foto"{% if filtros.pendencia == "sem-foto" %} selected{% endif %}>Sem foto</option>
+      <option value="sem-categoria"{% if filtros.pendencia == "sem-categoria" %} selected{% endif %}>Sem categoria</option>
+    </select></label>
+    <label><span class="oculto">Ordenar</span><select name="ordem">
+      <option value="">Nome (A–Z)</option>
+      <option value="preco"{% if ordem == "preco" %} selected{% endif %}>Menor preço</option>
+      <option value="-preco"{% if ordem == "-preco" %} selected{% endif %}>Maior preço</option>
+      <option value="estoque"{% if ordem == "estoque" %} selected{% endif %}>Menor estoque</option>
+      <option value="-estoque"{% if ordem == "-estoque" %} selected{% endif %}>Maior estoque</option>
+    </select></label>
+    <button class="botao" type="submit" data-sem-js>Filtrar</button>
+  </form>
+
+  <form method="post" data-acoes-em-massa>
+    {% csrf_token %}
+    <div class="acoes-em-massa">
+      <span data-contagem-selecao>Selecione produtos para agir em lote</span>
+      <select name="acao" aria-label="Ação em lote">
+        <option value="">Ação…</option>
+        <option value="publicar">Publicar</option>
+        <option value="despublicar">Tirar do ar</option>
+        <option value="destacar">Destacar na home</option>
+        <option value="tirar-destaque">Tirar destaque</option>
+      </select>
+      <button class="botao" type="submit">Aplicar</button>
+    </div>
+    <div class="tabela-rolagem">
+      <table class="tabela tabela-produtos">
+        <thead>
+          <tr>
+            <th class="col-check"><input type="checkbox" data-selecionar-todos aria-label="Selecionar todos"></th>
+            <th>Produto</th><th>Categorias</th><th class="num">Preço</th><th class="num">Estoque</th><th>Situação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in pagina %}
+            <tr>
+              <td class="col-check"><input type="checkbox" name="selecionados" value="{{ p.pk }}" aria-label="Selecionar {{ p.nome }}"></td>
+              <td>
+                <a class="produto-celula" href="{% url 'gestao:produto' p.pk %}">
+                  {% with f=p.fotos|first %}{% if f %}<img src="{{ f.imagem.url }}" alt="" width="48" height="48" loading="lazy">{% else %}<span class="sem-imagem">{% icone "banners" %}</span>{% endif %}{% endwith %}
+                  <span><b>{{ p.nome }}</b><small>{{ p.n_variacoes }} cor{{ p.n_variacoes|pluralize:"es" }}{% if p.destaque %} · {% icone "estrela" "icone icone-mini" %} destaque{% endif %}</small></span>
+                </a>
+              </td>
+              <td class="col-categorias">{% for c in p.categorias.all %}<span class="etiqueta">{{ c.nome }}</span>{% empty %}<span class="texto-suave">—</span>{% endfor %}</td>
+              <td class="num">{{ p.preco|brl }}{% if p.preco_comparativo %}<br><s class="texto-suave">{{ p.preco_comparativo|brl }}</s>{% endif %}</td>
+              <td class="num"><span class="selo {% if not p.estoque_total %}selo-erro{% elif p.estoque_total <= 2 %}selo-aviso{% else %}selo-neutro{% endif %}">{{ p.estoque_total|default:0 }}</span></td>
+              <td>{% if p.ativo %}<span class="selo selo-ok">Publicado</span>{% else %}<span class="selo selo-neutro">Rascunho</span>{% endif %}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="vazio">Nenhum produto encontrado com esses filtros.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </form>
+  {% include "gestao/partials/paginacao.html" %}
+{% endblock %}

@@ -1,0 +1,11 @@
+{# Campo de formulário: rótulo, widget, ajuda e erros. Uso: include com campo=form.x #}
+<div class="campo{% if campo.errors %} campo-erro{% endif %}{% if campo.field.widget.input_type == 'checkbox' %} campo-checkbox{% endif %}{% if largo %} campo-largo{% endif %}">
+  {% if campo.field.widget.input_type == "checkbox" and not campo.field.widget.allow_multiple_selected %}
+    <label>{{ campo }} <span>{{ campo.label }}</span></label>
+  {% else %}
+    <label class="campo-rotulo" for="{{ campo.id_for_label }}">{{ campo.label }}{% if campo.field.required %} <abbr title="obrigatório">*</abbr>{% endif %}</label>
+    {{ campo }}
+  {% endif %}
+  {% if campo.help_text %}<small class="campo-ajuda">{{ campo.help_text|safe }}</small>{% endif %}
+  {% for erro in campo.errors %}<small class="campo-mensagem">{{ erro }}</small>{% endfor %}
+</div>

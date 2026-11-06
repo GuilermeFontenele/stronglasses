@@ -1,0 +1,54 @@
+{% extends "gestao/base.html" %}
+{% load gestao %}
+{% block titulo %}{% if banner.pk %}{{ banner.titulo }}{% else %}Novo banner{% endif %}{% endblock %}
+{% block conteudo %}
+  <a class="voltar" href="{% url 'gestao:banners' %}">{% icone "voltar" %} Banners</a>
+  <form method="post" enctype="multipart/form-data" class="formulario" novalidate>
+    {% csrf_token %}
+    <div class="cabecalho">
+      <h1>{% if banner.pk %}Editar banner{% else %}Novo banner{% endif %}</h1>
+      {% if pode_editar %}<button class="botao botao-primario" type="submit">Salvar</button>{% endif %}
+    </div>
+    {% if form.non_field_errors %}<div class="mensagem mensagem-error">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="duas-colunas">
+      <div class="coluna-principal">
+        <section class="bloco">
+          <h2>Imagens</h2>
+          <div class="previas-banner">
+            <figure>{% if banner.imagem %}<img src="{{ banner.imagem.url }}" alt="" width="480" height="200">{% else %}<span class="sem-imagem sem-imagem-larga">{% icone "banners" %}</span>{% endif %}<figcaption>Computador</figcaption></figure>
+            <figure class="previa-celular">{% if banner.imagem_mobile %}<img src="{{ banner.imagem_mobile.url }}" alt="" width="160" height="200">{% else %}<span class="sem-imagem">{% icone "banners" %}</span>{% endif %}<figcaption>Celular</figcaption></figure>
+          </div>
+          <div class="campos">
+            {% include "gestao/partials/campo.html" with campo=form.titulo largo=1 %}
+            {% include "gestao/partials/campo.html" with campo=form.imagem %}
+            {% include "gestao/partials/campo.html" with campo=form.imagem_mobile %}
+          </div>
+        </section>
+        <section class="bloco">
+          <h2>Vídeo (opcional)</h2>
+          <div class="campos">
+            {% include "gestao/partials/campo.html" with campo=form.video %}
+            {% include "gestao/partials/campo.html" with campo=form.video_mobile %}
+          </div>
+        </section>
+      </div>
+      <div class="coluna-lateral">
+        <section class="bloco">
+          <h2>Exibição</h2>
+          {% include "gestao/partials/campo.html" with campo=form.ativo %}
+          {% include "gestao/partials/campo.html" with campo=form.link %}
+          {% include "gestao/partials/campo.html" with campo=form.ordem %}
+          {% include "gestao/partials/campo.html" with campo=form.inicio %}
+          {% include "gestao/partials/campo.html" with campo=form.fim %}
+        </section>
+        {% if banner.pk and perms.catalogo.delete_banner %}
+          <details class="perigo bloco">
+            <summary>Excluir banner</summary>
+            <p class="campo-ajuda">Prefira desligar o banner se for usar de novo.</p>
+            <button class="botao botao-perigo botao-largo" type="submit" name="excluir" value="1" formnovalidate>Excluir de vez</button>
+          </details>
+        {% endif %}
+      </div>
+    </div>
+  </form>
+{% endblock %}

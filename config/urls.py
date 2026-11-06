@@ -14,6 +14,7 @@ admin.site.index_title = "Administração da loja"
 
 urlpatterns = [
     path(settings.ADMIN_URL, admin.site.urls),
+    path(settings.GESTAO_URL, include("apps.gestao.urls")),
     path("", include("apps.core.urls")),
     path("sitemap.xml", sitemap, {"sitemaps": SITEMAPS}, name="sitemap"),
     path("robots.txt", robots_txt, name="robots"),

@@ -1,0 +1,123 @@
+{% extends "gestao/base.html" %}
+{% load gestao catalogo %}
+{% block titulo %}{% if produto.pk %}{{ produto.nome }}{% else %}Novo produto{% endif %}{% endblock %}
+{% block conteudo %}
+  <a class="voltar" href="{% url 'gestao:produtos' %}">{% icone "voltar" %} Produtos</a>
+  <form method="post" enctype="multipart/form-data" class="formulario" novalidate>
+    {% csrf_token %}
+    <div class="cabecalho cabecalho-fixo">
+      <div>
+        <h1>{% if produto.pk %}{{ produto.nome }}{% else %}Novo produto{% endif %}</h1>
+        {% if produto.pk %}<p class="subtitulo">{% if produto.ativo %}<span class="selo selo-ok">Publicado</span> <a class="link" href="{{ produto.get_absolute_url }}" target="_blank" rel="noopener">Ver na loja {% icone "seta" %}</a>{% else %}<span class="selo selo-neutro">Rascunho</span>{% endif %}</p>{% endif %}
+      </div>
+      {% if pode_editar %}
+        <div class="acoes">
+          <button class="botao" type="submit" name="continuar">Salvar e continuar</button>
+          <button class="botao botao-primario" type="submit">Salvar</button>
+        </div>
+      {% endif %}
+    </div>
+    {% if form.non_field_errors %}<div class="mensagem mensagem-error">{{ form.non_field_errors }}</div>{% endif %}
+
+    <div class="duas-colunas">
+      <div class="coluna-principal">
+        <section class="bloco">
+          <h2>Informações</h2>
+          <div class="campos">
+            {% include "gestao/partials/campo.html" with campo=form.nome largo=1 %}
+            {% include "gestao/partials/campo.html" with campo=form.slug largo=1 %}
+            {% include "gestao/partials/campo.html" with campo=form.tipo %}
+            {% include "gestao/partials/campo.html" with campo=form.publico %}
+            {% include "gestao/partials/campo.html" with campo=form.formato %}
+            {% include "gestao/partials/campo.html" with campo=form.descricao largo=1 %}
+          </div>
+        </section>
+
+        <section class="bloco">
+          <div class="bloco-topo"><h2>Cores e estoque</h2><span class="dica">Cada linha é uma combinação armação + lente</span></div>
+          {{ variacoes.management_form }}
+          {% if variacoes.non_form_errors %}<div class="mensagem mensagem-error">{{ variacoes.non_form_errors }}</div>{% endif %}
+          <div class="tabela-rolagem">
+            <table class="tabela tabela-form">
+              <thead><tr><th></th><th>Armação</th><th>Lente</th><th>SKU</th><th class="num">Preço próprio</th><th class="num">Estoque</th><th>Ativa</th><th class="num">Ordem</th><th>Excluir</th></tr></thead>
+              <tbody>
+                {% for f in variacoes %}
+                  <tr{% if f.errors %} class="linha-erro"{% endif %}>
+                    <td>{{ f.id }}{% if f.instance.pk %}{% swatch f.instance %}{% endif %}</td>
+                    <td>{{ f.armacao }}{{ f.armacao.errors }}</td>
+                    <td>{{ f.lente }}{{ f.lente.errors }}</td>
+                    <td>{{ f.sku }}{{ f.sku.errors }}</td>
+                    <td class="num">{{ f.preco }}{{ f.preco.errors }}</td>
+                    <td class="num">{{ f.estoque }}{{ f.estoque.errors }}</td>
+                    <td>{{ f.ativa }}</td>
+                    <td class="num">{{ f.ordem }}</td>
+                    <td>{% if f.instance.pk %}{{ f.DELETE }}{% endif %}</td>
+                  </tr>
+                  {% if f.non_field_errors %}<tr><td colspan="9" class="campo-mensagem">{{ f.non_field_errors }}</td></tr>{% endif %}
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <p class="campo-ajuda">A última linha em branco serve para cadastrar uma cor nova. Salve para aparecer outra.</p>
+        </section>
+
+        <section class="bloco">
+          <div class="bloco-topo"><h2>Fotos</h2><span class="dica">A de menor ordem é a capa</span></div>
+          {{ imagens.management_form }}
+          {% if imagens.forms %}
+            <div class="fotos">
+              {% for f in imagens %}
+                <div class="foto-cartao">
+                  {{ f.id }}
+                  <img src="{{ f.instance.imagem.url }}" alt="" width="160" height="160" loading="lazy">
+                  {% include "gestao/partials/campo.html" with campo=f.texto_alternativo %}
+                  <div class="foto-linha">
+                    {% include "gestao/partials/campo.html" with campo=f.ordem %}
+                    {% include "gestao/partials/campo.html" with campo=f.variacao %}
+                  </div>
+                  <label class="excluir">{{ f.DELETE }} Excluir foto</label>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}<p class="vazio">Nenhuma foto ainda.</p>{% endif %}
+          <div class="upload" data-upload>
+            {% include "gestao/partials/campo.html" with campo=form.novas_fotos largo=1 %}
+            <div class="upload-previa" data-previa></div>
+          </div>
+        </section>
+      </div>
+
+      <div class="coluna-lateral">
+        <section class="bloco">
+          <h2>Publicação</h2>
+          {% include "gestao/partials/campo.html" with campo=form.ativo %}
+          {% include "gestao/partials/campo.html" with campo=form.destaque %}
+        </section>
+        <section class="bloco">
+          <h2>Preço</h2>
+          {% include "gestao/partials/campo.html" with campo=form.preco %}
+          {% include "gestao/partials/campo.html" with campo=form.preco_comparativo %}
+        </section>
+        <section class="bloco">
+          <h2>Categorias</h2>
+          <div class="lista-marcar">{{ form.categorias }}</div>
+          {{ form.categorias.errors }}
+        </section>
+        <section class="bloco">
+          <h2>Envio</h2>
+          <div class="campos campos-2">
+            {% include "gestao/partials/campo.html" with campo=form.peso_g %}
+            {% include "gestao/partials/campo.html" with campo=form.altura_cm %}
+            {% include "gestao/partials/campo.html" with campo=form.largura_cm %}
+            {% include "gestao/partials/campo.html" with campo=form.comprimento_cm %}
+          </div>
+        </section>
+        <section class="bloco">
+          <h2>Google</h2>
+          {% include "gestao/partials/campo.html" with campo=form.seo_titulo %}
+          {% include "gestao/partials/campo.html" with campo=form.seo_descricao %}
+        </section>
+      </div>
+    </div>
+  </form>
+{% endblock %}

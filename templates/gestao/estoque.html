@@ -1,0 +1,42 @@
+{% extends "gestao/base.html" %}
+{% load gestao catalogo %}
+{% block titulo %}Estoque{% endblock %}
+{% block conteudo %}
+  <div class="cabecalho">
+    <div><h1>Estoque</h1><p class="subtitulo">Ajuste quantidades e preços de várias cores de uma vez</p></div>
+  </div>
+  <form class="filtros" method="get" data-filtros>
+    <label class="filtro-busca">{% icone "busca" %}<span class="oculto">Buscar</span><input type="search" name="q" value="{{ termo }}" placeholder="Produto ou SKU"></label>
+    <label><span class="oculto">Filtro</span><select name="filtro">
+      <option value="">Todas as cores</option>
+      <option value="baixo"{% if filtro == "baixo" %} selected{% endif %}>Estoque baixo (≤1)</option>
+      <option value="publicados"{% if filtro == "publicados" %} selected{% endif %}>Só publicados</option>
+    </select></label>
+    <button class="botao" type="submit" data-sem-js>Filtrar</button>
+  </form>
+
+  <form method="post">
+    {% csrf_token %}
+    {{ formset.management_form }}
+    <div class="tabela-rolagem">
+      <table class="tabela tabela-form">
+        <thead><tr><th>Produto</th><th>Cor</th><th>SKU</th><th class="num">Preço próprio</th><th class="num">Estoque</th></tr></thead>
+        <tbody>
+          {% for v, f in linhas %}
+            <tr{% if f.errors %} class="linha-erro"{% endif %}>
+              <td><a href="{% url 'gestao:produto' v.produto_id %}">{{ v.produto.nome }}</a>{% if not v.produto.ativo %} <span class="selo selo-neutro">Rascunho</span>{% endif %}</td>
+              <td><span class="cor-celula">{% swatch v %}{{ v.descricao_cor }}</span></td>
+              <td class="texto-suave">{{ v.sku }}</td>
+              <td class="num">{{ f.id }}{{ f.preco }}{{ f.preco.errors }}</td>
+              <td class="num">{{ f.estoque }}{{ f.estoque.errors }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="vazio">Nada encontrado.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if linhas %}<div class="barra-salvar"><span class="texto-suave">Só as linhas alteradas são gravadas.</span><button class="botao botao-primario" type="submit">Salvar estoque</button></div>{% endif %}
+  </form>
+  {% include "gestao/partials/paginacao.html" %}
+{% endblock %}

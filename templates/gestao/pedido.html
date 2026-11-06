@@ -1,0 +1,62 @@
+{% extends "gestao/base.html" %}
+{% load gestao %}
+{% block titulo %}Pedido #{{ pedido.numero }}{% endblock %}
+{% block conteudo %}
+  <a class="voltar" href="{% url 'gestao:pedidos' %}">{% icone "voltar" %} Pedidos</a>
+  <div class="cabecalho">
+    <div>
+      <h1>Pedido #{{ pedido.numero }}</h1>
+      <p class="subtitulo">{{ pedido.realizado_em|date:"d/m/Y \à\s H:i" }} · <span class="selo selo-{{ pedido.situacao.tom }}">{{ pedido.situacao.rotulo }}</span> · Envio: {{ pedido.envio }}</p>
+    </div>
+  </div>
+  <div class="duas-colunas">
+    <div class="coluna-principal">
+      <section class="bloco">
+        <h2>Itens</h2>
+        <div class="tabela-rolagem">
+          <table class="tabela">
+            <thead><tr><th>Produto</th><th>Cor</th><th>SKU</th><th class="num">Qtd.</th><th class="num">Unitário</th><th class="num">Subtotal</th></tr></thead>
+            <tbody>
+              {% for item in itens %}
+                <tr>
+                  <td>{% if item.produto %}<a href="{% url 'gestao:produto' item.produto_id %}">{{ item.nome }}</a>{% else %}{{ item.nome }}{% endif %}</td>
+                  <td class="texto-suave">{{ item.variante|default:"—" }}</td>
+                  <td class="texto-suave">{{ item.sku|default:"—" }}</td>
+                  <td class="num">{{ item.quantidade }}</td>
+                  <td class="num">{{ item.preco_unitario|brl }}</td>
+                  <td class="num">{{ item.subtotal|brl }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <dl class="totais">
+          <div><dt>Subtotal</dt><dd>{{ pedido.subtotal|brl }}</dd></div>
+          {% if pedido.desconto %}<div><dt>Desconto{% if pedido.cupom %} (cupom {{ pedido.cupom }}){% endif %}</dt><dd>− {{ pedido.desconto|brl }}</dd></div>{% endif %}
+          <div><dt>Frete</dt><dd>{% if pedido.frete is not None %}{{ pedido.frete|brl }}{% else %}—{% endif %}</dd></div>
+          <div class="total"><dt>Total</dt><dd>{{ pedido.total|brl }}</dd></div>
+        </dl>
+      </section>
+    </div>
+    <div class="coluna-lateral">
+      <section class="bloco">
+        <h2>Cliente</h2>
+        {% if pedido.cliente %}
+          <a class="pessoa" href="{% url 'gestao:cliente' pedido.cliente_id %}"><span class="avatar" aria-hidden="true">{{ pedido.cliente.nome|slice:":1"|upper }}</span><b>{{ pedido.cliente.nome }}</b></a>
+        {% else %}<p class="vazio">Sem cliente vinculado.</p>{% endif %}
+        <dl class="dados">
+          <dt>Destino</dt><dd>{{ pedido.cidade|default:"—" }}{% if pedido.uf %}/{{ pedido.uf }}{% endif %}</dd>
+        </dl>
+      </section>
+      <section class="bloco">
+        <h2>Pagamento</h2>
+        <dl class="dados">
+          <dt>Forma</dt><dd>{{ pedido.forma_pagamento|default:"—" }}</dd>
+          <dt>Pago em</dt><dd>{{ pedido.pago_em|date:"d/m/Y H:i"|default:"—" }}</dd>
+          <dt>Canal</dt><dd>{{ pedido.canal|default:"—" }}</dd>
+          {% if pedido.cancelado_em %}<dt>Cancelado em</dt><dd>{{ pedido.cancelado_em|date:"d/m/Y" }}</dd>{% endif %}
+        </dl>
+      </section>
+    </div>
+  </div>
+{% endblock %}

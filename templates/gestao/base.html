@@ -1,0 +1,49 @@
+{% load static gestao %}<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{% block titulo %}Painel{% endblock %} · Strong Glasses</title>
+  <link rel="icon" href="{% static 'favicon.ico' %}" sizes="any">
+  <link rel="stylesheet" href="{% static 'gestao/gestao.css' %}">
+</head>
+<body class="gestao">
+  <aside class="lateral">
+    <a class="lateral-marca" href="{% url 'gestao:dashboard' %}">
+      <img src="{% static 'img/logo-simbolo.png' %}" alt="" width="22" height="34">
+      <span>STRONG GLASSES<small>Gestão</small></span>
+    </a>
+    {% include "gestao/partials/menu.html" %}
+  </aside>
+
+  <div class="principal">
+    <header class="barra">
+      <details class="menu-movel">
+        <summary aria-label="Abrir menu">{% icone "painel" %}<span>Menu</span></summary>
+        <div class="menu-movel-painel">{% include "gestao/partials/menu.html" %}</div>
+      </details>
+      <form class="barra-busca" method="get" action="{% url 'gestao:produtos' %}" role="search">
+        {% icone "busca" %}
+        <label class="oculto" for="busca-global">Buscar produto</label>
+        <input id="busca-global" name="q" type="search" placeholder="Buscar produto ou SKU…" autocomplete="off">
+      </form>
+      <div class="barra-usuario">
+        <span class="avatar" aria-hidden="true">{{ user.get_username|slice:":1"|upper }}</span>
+        <span class="barra-nome">{{ user.get_full_name|default:user.get_username }}</span>
+        <form method="post" action="{% url 'gestao:sair' %}">{% csrf_token %}<button class="botao-icone" type="submit" aria-label="Sair" title="Sair">{% icone "sair" %}</button></form>
+      </div>
+    </header>
+
+    <main class="conteudo" id="conteudo">
+      {% if messages %}
+        <div class="mensagens" role="status">
+          {% for m in messages %}<p class="mensagem mensagem-{{ m.tags }}">{{ m }}</p>{% endfor %}
+        </div>
+      {% endif %}
+      {% block conteudo %}{% endblock %}
+    </main>
+  </div>
+  <script src="{% static 'gestao/gestao.js' %}" defer></script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{% extends "gestao/base.html" %}
+{% load gestao %}
+{% block titulo %}Configurações{% endblock %}
+{% block conteudo %}
+  <form method="post" class="formulario" novalidate>
+    {% csrf_token %}
+    <div class="cabecalho">
+      <div><h1>Configurações</h1><p class="subtitulo">Dados da loja, regras de venda e padrões de envio</p></div>
+      <button class="botao botao-primario" type="submit">Salvar</button>
+    </div>
+    <div class="grade-config">
+      {% for titulo, campos in form.grupos_com_campos %}
+        <section class="bloco">
+          <h2>{{ titulo }}</h2>
+          {% for campo in campos %}{% include "gestao/partials/campo.html" %}{% endfor %}
+        </section>
+      {% endfor %}
+    </div>
+  </form>
+{% endblock %}

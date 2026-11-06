@@ -1,0 +1,37 @@
+{% load static %}<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Entrar · Gestão Strong Glasses</title>
+  <link rel="icon" href="{% static 'favicon.ico' %}" sizes="any">
+  <link rel="stylesheet" href="{% static 'gestao/gestao.css' %}">
+</head>
+<body class="gestao tela-entrar">
+  <main class="entrar">
+    <img class="entrar-logo" src="{% static 'img/logo.png' %}" alt="Strong Glasses" width="96" height="120">
+    <h1>Gestão da loja</h1>
+    {% if messages %}{% for m in messages %}<p class="mensagem mensagem-{{ m.tags }}">{{ m }}</p>{% endfor %}{% endif %}
+    {% if erro_bloqueio %}
+      <p class="mensagem mensagem-error">Muitas tentativas. Espere 15 minutos e tente de novo.</p>
+    {% elif form.non_field_errors %}
+      {% for erro in form.non_field_errors %}<p class="mensagem mensagem-error">{{ erro }}</p>{% endfor %}
+    {% endif %}
+    <form method="post" class="formulario">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+      <label class="campo">
+        <span class="campo-rotulo">Usuário</span>
+        <input name="username" autocomplete="username" required autofocus value="{{ form.username.value|default:'' }}">
+      </label>
+      <label class="campo">
+        <span class="campo-rotulo">Senha</span>
+        <input name="password" type="password" autocomplete="current-password" required>
+      </label>
+      <button class="botao botao-primario botao-largo" type="submit">Entrar</button>
+    </form>
+    <a class="entrar-voltar" href="/">← Voltar para a loja</a>
+  </main>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{% extends "gestao/base.html" %}
+{% load gestao %}
+{% block titulo %}Banners{% endblock %}
+{% block conteudo %}
+  <div class="cabecalho">
+    <div><h1>Banners</h1><p class="subtitulo">Destaques da página inicial · computador 1920×800, celular 1080×1350</p></div>
+    {% if perms.catalogo.add_banner %}<a class="botao botao-primario" href="{% url 'gestao:banner_novo' %}">{% icone "mais" %} Novo banner</a>{% endif %}
+  </div>
+  <div class="cartoes-banner">
+    {% for b in banners %}
+      <a class="cartao-banner" href="{% url 'gestao:banner' b.pk %}">
+        <img src="{{ b.imagem.url }}" alt="" width="480" height="200" loading="lazy">
+        <div class="cartao-banner-info">
+          <b>{{ b.titulo }}</b>
+          <span><span class="selo selo-{{ b.situacao.1 }}">{{ b.situacao.0 }}</span> · ordem {{ b.ordem }}{% if b.video %} · vídeo{% endif %}{% if not b.imagem_mobile %} · <span class="texto-aviso">sem versão de celular</span>{% endif %}</span>
+          {% if b.inicio or b.fim %}<small class="texto-suave">{% if b.inicio %}de {{ b.inicio|date:"d/m H:i" }}{% endif %}{% if b.fim %} até {{ b.fim|date:"d/m H:i" }}{% endif %}</small>{% endif %}
+        </div>
+      </a>
+    {% empty %}<p class="vazio">Nenhum banner. A home mostra o título em texto.</p>{% endfor %}
+  </div>
+{% endblock %}

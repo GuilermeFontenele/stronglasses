@@ -1,0 +1,120 @@
+{% extends "gestao/base.html" %}
+{% load gestao %}
+{% block titulo %}Dashboard{% endblock %}
+{% block conteudo %}
+  <div class="cabecalho">
+    <div>
+      <h1>Olá, {{ user.first_name|default:user.get_username }}</h1>
+      <p class="subtitulo">Resumo da loja · {{ periodo_rotulo|lower }}</p>
+    </div>
+    <nav class="abas" aria-label="Período">
+      {% for chave, info in periodos.items %}<a href="?periodo={{ chave }}"{% if chave == periodo %} aria-current="true"{% endif %}>{{ info.0 }}</a>{% endfor %}
+    </nav>
+  </div>
+
+  <section class="cartoes" aria-label="Números do período">
+    {% with n=numeros %}
+    <article class="cartao-numero">
+      <p>Faturamento</p>
+      <strong>{{ n.faturamento|brl }}</strong>
+      {% if n.faturamento_variacao is not None %}<span class="tendencia {% if n.faturamento_variacao >= 0 %}sobe{% else %}cai{% endif %}">{% if n.faturamento_variacao >= 0 %}{% icone "subiu" %}{% else %}{% icone "desceu" %}{% endif %}{{ n.faturamento_variacao|variacao_pct }} vs. período anterior</span>{% endif %}
+    </article>
+    <article class="cartao-numero">
+      <p>Pedidos pagos</p>
+      <strong>{{ n.pedidos|inteiro }}</strong>
+      {% if n.pedidos_variacao is not None %}<span class="tendencia {% if n.pedidos_variacao >= 0 %}sobe{% else %}cai{% endif %}">{% if n.pedidos_variacao >= 0 %}{% icone "subiu" %}{% else %}{% icone "desceu" %}{% endif %}{{ n.pedidos_variacao|variacao_pct }}</span>{% endif %}
+    </article>
+    <article class="cartao-numero">
+      <p>Ticket médio</p>
+      <strong>{{ n.ticket|brl }}</strong>
+      {% if n.ticket_variacao is not None %}<span class="tendencia {% if n.ticket_variacao >= 0 %}sobe{% else %}cai{% endif %}">{% if n.ticket_variacao >= 0 %}{% icone "subiu" %}{% else %}{% icone "desceu" %}{% endif %}{{ n.ticket_variacao|variacao_pct }}</span>{% endif %}
+    </article>
+    <article class="cartao-numero">
+      <p>Óculos vendidos</p>
+      <strong>{{ n.itens|inteiro }}</strong>
+      {% if n.itens_variacao is not None %}<span class="tendencia {% if n.itens_variacao >= 0 %}sobe{% else %}cai{% endif %}">{% if n.itens_variacao >= 0 %}{% icone "subiu" %}{% else %}{% icone "desceu" %}{% endif %}{{ n.itens_variacao|variacao_pct }}</span>{% endif %}
+    </article>
+    {% endwith %}
+  </section>
+
+  <div class="grade-painel">
+    <section class="bloco bloco-largo" aria-labelledby="t-fat">
+      <div class="bloco-topo"><h2 id="t-fat">Faturamento por mês</h2><span class="dica">Últimos 12 meses · pedidos pagos</span></div>
+      {% if grafico_faturamento.vazio %}<p class="vazio">Ainda não há vendas nesse período.</p>{% else %}{% include "gestao/partials/grafico_barras.html" with g=grafico_faturamento titulo="Faturamento por mês" %}{% endif %}
+    </section>
+
+    <section class="bloco" aria-labelledby="t-alertas">
+      <div class="bloco-topo"><h2 id="t-alertas">Precisa de atenção</h2></div>
+      <ul class="alertas">
+        <li><a href="{% url 'gestao:estoque' %}?filtro=baixo"><span>{% icone "alerta" %} Cores com estoque baixo (≤1)</span><b class="selo {% if alertas.estoque_baixo_total %}selo-aviso{% else %}selo-ok{% endif %}">{{ alertas.estoque_baixo_total }}</b></a></li>
+        <li><a href="{% url 'gestao:produtos' %}?status=publicados&amp;estoque=zerado"><span>{% icone "estoque" %} Publicados sem estoque</span><b class="selo {% if alertas.sem_estoque %}selo-erro{% else %}selo-ok{% endif %}">{{ alertas.sem_estoque }}</b></a></li>
+        <li><a href="{% url 'gestao:produtos' %}?status=publicados&amp;pendencia=sem-foto"><span>{% icone "banners" %} Publicados sem foto</span><b class="selo {% if alertas.sem_foto %}selo-erro{% else %}selo-ok{% endif %}">{{ alertas.sem_foto }}</b></a></li>
+        <li><a href="{% url 'gestao:produtos' %}?status=publicados&amp;pendencia=sem-categoria"><span>{% icone "paginas" %} Publicados sem categoria</span><b class="selo {% if alertas.sem_categoria %}selo-aviso{% else %}selo-ok{% endif %}">{{ alertas.sem_categoria }}</b></a></li>
+        <li><a href="{% url 'gestao:produtos' %}?status=rascunhos"><span>{% icone "produtos" %} Rascunhos (não publicados)</span><b class="selo selo-neutro">{{ alertas.rascunhos }}</b></a></li>
+      </ul>
+    </section>
+
+    <section class="bloco" aria-labelledby="t-pedidos-mes">
+      <div class="bloco-topo"><h2 id="t-pedidos-mes">Pedidos por mês</h2></div>
+      {% include "gestao/partials/grafico_linha.html" with g=grafico_pedidos titulo="Pedidos por mês" %}
+    </section>
+
+    <section class="bloco" aria-labelledby="t-top">
+      <div class="bloco-topo"><h2 id="t-top">Mais vendidos</h2><span class="dica">{{ periodo_rotulo }}</span></div>
+      {% if mais_vendidos %}
+        <ol class="ranking">
+          {% for item in mais_vendidos %}
+            <li>
+              <div class="ranking-linha">
+                {% if item.produto_ref %}<a href="{% url 'gestao:produto' item.produto_ref %}">{{ item.nome }}</a>{% else %}<span>{{ item.nome }}</span>{% endif %}
+                <span class="ranking-valor">{{ item.quantidade_total }} un · {{ item.receita|brl }}</span>
+              </div>
+              <meter min="0" max="100" value="{{ item.percentual }}"></meter>
+            </li>
+          {% endfor %}
+        </ol>
+      {% else %}<p class="vazio">Sem vendas no período.</p>{% endif %}
+    </section>
+
+    <section class="bloco" aria-labelledby="t-uf">
+      <div class="bloco-topo"><h2 id="t-uf">Vendas por estado</h2><span class="dica">{{ periodo_rotulo }}</span></div>
+      {% if estados %}
+        <ol class="ranking">
+          {% for uf in estados %}
+            <li>
+              <div class="ranking-linha"><span>{{ uf.uf }}</span><span class="ranking-valor">{{ uf.pedidos }} pedido{{ uf.pedidos|pluralize }} · {{ uf.valor|brl }}</span></div>
+              <meter min="0" max="100" value="{{ uf.percentual }}"></meter>
+            </li>
+          {% endfor %}
+        </ol>
+      {% else %}<p class="vazio">Sem vendas no período.</p>{% endif %}
+    </section>
+
+    {% if grafico_visitas %}
+      <section class="bloco" aria-labelledby="t-visitas">
+        <div class="bloco-topo"><h2 id="t-visitas">Visitas no site</h2><span class="dica">Dados da Nuvemshop</span></div>
+        {% include "gestao/partials/grafico_linha.html" with g=grafico_visitas titulo="Visitas por mês" %}
+      </section>
+    {% endif %}
+
+    <section class="bloco bloco-largo" aria-labelledby="t-ultimos">
+      <div class="bloco-topo"><h2 id="t-ultimos">Últimos pedidos</h2><a class="link" href="{% url 'gestao:pedidos' %}">Ver todos {% icone "seta" %}</a></div>
+      <div class="tabela-rolagem">
+        <table class="tabela">
+          <thead><tr><th>Pedido</th><th>Cliente</th><th>Data</th><th>Situação</th><th class="num">Total</th></tr></thead>
+          <tbody>
+            {% for p in ultimos %}
+              <tr>
+                <td><a href="{% url 'gestao:pedido' p.pk %}">#{{ p.numero }}</a></td>
+                <td>{{ p.cliente.nome|default:"—" }}</td>
+                <td>{{ p.realizado_em|date:"d/m/Y" }}</td>
+                <td><span class="selo selo-{{ p.situacao.tom }}">{{ p.situacao.rotulo }}</span></td>
+                <td class="num">{{ p.total|brl }}</td>
+              </tr>
+            {% empty %}<tr><td colspan="5" class="vazio">Nenhum pedido ainda.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+{% endblock %}
