@@ -362,6 +362,7 @@ class AjustesTests(BaseGestao):
         self.cliente.refresh_from_db()
         self.assertEqual(self.cliente.razao_social, "")
         dados["tipo"] = "PJ"
+        Cliente.objects.filter(pk=self.cliente.pk).update(documento="", documento_hash="")  # CPF não vale para PJ
         self.client.post(f"/gestao/clientes/{self.cliente.pk}/", dados)
         self.cliente.refresh_from_db()
         self.assertEqual(self.cliente.razao_social, "Empresa X")

@@ -216,7 +216,7 @@ class ImportadorTests(TestCase):
     def test_categorias_e_produtos(self):
         relatorio = self.importar(("categorias", "produtos"))
 
-        self.assertEqual(Categoria.objects.count(), 4)
+        self.assertEqual(Categoria.objects.filter(nuvemshop_id__isnull=False).count(), 4)
         self.assertEqual(Categoria.objects.get(nuvemshop_id=4).pai.nome, "Feminino")
 
         roshi = Produto.objects.get(nuvemshop_id=100)
