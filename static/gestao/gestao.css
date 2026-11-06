@@ -140,7 +140,8 @@ h2 { font-size: 15px; }
 .bloco-largo .grafico-eixo { font-size: 7px; }
 @media (max-width: 960px) { .bloco-largo .grafico-eixo { font-size: 11px; } }
 .grafico-barra rect { fill: #c9ccd3; transition: fill .15s; }
-.grafico-barra.destaque rect, .grafico-barra:hover rect { fill: var(--primaria); }
+.grafico-barra rect.grafico-alvo, .grafico-marcador .grafico-alvo { fill: transparent; stroke: none; }
+.grafico-barra.destaque rect:not(.grafico-alvo), .grafico-barra:hover rect:not(.grafico-alvo) { fill: var(--primaria); }
 .grafico-traco { fill: none; stroke: var(--destaque); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
 .grafico-area { fill: var(--destaque); fill-opacity: .08; }
 .grafico-ponto { fill: #fff; stroke: var(--destaque); stroke-width: 2; }
