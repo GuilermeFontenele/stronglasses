@@ -1,5 +1,6 @@
 import io
 import json
+import secrets
 import tempfile
 from datetime import timedelta
 from decimal import Decimal
@@ -18,6 +19,7 @@ from apps.gestao import graficos
 from apps.historico.models import ItemPedidoHistorico, PedidoHistorico
 
 Usuario = get_user_model()
+SENHA = secrets.token_urlsafe(16)  # gerada na hora: nada de senha fixa no repositório
 
 
 def png(nome="foto.png"):
@@ -29,7 +31,7 @@ def png(nome="foto.png"):
 class BaseGestao(TestCase):
     def setUp(self):
         cache.clear()
-        self.dono = Usuario.objects.create_superuser("dono", "dono@exemplo.com", "Senha-forte-123")
+        self.dono = Usuario.objects.create_superuser("dono", "dono@exemplo.com", SENHA)
         self.categoria = Categoria.objects.create(nome="Feminino", slug="feminino")
         self.preta = AcabamentoArmacao.objects.create(nome="Preta", cor_hex="#111111")
         self.verde = CorLente.objects.create(nome="Verde", cor_hex="#55704A")
@@ -75,32 +77,32 @@ class AcessoTests(BaseGestao):
         self.assertRedirects(resposta, "/gestao/entrar/?next=/gestao/")
 
     def test_quem_nao_e_da_equipe_nao_entra(self):
-        comum = Usuario.objects.create_user("comum", password="Senha-forte-123")
-        resposta = self.client.post("/gestao/entrar/", {"username": "comum", "password": "Senha-forte-123"})
+        comum = Usuario.objects.create_user("comum", password=SENHA)
+        resposta = self.client.post("/gestao/entrar/", {"username": "comum", "password": SENHA})
         self.assertContains(resposta, "não tem acesso ao painel")
         self.client.force_login(comum)
         self.assertEqual(self.client.get("/gestao/").status_code, 403)
 
     def test_equipe_sem_permissao_nao_ve_clientes(self):
-        equipe = Usuario.objects.create_user("ajudante", password="Senha-forte-123", is_staff=True)
+        equipe = Usuario.objects.create_user("ajudante", password=SENHA, is_staff=True)
         self.client.force_login(equipe)
         self.assertEqual(self.client.get("/gestao/").status_code, 200)
         self.assertEqual(self.client.get("/gestao/clientes/").status_code, 403)
 
     def test_login_e_bloqueio_por_tentativas(self):
         for _ in range(5):
-            self.client.post("/gestao/entrar/", {"username": "dono", "password": "errada"})
-        resposta = self.client.post("/gestao/entrar/", {"username": "dono", "password": "Senha-forte-123"})
+            self.client.post("/gestao/entrar/", {"username": "dono", "password": SENHA + "x"})
+        resposta = self.client.post("/gestao/entrar/", {"username": "dono", "password": SENHA})
         self.assertEqual(resposta.status_code, 429)
         cache.clear()
         resposta = self.client.post(
-            "/gestao/entrar/", {"username": "dono", "password": "Senha-forte-123", "next": "/gestao/produtos/"}
+            "/gestao/entrar/", {"username": "dono", "password": SENHA, "next": "/gestao/produtos/"}
         )
         self.assertRedirects(resposta, "/gestao/produtos/")
 
     def test_next_externo_e_ignorado(self):
         resposta = self.client.post(
-            "/gestao/entrar/", {"username": "dono", "password": "Senha-forte-123", "next": "https://golpe.exemplo.com/"}
+            "/gestao/entrar/", {"username": "dono", "password": SENHA, "next": "https://golpe.exemplo.com/"}
         )
         self.assertRedirects(resposta, "/gestao/")
 
