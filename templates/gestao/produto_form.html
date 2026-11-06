@@ -39,7 +39,7 @@
           {% if variacoes.non_form_errors %}<div class="mensagem mensagem-error">{{ variacoes.non_form_errors }}</div>{% endif %}
           <div class="tabela-rolagem">
             <table class="tabela tabela-form tabela-variacoes" data-formset="variacoes">
-              <thead><tr><th class="col-mover"><span class="oculto">Ordem</span></th><th class="col-cor">Cor</th><th>Armação</th><th>Lente</th><th>SKU</th><th class="num">Preço próprio</th><th class="num">Estoque</th><th>Ativa</th><th><span class="oculto">Remover</span></th></tr></thead>
+              <thead><tr><th class="col-mover">Cor</th><th>Armação</th><th>Lente</th><th>SKU</th><th class="num">Preço próprio</th><th class="num">Estoque</th><th>Ativa</th><th><span class="oculto">Remover</span></th></tr></thead>
               <tbody data-linhas>
                 {% for f in variacoes %}{% include "gestao/partials/linha_variacao.html" %}{% endfor %}
               </tbody>

@@ -105,7 +105,7 @@ class VariacaoForm(EstiloPainel, forms.ModelForm):
         fields = ["armacao", "lente", "sku", "preco", "estoque", "ativa", "ordem"]
         widgets = {
             "ordem": forms.HiddenInput(attrs={"data-ordem": ""}),
-            "preco": forms.NumberInput(attrs={"placeholder": "Igual ao produto", "step": "0.01"}),
+            "preco": forms.NumberInput(attrs={"placeholder": "Do produto", "step": "0.01"}),
             "estoque": forms.NumberInput(attrs={"min": "0"}),
         }
 

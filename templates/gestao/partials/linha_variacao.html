@@ -5,8 +5,8 @@
       <button type="button" class="mover-botao" data-subir aria-label="Subir">{% icone "subiu" "icone icone-mini" %}</button>
       <button type="button" class="mover-botao" data-descer aria-label="Descer">{% icone "desceu" "icone icone-mini" %}</button>
     </span>
+    {% if f.instance.pk %}{% swatch f.instance %}{% else %}<span class="swatch-vazio" aria-hidden="true"></span>{% endif %}
   </td>
-  <td class="col-cor">{% if f.instance.pk %}{% swatch f.instance %}{% else %}<span class="swatch-vazio" aria-hidden="true"></span>{% endif %}</td>
   <td>{{ f.armacao }}{{ f.armacao.errors }}</td>
   <td>{{ f.lente }}{{ f.lente.errors }}</td>
   <td class="col-sku">{{ f.sku }}{{ f.sku.errors }}</td>
@@ -21,4 +21,4 @@
     {% endif %}
   </td>
 </tr>
-{% if f.non_field_errors %}<tr><td colspan="9" class="campo-mensagem">{{ f.non_field_errors }}</td></tr>{% endif %}
+{% if f.non_field_errors %}<tr><td colspan="8" class="campo-mensagem">{{ f.non_field_errors }}</td></tr>{% endif %}

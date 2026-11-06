@@ -360,7 +360,6 @@ tr:has(.remover input:checked) td.col-sku input { text-decoration: line-through;
 .foto-cartao:has(.remover input:checked) img { opacity: .35; }
 
 /* Tabela de cores */
-.tabela-variacoes .col-mover { width: 34px; padding-right: 0; }
 .tabela-variacoes .col-cor { width: 44px; }
 .tabela-variacoes .col-sku input { min-width: 130px; }
 .tabela-variacoes .col-estoque input { max-width: 80px; }
@@ -397,3 +396,13 @@ tr:has(.remover input:checked) td.col-sku input { text-decoration: line-through;
 .arquivo-botao input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .arquivo-nome { font-size: 12px; color: var(--ok); font-weight: 600; }
 .arquivo-remover { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--erro); font-weight: 600; cursor: pointer; }
+.tabela-variacoes th, .tabela-variacoes td { padding: 8px 6px; }
+.tabela-variacoes th:first-child, .tabela-variacoes td:first-child { padding-left: 14px; }
+.tabela-variacoes .col-mover { width: 64px; white-space: nowrap; }
+.tabela-variacoes .col-mover .mover, .tabela-variacoes .col-mover .swatch, .tabela-variacoes .col-mover .swatch-vazio { vertical-align: middle; }
+.tabela-variacoes select { min-width: 124px; }
+.tabela-variacoes .col-sku input { min-width: 96px; }
+.tabela-variacoes td.num input { min-width: 0; width: 84px; }
+.tabela-variacoes .col-estoque input { width: 64px; }
+.tabela-variacoes .col-ativa, .tabela-variacoes .col-remover { width: 48px; }
+.foto-cartao img { background: #fff; border: 1px solid var(--linha); }
