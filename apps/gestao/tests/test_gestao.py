@@ -357,7 +357,7 @@ class AjustesTests(BaseGestao):
     def test_pessoa_fisica_nao_guarda_razao_social(self):
         self.entrar()
         dados = {"tipo": "PF", "nome": "Maria Souza", "razao_social": "Empresa X", "email": "maria@exemplo.com"}
-        dados["whatsapp"] = "5585999998888"
+        dados["whatsapp"] = "+5585999998888"
         self.client.post(f"/gestao/clientes/{self.cliente.pk}/", dados)
         self.cliente.refresh_from_db()
         self.assertEqual(self.cliente.razao_social, "")
@@ -410,3 +410,10 @@ class AjustesTests(BaseGestao):
         self.assertEqual(box.tipo, "acessorio")
         self.assertEqual(list(box.categorias.values_list("slug", flat=True)), ["acessorios"])
         self.assertFalse(self.produto.categorias.filter(slug="acessorios").exists())
+
+    def test_link_do_whatsapp_sem_mais(self):
+        Cliente.objects.filter(pk=self.cliente.pk).update(whatsapp="+5585999998888")
+        self.entrar()
+        self.assertContains(
+            self.client.get(f"/gestao/clientes/{self.cliente.pk}/"), 'href="https://wa.me/5585999998888"'
+        )

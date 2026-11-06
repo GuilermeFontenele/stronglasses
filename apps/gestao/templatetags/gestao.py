@@ -66,3 +66,9 @@ def inteiro(valor) -> str:
         return f"{int(valor):,}".replace(",", ".")
     except (TypeError, ValueError):
         return "0"
+
+
+@register.filter
+def digitos(valor) -> str:
+    """+55 85 99999-8888 -> 5585999998888 (o wa.me não aceita +, espaço nem traço)."""
+    return "".join(c for c in str(valor or "") if c.isdigit())

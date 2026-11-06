@@ -8,7 +8,7 @@
       <span class="avatar" aria-hidden="true">{{ cliente.nome|slice:":1"|upper }}</span>
       <div><h1>{{ cliente.nome }}</h1><p class="subtitulo">{{ cliente.get_tipo_display }}{% if cliente.anonimizado_em %} · <span class="selo selo-neutro">Anonimizado em {{ cliente.anonimizado_em|date:"d/m/Y" }}</span>{% endif %}</p></div>
     </div>
-    {% if cliente.whatsapp %}<a class="botao botao-whatsapp" href="https://wa.me/{{ cliente.whatsapp }}" target="_blank" rel="noopener">{% icone "whatsapp" %} Chamar no WhatsApp</a>{% endif %}
+    {% if cliente.whatsapp %}<a class="botao botao-whatsapp" href="https://wa.me/{{ cliente.whatsapp|digitos }}" target="_blank" rel="noopener">{% icone "whatsapp" %} Chamar no WhatsApp</a>{% endif %}
   </div>
 
   <section class="cartoes cartoes-3">
