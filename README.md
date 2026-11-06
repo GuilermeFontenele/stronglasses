@@ -16,7 +16,7 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-O painel fica em `http://localhost:8000/painel/` (configurável por `DJANGO_ADMIN_URL`).
+O painel fica em `http://localhost:8080/painel/` (configurável por `DJANGO_ADMIN_URL`).
 
 Para o Claude gastar menos tokens no projeto, rode uma vez `scripts/setup-graphify.ps1`
 (ou `.sh`) e depois `/graphify .` no Claude Code. Detalhes em `CLAUDE.md`.
