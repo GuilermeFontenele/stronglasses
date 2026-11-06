@@ -351,3 +351,61 @@ class GraficoRenderizadoTests(BaseGestao):
         html = self.client.get("/gestao/").content.decode()
         svg = html[html.index('<svg class="grafico"') : html.index("</svg>", html.index('<svg class="grafico"'))]
         self.assertFalse(re.search(r'(x|y|width|height|x1|x2|y1|y2)="\d+,\d', svg), "coordenada com vírgula")
+
+
+class AjustesTests(BaseGestao):
+    def test_pessoa_fisica_nao_guarda_razao_social(self):
+        self.entrar()
+        dados = {"tipo": "PF", "nome": "Maria Souza", "razao_social": "Empresa X", "email": "maria@exemplo.com"}
+        dados["whatsapp"] = "5585999998888"
+        self.client.post(f"/gestao/clientes/{self.cliente.pk}/", dados)
+        self.cliente.refresh_from_db()
+        self.assertEqual(self.cliente.razao_social, "")
+        dados["tipo"] = "PJ"
+        self.client.post(f"/gestao/clientes/{self.cliente.pk}/", dados)
+        self.cliente.refresh_from_db()
+        self.assertEqual(self.cliente.razao_social, "Empresa X")
+
+    def test_pedido_mostra_miniatura_do_produto(self):
+        ImagemProduto.objects.create(produto=self.produto, imagem="produtos/zaik.webp", texto_alternativo="Zaik")
+        self.entrar()
+        self.assertContains(self.client.get(f"/gestao/pedidos/{self.pedido.pk}/"), "/media/produtos/zaik.webp")
+        self.assertContains(self.client.get(f"/gestao/clientes/{self.cliente.pk}/"), "/media/produtos/zaik.webp")
+
+    def test_grafico_mostra_valor_no_mouse(self):
+        self.entrar()
+        self.assertContains(self.client.get("/gestao/"), 'class="grafico-valor"')
+
+    def test_menu_da_loja_esconde_categoria_vazia(self):
+        Categoria.objects.create(nome="Vazia", slug="vazia")
+        html = self.client.get("/").content.decode()
+        self.assertIn('href="/feminino/"', html)
+        self.assertNotIn('href="/vazia/"', html)
+
+    def test_estados_completos(self):
+        from apps.gestao import metricas
+
+        for i, uf in enumerate(["SP", "RJ", "PE", "BA", "MG", "DF", "GO", "MA", "PI"]):
+            PedidoHistorico.objects.create(
+                nuvemshop_id=900 + i,
+                numero=900 + i,
+                realizado_em=timezone.now(),
+                status="open",
+                status_pagamento="paid",
+                total=10,
+                uf=uf,
+            )
+        self.assertEqual(len(metricas.vendas_por_estado(metricas.pedidos_pagos())), 10)
+
+    def test_migracao_poe_acessorios_na_categoria(self):
+        import importlib
+
+        from django.apps import apps as registro
+
+        box = Produto.objects.create(nome="Box Organizador de Óculos (3 espaços)", slug="box", preco=Decimal("80"))
+        migracao = importlib.import_module("apps.catalogo.migrations.0006_categoria_acessorios")
+        migracao.cria(registro, None)
+        box.refresh_from_db()
+        self.assertEqual(box.tipo, "acessorio")
+        self.assertEqual(list(box.categorias.values_list("slug", flat=True)), ["acessorios"])
+        self.assertFalse(self.produto.categorias.filter(slug="acessorios").exists())

@@ -24,7 +24,7 @@ from apps.core.auditoria import diferenca, foto, registrar
 from apps.core.crypto import hash_busca
 from apps.core.models import Pagina, RegistroAuditoria
 from apps.core.validators import so_digitos
-from apps.historico.models import STATUS_PAGOS, PedidoHistorico
+from apps.historico.models import STATUS_PAGOS, ItemPedidoHistorico, PedidoHistorico
 
 from . import graficos, metricas
 from .acesso import bloqueado, equipe, limpar_falhas, registrar_falha
@@ -91,6 +91,19 @@ def _auditar_formset(request, formset):
         registrar(RegistroAuditoria.Acao.ALTERACAO, obj, None, foto(obj), request.user)
     for obj in formset.deleted_objects:
         registrar(RegistroAuditoria.Acao.EXCLUSAO, obj, None, None, request.user)
+
+
+def _itens_com_foto():
+    """Itens de pedido já com a foto do produto (a da cor vendida, se houver)."""
+    fotos = Prefetch("produto__imagens", queryset=ImagemProduto.objects.order_by("ordem", "id"), to_attr="fotos")
+    return ItemPedidoHistorico.objects.select_related("produto").prefetch_related(fotos)
+
+
+def _foto_do_item(item):
+    fotos = getattr(item.produto, "fotos", None) if item.produto_id else None
+    if not fotos:
+        return None
+    return next((f for f in fotos if item.variacao_id and f.variacao_id == item.variacao_id), fotos[0])
 
 
 def _status_pedido(pedido) -> dict:
@@ -413,7 +426,12 @@ def cliente(request, pk):
         form = ClienteForm(instance=obj)
     # Abrir a ficha é acesso a dado pessoal: fica registrado (LGPD).
     registrar(RegistroAuditoria.Acao.ACESSO, obj, None, None, request.user)
-    pedidos = list(obj.pedidos_historicos.prefetch_related("itens").order_by("-realizado_em"))
+    pedidos = list(
+        obj.pedidos_historicos.prefetch_related(Prefetch("itens", queryset=_itens_com_foto())).order_by("-realizado_em")
+    )
+    for pedido in pedidos:
+        for item in pedido.itens.all():
+            item.foto = _foto_do_item(item)
     for pedido in pedidos:
         pedido.situacao = _status_pedido(pedido)
     pagos = [p for p in pedidos if p.pago]
@@ -524,9 +542,10 @@ def pedido(request, pk):
     obj = get_object_or_404(PedidoHistorico.objects.select_related("cliente"), pk=pk)
     obj.situacao = _status_pedido(obj)
     obj.envio = STATUS_ENVIO.get(obj.status_envio, obj.status_envio or "—")
-    itens = list(obj.itens.select_related("produto"))
+    itens = list(_itens_com_foto().filter(pedido=obj))
     for item in itens:
         item.subtotal = item.preco_unitario * item.quantidade
+        item.foto = _foto_do_item(item)
     if obj.cliente_id:
         registrar(RegistroAuditoria.Acao.ACESSO, obj.cliente, None, {"pedido": obj.numero}, request.user)
     return render(request, "gestao/pedido.html", {"secao": "pedidos", "pedido": obj, "itens": itens})

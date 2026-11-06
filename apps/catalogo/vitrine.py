@@ -38,4 +38,9 @@ def produtos_visiveis():
 
 
 def categorias_menu():
-    return Categoria.objects.filter(ativa=True, pai__isnull=True).order_by("ordem", "nome")
+    # Categoria vazia (sem produto publicado) não aparece no menu.
+    return (
+        Categoria.objects.filter(ativa=True, pai__isnull=True, produtos__ativo=True)
+        .distinct()
+        .order_by("ordem", "nome")
+    )

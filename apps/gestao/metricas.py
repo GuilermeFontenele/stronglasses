@@ -125,9 +125,12 @@ def mais_vendidos(qs, limite: int = 8) -> list[dict]:
     return linhas
 
 
-def vendas_por_estado(qs, limite: int = 8) -> list[dict]:
+def vendas_por_estado(qs, limite: int | None = None) -> list[dict]:
     linhas = list(
-        qs.exclude(uf="").values("uf").annotate(pedidos=Count("id"), valor=Sum("total")).order_by("-pedidos")[:limite]
+        qs.exclude(uf="")
+        .values("uf")
+        .annotate(pedidos=Count("id"), valor=Sum("total"))
+        .order_by("-pedidos", "uf")[:limite]
     )
     maximo = max((linha["pedidos"] for linha in linhas), default=0) or 1
     for linha in linhas:

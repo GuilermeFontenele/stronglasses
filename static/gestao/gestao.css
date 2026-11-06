@@ -48,7 +48,8 @@ h2 { font-size: 15px; }
 .menu-grupo { margin: 16px 12px 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: #6c7079; }
 .menu-rodape { margin-top: auto; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, .08); display: flex; flex-direction: column; gap: 2px; }
 .principal { margin-left: 236px; min-height: 100vh; display: flex; flex-direction: column; }
-.barra { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 16px; height: 64px; padding: 0 28px; background: rgba(245, 246, 248, .9); backdrop-filter: blur(8px); border-bottom: 1px solid var(--linha); }
+/* Sem backdrop-filter: ele prende o menu do celular (position: fixed) dentro da barra. */
+.barra { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 16px; height: 64px; padding: 0 28px; background: var(--fundo); border-bottom: 1px solid var(--linha); }
 .barra-busca { flex: 1; max-width: 420px; display: flex; align-items: center; gap: 8px; background: var(--superficie); border: 1px solid var(--linha); border-radius: 999px; padding: 0 14px; height: 40px; color: var(--suave); }
 .barra-busca input { border: 0; outline: 0; background: none; font: inherit; width: 100%; color: var(--texto); }
 .barra-busca:focus-within { border-color: var(--texto); }
@@ -70,8 +71,10 @@ h2 { font-size: 15px; }
   .menu-movel { display: block; position: relative; }
   .menu-movel > summary { list-style: none; display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 12px; border-radius: 10px; background: var(--primaria); color: #fff; font-weight: 600; cursor: pointer; }
   .menu-movel > summary::-webkit-details-marker { display: none; }
-  .menu-movel[open] > summary::before { content: ""; position: fixed; inset: 0; background: rgba(0, 0, 0, .35); }
-  .menu-movel-painel { position: fixed; top: 0; left: 0; bottom: 0; z-index: 30; width: min(84vw, 300px); background: var(--lateral); padding: 18px 12px; overflow-y: auto; }
+  .menu-movel[open] > summary::before { content: ""; position: fixed; inset: 0; z-index: 29; background: rgba(0, 0, 0, .4); }
+  .menu-movel-painel { position: fixed; top: 0; left: 0; bottom: 0; z-index: 30; width: min(84vw, 300px); background: var(--lateral); padding: 18px 12px; overflow-y: auto; box-shadow: 8px 0 32px rgba(0, 0, 0, .25); }
+  .menu-movel-painel .menu-gestao { min-height: 100%; }
+  .menu-movel-painel .menu-gestao a { padding: 12px; }
 }
 
 /* Cabeçalho das páginas */
@@ -142,6 +145,28 @@ h2 { font-size: 15px; }
 .grafico-area { fill: var(--destaque); fill-opacity: .08; }
 .grafico-ponto { fill: #fff; stroke: var(--destaque); stroke-width: 2; }
 .grafico-ponto:hover { fill: var(--destaque); }
+/* Valor aparece ao passar o mouse (ou tocar, no celular) */
+.grafico-barra, .grafico-marcador { cursor: pointer; outline: none; }
+.grafico-valor { fill: var(--texto); font-size: 12px; font-weight: 700; font-family: var(--fonte); opacity: 0; transition: opacity .12s; pointer-events: none; paint-order: stroke; stroke: #fff; stroke-width: 4px; }
+.bloco-largo .grafico-valor { font-size: 9px; stroke-width: 3px; }
+@media (max-width: 960px) { .bloco-largo .grafico-valor { font-size: 13px; } }
+.grafico-barra:hover .grafico-valor, .grafico-barra:focus .grafico-valor, .grafico-marcador:hover .grafico-valor, .grafico-marcador:focus .grafico-valor { opacity: 1; }
+.grafico-barra:focus rect:not(.grafico-alvo) { fill: var(--primaria); }
+.grafico-marcador:hover .grafico-ponto, .grafico-marcador:focus .grafico-ponto { fill: var(--destaque); }
+
+/* Itens de pedido com miniatura */
+.item-pedido { display: inline-flex; align-items: center; gap: 12px; }
+.item-pedido img, .item-pedido .sem-imagem { width: 48px; height: 48px; border-radius: 10px; object-fit: contain; background: var(--neutro-fundo); }
+.lista-pedidos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.lista-pedidos > li { padding: 14px 0; border-bottom: 1px solid var(--linha); }
+.lista-pedidos > li:last-child { border-bottom: 0; }
+.lista-pedidos-topo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; text-decoration: none; margin-bottom: 8px; }
+.lista-pedidos-topo:hover b { text-decoration: underline; }
+.lista-pedidos-total { margin-left: auto; font-variant-numeric: tabular-nums; }
+.lista-itens { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.lista-itens li { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.lista-itens img, .sem-imagem-mini { width: 36px; height: 36px; border-radius: 8px; object-fit: contain; background: var(--neutro-fundo); flex: 0 0 auto; }
+.lista-itens .qtd { font-weight: 700; min-width: 24px; }
 
 /* Rankings com barra */
 .ranking { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; counter-reset: pos; }

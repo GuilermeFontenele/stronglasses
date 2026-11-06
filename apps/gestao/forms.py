@@ -132,6 +132,13 @@ class ClienteForm(forms.ModelForm):
     class Meta:
         model = Cliente
         fields = ["tipo", "nome", "razao_social", "email", "whatsapp"]
+        help_texts = {"razao_social": "Só para pessoa jurídica (ex.: hotéis)."}
+
+    def clean(self):
+        dados = super().clean()
+        if dados.get("tipo") != Cliente.Tipo.PESSOA_JURIDICA:
+            dados["razao_social"] = ""  # pessoa física não tem razão social
+        return dados
 
 
 # Parâmetros aparecem agrupados; os que não estão aqui ficam só no admin técnico.

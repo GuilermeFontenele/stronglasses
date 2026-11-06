@@ -6,7 +6,11 @@
   {% if g.area %}<polygon class="grafico-area" points="{{ g.area }}"/>{% endif %}
   {% if g.linha %}<polyline class="grafico-traco" points="{{ g.linha }}"/>{% endif %}
   {% for p in g.itens %}
-    <circle class="grafico-ponto" cx="{{ p.centro }}" cy="{{ p.y }}" r="3.5"><title>{{ p.rotulo }}: {% if g.moeda %}{{ p.valor|brl }}{% else %}{{ p.valor|inteiro }}{% endif %}</title></circle>
+    <g class="grafico-marcador" tabindex="0" aria-label="{{ p.rotulo }}: {% if g.moeda %}{{ p.valor|brl }}{% else %}{{ p.valor|inteiro }}{% endif %}">
+      <circle class="grafico-alvo" cx="{{ p.centro }}" cy="{{ p.y }}" r="14" fill="transparent"/>
+      <circle class="grafico-ponto" cx="{{ p.centro }}" cy="{{ p.y }}" r="3.5"/>
+      <text class="grafico-valor" x="{{ p.centro }}" y="{{ p.y_valor }}" text-anchor="middle">{% if g.moeda %}{{ p.valor|brl }}{% else %}{{ p.valor|inteiro }}{% endif %}</text>
+    </g>
     <text class="grafico-eixo" x="{{ p.centro }}" y="{{ g.rotulo_y }}" text-anchor="middle">{{ p.rotulo }}</text>
   {% endfor %}
 </svg>{% endlocalize %}

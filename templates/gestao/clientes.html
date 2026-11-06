@@ -7,7 +7,7 @@
     <label class="filtro-busca">{% icone "busca" %}<span class="oculto">Buscar</span><input type="search" name="q" value="{{ termo }}" placeholder="Nome, e-mail, WhatsApp ou CPF"></label>
     <label><span class="oculto">Ordenar</span><select name="ordem">
       <option value="">Nome (A–Z)</option>
-      <option value="gasto"{% if ordem == "gasto" %} selected{% endif %}>Quem mais comprou</option>
+      <option value="gasto"{% if ordem == "gasto" %} selected{% endif %}>Quem mais gastou</option>
       <option value="pedidos"{% if ordem == "pedidos" %} selected{% endif %}>Mais pedidos</option>
       <option value="recentes"{% if ordem == "recentes" %} selected{% endif %}>Compra mais recente</option>
     </select></label>

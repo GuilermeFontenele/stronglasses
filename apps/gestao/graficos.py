@@ -45,6 +45,7 @@ def barras(pontos: list[tuple[str, Decimal | int]], moeda: bool = True, destaque
             {
                 "x": round(x, 1),
                 "y": round(MARGEM_TOPO + area_a - altura, 1),
+                "y_valor": round(max(MARGEM_TOPO + area_a - altura - 6, 11), 1),
                 "largura": round(largura_barra, 1),
                 "altura": round(max(altura, 0), 1),
                 "centro": round(x + largura_barra / 2, 1),
@@ -54,6 +55,8 @@ def barras(pontos: list[tuple[str, Decimal | int]], moeda: bool = True, destaque
             }
         )
     return {
+        "topo": MARGEM_TOPO,
+        "area_altura": area_a,
         "largura": LARGURA,
         "altura": ALTURA,
         "base": MARGEM_TOPO + area_a,

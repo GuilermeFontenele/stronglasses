@@ -53,3 +53,13 @@ document.querySelectorAll(".menu-movel").forEach((menu) => {
   });
   menu.querySelectorAll("a").forEach((a) => a.addEventListener("click", () => (menu.open = false)));
 });
+
+// Ficha do cliente: razão social só aparece para pessoa jurídica.
+document.querySelectorAll("form").forEach((form) => {
+  const tipo = form.querySelector('select[name="tipo"]');
+  const bloco = form.querySelector("[data-so-pj]");
+  if (!tipo || !bloco) return;
+  const atualizar = () => (bloco.hidden = tipo.value !== "PJ");
+  tipo.addEventListener("change", atualizar);
+  atualizar();
+});

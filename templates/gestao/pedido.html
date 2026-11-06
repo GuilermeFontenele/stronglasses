@@ -19,7 +19,12 @@
             <tbody>
               {% for item in itens %}
                 <tr>
-                  <td>{% if item.produto %}<a href="{% url 'gestao:produto' item.produto_id %}">{{ item.nome }}</a>{% else %}{{ item.nome }}{% endif %}</td>
+                  <td>
+                    <span class="item-pedido">
+                      {% if item.foto %}<img src="{{ item.foto.imagem.url }}" alt="" width="48" height="48" loading="lazy">{% else %}<span class="sem-imagem">{% icone "banners" %}</span>{% endif %}
+                      {% if item.produto %}<a href="{% url 'gestao:produto' item.produto_id %}">{{ item.nome }}</a>{% else %}<span>{{ item.nome }}</span>{% endif %}
+                    </span>
+                  </td>
                   <td class="texto-suave">{{ item.variante|default:"—" }}</td>
                   <td class="texto-suave">{{ item.sku|default:"—" }}</td>
                   <td class="num">{{ item.quantidade }}</td>
