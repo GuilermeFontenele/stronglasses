@@ -341,3 +341,13 @@ class GraficosTests(SimpleTestCase):
         vazio = graficos.linha([("jan", 0), ("fev", 0)])
         self.assertTrue(vazio["vazio"])
         self.assertIn(",", vazio["linha"])
+
+
+class GraficoRenderizadoTests(BaseGestao):
+    def test_coordenadas_do_svg_usam_ponto(self):
+        import re
+
+        self.entrar()
+        html = self.client.get("/gestao/").content.decode()
+        svg = html[html.index('<svg class="grafico"') : html.index("</svg>", html.index('<svg class="grafico"'))]
+        self.assertFalse(re.search(r'(x|y|width|height|x1|x2|y1|y2)="\d+,\d', svg), "coordenada com vírgula")

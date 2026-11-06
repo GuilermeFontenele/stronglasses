@@ -1,4 +1,4 @@
-{% load gestao %}<svg class="grafico" viewBox="0 0 {{ g.largura }} {{ g.altura }}" role="img" aria-label="{{ titulo }}">
+{% load gestao l10n %}{% localize off %}<svg class="grafico" viewBox="0 0 {{ g.largura }} {{ g.altura }}" role="img" aria-label="{{ titulo }}">
   {% for linha in g.grade %}
     <line class="grafico-grade" x1="{{ g.esquerda }}" x2="{{ g.direita }}" y1="{{ linha.y }}" y2="{{ linha.y }}"/>
     <text class="grafico-eixo" x="{{ g.esquerda|add:'-8' }}" y="{{ linha.y }}" text-anchor="end" dominant-baseline="middle">{{ linha.rotulo }}</text>
@@ -9,4 +9,4 @@
       <text class="grafico-eixo" x="{{ b.centro }}" y="{{ g.rotulo_y }}" text-anchor="middle">{{ b.rotulo }}</text>
     </g>
   {% endfor %}
-</svg>
+</svg>{% endlocalize %}
