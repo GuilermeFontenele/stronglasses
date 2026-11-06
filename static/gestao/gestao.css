@@ -327,3 +327,73 @@ meter::-moz-meter-bar { background: var(--primaria); border-radius: 999px; }
 
 /* Rolagem suave só quando a pessoa não pediu menos movimento */
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* Caixas de seleção com a cara do painel */
+input[type="checkbox"]:not(.interruptor) { appearance: none; width: 18px; height: 18px; margin: 0; border: 1.5px solid var(--linha-forte); border-radius: 5px; background: #fff; display: inline-grid; place-items: center; cursor: pointer; vertical-align: middle; flex: 0 0 auto; transition: background-color .12s, border-color .12s; }
+input[type="checkbox"]:not(.interruptor)::after { content: ""; width: 9px; height: 5px; border: 2px solid #fff; border-top: 0; border-right: 0; transform: rotate(-45deg) translate(1px, -1px); opacity: 0; }
+input[type="checkbox"]:not(.interruptor):checked { background: var(--primaria); border-color: var(--primaria); }
+input[type="checkbox"]:not(.interruptor):checked::after { opacity: 1; }
+input[type="checkbox"]:not(.interruptor):indeterminate { background: var(--primaria); border-color: var(--primaria); }
+input[type="checkbox"]:not(.interruptor):indeterminate::after { opacity: 1; width: 8px; height: 0; border-left: 0; transform: none; }
+input[type="checkbox"]:focus-visible { outline: 2px solid var(--destaque); outline-offset: 2px; }
+
+/* Interruptor (Sim/Não) */
+input.interruptor { appearance: none; position: relative; width: 40px; height: 24px; margin: 0; border-radius: 999px; background: var(--linha-forte); cursor: pointer; flex: 0 0 auto; transition: background-color .18s; vertical-align: middle; }
+input.interruptor::before { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(16, 24, 40, .25); transition: transform .18s; }
+input.interruptor:checked { background: var(--ok); }
+input.interruptor:checked::before { transform: translateX(16px); }
+input.interruptor:disabled { opacity: .5; cursor: not-allowed; }
+.tabela-form input.interruptor { width: 40px; min-width: 40px; height: 24px; padding: 0; border: 0; }
+.interruptor-rotulo { display: inline-flex; }
+.campo-checkbox label { justify-content: space-between; padding: 10px 12px; border: 1px solid var(--linha); border-radius: 10px; }
+.campo-checkbox label span { order: -1; }
+
+/* Remover (lixeira que liga/desliga) */
+.remover { position: relative; display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; border: 1px solid transparent; background: none; color: var(--suave); cursor: pointer; transition: background-color .12s, color .12s; }
+.remover:hover { background: var(--erro-fundo); color: var(--erro); }
+.remover input { position: absolute; inset: 0; opacity: 0; cursor: pointer; margin: 0; width: 100% !important; height: 100% !important; }
+.remover:has(input:checked) { background: var(--erro); color: #fff; }
+.remover:focus-within { outline: 2px solid var(--destaque); outline-offset: 1px; }
+tr:has(.remover input:checked) td:not(.col-remover) { opacity: .45; }
+tr:has(.remover input:checked) td.col-sku input { text-decoration: line-through; }
+.foto-cartao:has(.remover input:checked) { border-color: var(--erro); background: var(--erro-fundo); }
+.foto-cartao:has(.remover input:checked) img { opacity: .35; }
+
+/* Tabela de cores */
+.tabela-variacoes .col-mover { width: 34px; padding-right: 0; }
+.tabela-variacoes .col-cor { width: 44px; }
+.tabela-variacoes .col-sku input { min-width: 130px; }
+.tabela-variacoes .col-estoque input { max-width: 80px; }
+.tabela-variacoes .col-ativa, .tabela-variacoes .col-remover { width: 56px; text-align: center; }
+.tabela-variacoes tbody tr:first-child [data-subir], .tabela-variacoes tbody tr:last-child [data-descer] { visibility: hidden; }
+.swatch-vazio { display: inline-block; width: 22px; height: 22px; border-radius: 50%; border: 1.5px dashed var(--linha-forte); }
+.mover { display: inline-flex; flex-direction: column; }
+.mover-botao { display: inline-grid; place-items: center; width: 24px; height: 18px; padding: 0; border: 0; border-radius: 6px; background: none; color: var(--suave); cursor: pointer; }
+.mover-botao:hover { background: var(--neutro-fundo); color: var(--texto); }
+.botao-adicionar { margin-top: 12px; border-style: dashed; width: 100%; color: var(--suave); }
+.botao-adicionar:hover { color: var(--texto); }
+
+/* Fotos */
+.foto-imagem { position: relative; }
+.selo-capa { position: absolute; top: 8px; left: 8px; background: var(--primaria); color: #fff; display: none; }
+.fotos > [data-linha]:first-child .selo-capa { display: inline-flex; }
+.foto-acoes { position: absolute; right: 6px; bottom: 6px; display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: rgba(255, 255, 255, .92); box-shadow: var(--sombra); }
+.foto-acoes .mover-botao { width: 30px; height: 30px; }
+.remover-foto { width: 30px; height: 30px; }
+.fotos > [data-linha]:first-child [data-subir], .fotos > [data-linha]:last-child [data-descer] { display: none; }
+.soltar-arquivos { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 26px 16px; border: 1.5px dashed var(--linha-forte); border-radius: 14px; background: #fafbfc; color: var(--suave); text-align: center; cursor: pointer; transition: border-color .12s, background-color .12s; }
+.soltar-arquivos b { color: var(--texto); }
+.soltar-arquivos .icone { width: 26px; height: 26px; }
+.soltar-arquivos:hover, .soltar-arquivos.arrastando { border-color: var(--texto); background: #fff; }
+.soltar-arquivos input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.upload { margin-top: 4px; }
+.upload-previa { margin-top: 10px; }
+
+/* Campo de arquivo (banners) */
+.arquivo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.arquivo-atual { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 6px 10px; border-radius: 8px; background: var(--neutro-fundo); font-size: 12px; color: var(--suave); }
+.arquivo-botao { position: relative; display: inline-flex; align-items: center; height: 38px; padding: 0 14px; border: 1px solid var(--linha-forte); border-radius: 10px; background: #fff; font-weight: 600; cursor: pointer; }
+.arquivo-botao:hover { border-color: var(--texto); }
+.arquivo-botao input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.arquivo-nome { font-size: 12px; color: var(--ok); font-weight: 600; }
+.arquivo-remover { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--erro); font-weight: 600; cursor: pointer; }

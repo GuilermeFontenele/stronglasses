@@ -63,3 +63,81 @@ document.querySelectorAll("form").forEach((form) => {
   tipo.addEventListener("change", atualizar);
   atualizar();
 });
+
+// Linhas reordenáveis (cores e fotos): setas mudam a posição e o campo "ordem" acompanha.
+const renumerar = (lista) => {
+  [...lista.querySelectorAll(":scope > [data-linha]")].forEach((linha, i) => {
+    const ordem = linha.querySelector("[data-ordem]");
+    if (ordem) ordem.value = i;
+  });
+};
+document.addEventListener("click", (evento) => {
+  const botao = evento.target.closest("[data-subir], [data-descer]");
+  if (!botao) return;
+  const linha = botao.closest("[data-linha]");
+  const lista = linha?.parentElement;
+  if (!linha || !lista) return;
+  if (botao.hasAttribute("data-subir") && linha.previousElementSibling?.matches("[data-linha]")) {
+    lista.insertBefore(linha, linha.previousElementSibling);
+  } else if (botao.hasAttribute("data-descer") && linha.nextElementSibling?.matches("[data-linha]")) {
+    lista.insertBefore(linha.nextElementSibling, linha);
+  }
+  renumerar(lista);
+  botao.focus();
+});
+document.querySelectorAll("[data-linhas]").forEach(renumerar);
+
+// "Adicionar cor": clona a linha modelo do formset e atualiza o contador do Django.
+document.querySelectorAll("[data-adicionar]").forEach((botao) => {
+  const prefixo = botao.dataset.adicionar;
+  const modelo = document.querySelector(`template[data-modelo="${prefixo}"]`);
+  const total = document.querySelector(`input[name="${prefixo}-TOTAL_FORMS"]`);
+  const lista = document.querySelector(`[data-formset="${prefixo}"] [data-linhas]`);
+  if (!modelo || !total || !lista) return;
+  botao.addEventListener("click", () => {
+    const indice = parseInt(total.value, 10);
+    const html = modelo.innerHTML.replaceAll("__prefix__", indice);
+    lista.insertAdjacentHTML("beforeend", html);
+    total.value = indice + 1;
+    renumerar(lista);
+    lista.querySelector(":scope > [data-linha]:last-of-type select")?.focus();
+  });
+});
+
+// Linha nova que ainda não foi salva: a lixeira só limpa os campos (o Django ignora linha vazia).
+document.addEventListener("click", (evento) => {
+  const botao = evento.target.closest("[data-descartar]");
+  if (!botao) return;
+  const linha = botao.closest("[data-linha]");
+  linha.querySelectorAll("input:not([type=hidden]), select").forEach((campo) => {
+    if (campo.type === "checkbox") campo.checked = campo.defaultChecked;
+    else if (campo.tagName === "SELECT") campo.selectedIndex = 0;
+    else campo.value = campo.defaultValue;
+  });
+  linha.hidden = true;
+});
+
+// Envio de arquivos: mostra o nome escolhido e aceita arrastar e soltar.
+document.querySelectorAll("[data-arquivo]").forEach((bloco) => {
+  const entrada = bloco.querySelector('input[type="file"]');
+  const nome = bloco.querySelector("[data-arquivo-nome]");
+  entrada?.addEventListener("change", () => {
+    if (nome) nome.textContent = entrada.files[0] ? entrada.files[0].name : "";
+  });
+});
+document.querySelectorAll(".soltar-arquivos").forEach((zona) => {
+  const entrada = zona.querySelector('input[type="file"]');
+  ["dragenter", "dragover"].forEach((tipo) =>
+    zona.addEventListener(tipo, (e) => {
+      e.preventDefault();
+      zona.classList.add("arrastando");
+    }),
+  );
+  ["dragleave", "drop"].forEach((tipo) => zona.addEventListener(tipo, () => zona.classList.remove("arrastando")));
+  zona.addEventListener("drop", (e) => {
+    e.preventDefault();
+    if (!entrada || !e.dataTransfer?.files.length) return;
+    entrada.files = e.dataTransfer.files;
+    entrada.dispatchEvent(new Event("change"));
+  });
+});

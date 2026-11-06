@@ -38,50 +38,49 @@
           {{ variacoes.management_form }}
           {% if variacoes.non_form_errors %}<div class="mensagem mensagem-error">{{ variacoes.non_form_errors }}</div>{% endif %}
           <div class="tabela-rolagem">
-            <table class="tabela tabela-form">
-              <thead><tr><th></th><th>Armação</th><th>Lente</th><th>SKU</th><th class="num">Preço próprio</th><th class="num">Estoque</th><th>Ativa</th><th class="num">Ordem</th><th>Excluir</th></tr></thead>
-              <tbody>
-                {% for f in variacoes %}
-                  <tr{% if f.errors %} class="linha-erro"{% endif %}>
-                    <td>{{ f.id }}{% if f.instance.pk %}{% swatch f.instance %}{% endif %}</td>
-                    <td>{{ f.armacao }}{{ f.armacao.errors }}</td>
-                    <td>{{ f.lente }}{{ f.lente.errors }}</td>
-                    <td>{{ f.sku }}{{ f.sku.errors }}</td>
-                    <td class="num">{{ f.preco }}{{ f.preco.errors }}</td>
-                    <td class="num">{{ f.estoque }}{{ f.estoque.errors }}</td>
-                    <td>{{ f.ativa }}</td>
-                    <td class="num">{{ f.ordem }}</td>
-                    <td>{% if f.instance.pk %}{{ f.DELETE }}{% endif %}</td>
-                  </tr>
-                  {% if f.non_field_errors %}<tr><td colspan="9" class="campo-mensagem">{{ f.non_field_errors }}</td></tr>{% endif %}
-                {% endfor %}
+            <table class="tabela tabela-form tabela-variacoes" data-formset="variacoes">
+              <thead><tr><th class="col-mover"><span class="oculto">Ordem</span></th><th class="col-cor">Cor</th><th>Armação</th><th>Lente</th><th>SKU</th><th class="num">Preço próprio</th><th class="num">Estoque</th><th>Ativa</th><th><span class="oculto">Remover</span></th></tr></thead>
+              <tbody data-linhas>
+                {% for f in variacoes %}{% include "gestao/partials/linha_variacao.html" %}{% endfor %}
               </tbody>
             </table>
           </div>
-          <p class="campo-ajuda">A última linha em branco serve para cadastrar uma cor nova. Salve para aparecer outra.</p>
+          <template data-modelo="variacoes">{% include "gestao/partials/linha_variacao.html" with f=variacoes.empty_form %}</template>
+          {% if pode_editar %}<button type="button" class="botao botao-adicionar" data-adicionar="variacoes">{% icone "mais" %} Adicionar cor</button>{% endif %}
+          <p class="campo-ajuda">Use as setas para definir a ordem em que as cores aparecem na loja. Linhas marcadas na lixeira são removidas ao salvar.</p>
         </section>
 
         <section class="bloco">
-          <div class="bloco-topo"><h2>Fotos</h2><span class="dica">A de menor ordem é a capa</span></div>
+          <div class="bloco-topo"><h2>Fotos</h2><span class="dica">A primeira é a capa · use as setas para reordenar</span></div>
           {{ imagens.management_form }}
           {% if imagens.forms %}
-            <div class="fotos">
+            <div class="fotos" data-linhas>
               {% for f in imagens %}
-                <div class="foto-cartao">
-                  {{ f.id }}
-                  <img src="{{ f.instance.imagem.url }}" alt="" width="160" height="160" loading="lazy">
-                  {% include "gestao/partials/campo.html" with campo=f.texto_alternativo %}
-                  <div class="foto-linha">
-                    {% include "gestao/partials/campo.html" with campo=f.ordem %}
-                    {% include "gestao/partials/campo.html" with campo=f.variacao %}
+                <div class="foto-cartao" data-linha>
+                  {{ f.id }}{{ f.ordem }}
+                  <div class="foto-imagem">
+                    <img src="{{ f.instance.imagem.url }}" alt="" width="200" height="200" loading="lazy">
+                    <span class="selo selo-capa">Capa</span>
+                    <div class="foto-acoes">
+                      <button type="button" class="mover-botao" data-subir aria-label="Mover para a esquerda">{% icone "voltar" "icone icone-mini" %}</button>
+                      <button type="button" class="mover-botao" data-descer aria-label="Mover para a direita">{% icone "seta" "icone icone-mini" %}</button>
+                      <label class="remover remover-foto" title="Remover foto">{{ f.DELETE }}{% icone "lixeira" %}<span class="oculto">Remover foto</span></label>
+                    </div>
                   </div>
-                  <label class="excluir">{{ f.DELETE }} Excluir foto</label>
+                  {% include "gestao/partials/campo.html" with campo=f.texto_alternativo %}
+                  {% include "gestao/partials/campo.html" with campo=f.variacao %}
                 </div>
               {% endfor %}
             </div>
           {% else %}<p class="vazio">Nenhuma foto ainda.</p>{% endif %}
           <div class="upload" data-upload>
-            {% include "gestao/partials/campo.html" with campo=form.novas_fotos largo=1 %}
+            <label class="soltar-arquivos" for="{{ form.novas_fotos.id_for_label }}">
+              {% icone "banners" %}
+              <b>Adicionar fotos</b>
+              <span>Clique para escolher ou arraste as imagens aqui · JPG, PNG ou WEBP de até 5 MB</span>
+              {{ form.novas_fotos }}
+            </label>
+            {% for erro in form.novas_fotos.errors %}<small class="campo-mensagem">{{ erro }}</small>{% endfor %}
             <div class="upload-previa" data-previa></div>
           </div>
         </section>

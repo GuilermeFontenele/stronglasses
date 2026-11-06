@@ -19,7 +19,15 @@ from django.contrib.auth import get_user_model  # noqa: E402
 from django.test import Client  # noqa: E402
 from django.utils import timezone  # noqa: E402
 
-from apps.catalogo.models import AcabamentoArmacao, Banner, Categoria, CorLente, Produto, Variacao  # noqa: E402
+from apps.catalogo.models import (  # noqa: E402
+    AcabamentoArmacao,
+    Banner,
+    Categoria,
+    CorLente,
+    ImagemProduto,
+    Produto,
+    Variacao,
+)
 from apps.clientes.models import Cliente, Endereco  # noqa: E402
 from apps.historico.models import ItemPedidoHistorico, MetricaMensal, PedidoHistorico  # noqa: E402
 
@@ -107,6 +115,10 @@ hoje = date.today()
 for m in range(12):
     mes = date(hoje.year - (1 if hoje.month - m <= 0 else 0), (hoje.month - m - 1) % 12 + 1, 1)
     MetricaMensal.objects.create(mes=mes, visitas=900 + aleatorio.randint(0, 900), vendas=aleatorio.randint(5, 20))
+for k in range(3):
+    ImagemProduto.objects.create(
+        produto=produtos[2], imagem=f"produtos/demo{k}.webp", texto_alternativo=f"Foto {k}", ordem=k
+    )
 Banner.objects.create(titulo="Mapa do Brasil", imagem="banners/demo.webp", imagem_mobile="banners/demo-cel.webp")
 
 navegador = Client()
@@ -114,7 +126,7 @@ navegador.force_login(dono)
 telas = {
     "dashboard": "/gestao/",
     "produtos": "/gestao/produtos/",
-    "produto": f"/gestao/produtos/{produtos[0].pk}/",
+    "produto": f"/gestao/produtos/{produtos[2].pk}/",
     "estoque": "/gestao/estoque/",
     "clientes": "/gestao/clientes/",
     "cliente": f"/gestao/clientes/{clientes[0].pk}/",

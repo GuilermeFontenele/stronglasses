@@ -1,0 +1,24 @@
+{% load gestao catalogo %}<tr data-linha{% if f.errors %} class="linha-erro"{% endif %}>
+  <td class="col-mover">
+    {{ f.id }}{{ f.ordem }}
+    <span class="mover">
+      <button type="button" class="mover-botao" data-subir aria-label="Subir">{% icone "subiu" "icone icone-mini" %}</button>
+      <button type="button" class="mover-botao" data-descer aria-label="Descer">{% icone "desceu" "icone icone-mini" %}</button>
+    </span>
+  </td>
+  <td class="col-cor">{% if f.instance.pk %}{% swatch f.instance %}{% else %}<span class="swatch-vazio" aria-hidden="true"></span>{% endif %}</td>
+  <td>{{ f.armacao }}{{ f.armacao.errors }}</td>
+  <td>{{ f.lente }}{{ f.lente.errors }}</td>
+  <td class="col-sku">{{ f.sku }}{{ f.sku.errors }}</td>
+  <td class="num">{{ f.preco }}{{ f.preco.errors }}</td>
+  <td class="num col-estoque">{{ f.estoque }}{{ f.estoque.errors }}</td>
+  <td class="col-ativa"><label class="interruptor-rotulo">{{ f.ativa }}<span class="oculto">Ativa</span></label></td>
+  <td class="col-remover">
+    {% if f.instance.pk %}
+      <label class="remover" title="Remover esta cor">{{ f.DELETE }}{% icone "lixeira" %}<span class="oculto">Remover</span></label>
+    {% else %}
+      <button type="button" class="remover" data-descartar title="Descartar linha">{% icone "lixeira" %}<span class="oculto">Descartar</span></button>
+    {% endif %}
+  </td>
+</tr>
+{% if f.non_field_errors %}<tr><td colspan="9" class="campo-mensagem">{{ f.non_field_errors }}</td></tr>{% endif %}

@@ -17,6 +17,29 @@ from apps.clientes.models import Cliente
 from apps.core.models import Pagina, Parametro
 
 
+class EstiloPainel:
+    """Visual padrão do painel: Sim/Não vira interruptor e o "---------" do Django vira texto claro."""
+
+    rotulos_vazios: dict[str, str] = {}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for nome, campo in self.fields.items():
+            if isinstance(campo, forms.BooleanField) and nome != "DELETE":
+                campo.widget.attrs["class"] = "interruptor"
+            rotulo = self.rotulos_vazios.get(nome, "Selecione…")
+            if isinstance(campo, forms.ModelChoiceField) and campo.empty_label is not None:
+                campo.empty_label = rotulo
+            elif isinstance(campo, forms.ChoiceField) and campo.choices and campo.choices[0][0] == "":
+                campo.choices = [("", rotulo), *list(campo.choices)[1:]]
+
+
+class ArquivoAtual(forms.ClearableFileInput):
+    """Mostra o arquivo atual com prévia e um botão de trocar, sem o "Atualmente/Limpar/Modificar" do Django."""
+
+    template_name = "gestao/widgets/arquivo.html"
+
+
 class VariosArquivos(forms.ClearableFileInput):
     allow_multiple_selected = True
 
@@ -35,7 +58,9 @@ class VariasImagens(forms.ImageField):
         return [resultado] if resultado else []
 
 
-class ProdutoForm(forms.ModelForm):
+class ProdutoForm(EstiloPainel, forms.ModelForm):
+    rotulos_vazios = {"formato": "Não informado"}
+
     categorias = forms.ModelMultipleChoiceField(
         Categoria.objects.order_by("ordem", "nome"), required=False, widget=forms.CheckboxSelectMultiple
     )
@@ -72,19 +97,30 @@ class ProdutoForm(forms.ModelForm):
         return dados
 
 
-VariacaoFormSet = inlineformset_factory(
-    Produto,
-    Variacao,
-    fields=["armacao", "lente", "sku", "preco", "estoque", "ativa", "ordem"],
-    extra=1,
-    can_delete=True,
-)
+class VariacaoForm(EstiloPainel, forms.ModelForm):
+    rotulos_vazios = {"armacao": "Escolha a armação", "lente": "Sem lente"}
+
+    class Meta:
+        model = Variacao
+        fields = ["armacao", "lente", "sku", "preco", "estoque", "ativa", "ordem"]
+        widgets = {
+            "ordem": forms.HiddenInput(attrs={"data-ordem": ""}),
+            "preco": forms.NumberInput(attrs={"placeholder": "Igual ao produto", "step": "0.01"}),
+            "estoque": forms.NumberInput(attrs={"min": "0"}),
+        }
 
 
-class ImagemForm(forms.ModelForm):
+# Produto existente: linhas novas entram pelo botão "Adicionar cor"; produto novo já abre com uma.
+VariacaoFormSet = inlineformset_factory(Produto, Variacao, form=VariacaoForm, extra=0, can_delete=True)
+VariacaoFormSetNovo = inlineformset_factory(Produto, Variacao, form=VariacaoForm, extra=1, can_delete=True)
+
+
+class ImagemForm(EstiloPainel, forms.ModelForm):
     class Meta:
         model = ImagemProduto
         fields = ["texto_alternativo", "ordem", "variacao"]
+        widgets = {"ordem": forms.HiddenInput(attrs={"data-ordem": ""})}
+        labels = {"texto_alternativo": "Descrição da foto", "variacao": "Cor"}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -100,7 +136,7 @@ ImagemFormSet = inlineformset_factory(Produto, ImagemProduto, form=ImagemForm, e
 EstoqueFormSet = modelformset_factory(Variacao, fields=["estoque", "preco"], extra=0)
 
 
-class BannerForm(forms.ModelForm):
+class BannerForm(EstiloPainel, forms.ModelForm):
     class Meta:
         model = Banner
         fields = [
@@ -116,19 +152,23 @@ class BannerForm(forms.ModelForm):
             "ordem",
         ]
         widgets = {
+            "imagem": ArquivoAtual(attrs={"accept": "image/jpeg,image/png,image/webp"}),
+            "imagem_mobile": ArquivoAtual(attrs={"accept": "image/jpeg,image/png,image/webp"}),
+            "video": ArquivoAtual(attrs={"accept": "video/mp4,video/webm"}),
+            "video_mobile": ArquivoAtual(attrs={"accept": "video/mp4,video/webm"}),
             "inicio": forms.DateTimeInput(attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"),
             "fim": forms.DateTimeInput(attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"),
         }
 
 
-class PaginaForm(forms.ModelForm):
+class PaginaForm(EstiloPainel, forms.ModelForm):
     class Meta:
         model = Pagina
         fields = ["titulo", "slug", "conteudo", "seo_descricao", "publicada"]
         widgets = {"conteudo": forms.Textarea(attrs={"rows": 18})}
 
 
-class ClienteForm(forms.ModelForm):
+class ClienteForm(EstiloPainel, forms.ModelForm):
     class Meta:
         model = Cliente
         fields = ["tipo", "nome", "razao_social", "email", "whatsapp"]
@@ -153,7 +193,7 @@ GRUPOS_CONFIGURACAO = [
 ]
 
 
-class ConfiguracoesForm(forms.Form):
+class ConfiguracoesForm(EstiloPainel, forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         chaves = [chave for _, grupo in GRUPOS_CONFIGURACAO for chave in grupo]

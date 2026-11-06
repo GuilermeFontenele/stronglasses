@@ -1,0 +1,11 @@
+<div class="arquivo" data-arquivo>
+  {% if widget.is_initial %}<span class="arquivo-atual" title="{{ widget.value.name }}">{{ widget.value.name|cut:"banners/" }}</span>{% endif %}
+  <label class="arquivo-botao">
+    <input type="{{ widget.type }}" name="{{ widget.name }}"{% include "django/forms/widgets/attrs.html" %}>
+    <span>{% if widget.is_initial %}Trocar arquivo{% else %}Escolher arquivo{% endif %}</span>
+  </label>
+  <span class="arquivo-nome" data-arquivo-nome></span>
+  {% if widget.is_initial and not widget.required %}
+    <label class="arquivo-remover"><input type="checkbox" name="{{ widget.checkbox_name }}" id="{{ widget.checkbox_id }}"> Remover</label>
+  {% endif %}
+</div>

@@ -37,6 +37,7 @@ from .forms import (
     PaginaForm,
     ProdutoForm,
     VariacaoFormSet,
+    VariacaoFormSetNovo,
 )
 
 POR_PAGINA = 30
@@ -280,7 +281,7 @@ def produto_editar(request, pk=None):
     if request.method == "POST" and pode_editar:
         antes = foto(produto) if pk else None
         form = ProdutoForm(request.POST, request.FILES, instance=produto)
-        variacoes = VariacaoFormSet(request.POST, instance=produto, prefix="variacoes")
+        variacoes = (VariacaoFormSet if pk else VariacaoFormSetNovo)(request.POST, instance=produto, prefix="variacoes")
         imagens = ImagemFormSet(request.POST, instance=produto, prefix="imagens")
         if form.is_valid() and variacoes.is_valid() and imagens.is_valid():
             with transaction.atomic():
@@ -304,7 +305,7 @@ def produto_editar(request, pk=None):
         messages.error(request, "Confira os campos destacados.")
     else:
         form = ProdutoForm(instance=produto)
-        variacoes = VariacaoFormSet(instance=produto, prefix="variacoes")
+        variacoes = (VariacaoFormSet if pk else VariacaoFormSetNovo)(instance=produto, prefix="variacoes")
         imagens = ImagemFormSet(instance=produto, prefix="imagens")
     return render(
         request,
