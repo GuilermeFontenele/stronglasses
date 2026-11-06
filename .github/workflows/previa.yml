@@ -33,6 +33,12 @@ jobs:
       - run: pip install -r requirements/dev.txt
       - run: python manage.py migrate --noinput
       - run: python scripts/previa_gestao.py previa
+      - name: HTML no log (para quem não consegue baixar artefatos)
+        run: |
+          echo "INICIO_PREVIA"
+          tar czf - previa | base64 -w 0
+          echo
+          echo "FIM_PREVIA"
       - uses: actions/upload-artifact@v4
         with:
           name: previa-gestao
