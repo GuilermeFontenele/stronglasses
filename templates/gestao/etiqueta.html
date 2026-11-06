@@ -95,7 +95,7 @@
       <p>Declaro que não me enquadro no conceito de contribuinte previsto no art. 4º da Lei Complementar nº 87/1996, uma vez que não realizo, com habitualidade ou em volume que caracterize intuito comercial, operações de circulação de mercadoria, ainda que se iniciem no exterior, ou estou dispensado da emissão da nota fiscal por força da legislação tributária vigente, responsabilizando-me, nos termos da lei e a quem de direito, por informações inverídicas.</p>
       <p>Declaro ainda que não estou postando conteúdo inflamável, explosivo, causador de combustão espontânea, tóxico, corrosivo, gás ou qualquer outro conteúdo que constitua perigo, conforme o art. 13 da Lei Postal nº 6.538/78.</p>
       <div class="dc-assinatura">
-        <p>{{ remetente.cidade|default:"________________" }}, {{ hoje|date:"j \d\e F \d\e Y" }}</p>
+        <p>{{ remetente.cidade|default:"________________" }}, {{ hoje|date:"j \d\e F \d\e Y"|lower }}</p>
         <p class="dc-linha">Assinatura do declarante/remetente</p>
       </div>
     </div>

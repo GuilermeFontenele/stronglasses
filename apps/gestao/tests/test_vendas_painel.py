@@ -110,7 +110,7 @@ class TelasVendasTests(BaseVendasPainel):
         resposta = self.client.get("/gestao/vendas/nova/", {"busca_cliente": "maria"})
         self.assertEqual(resposta.context["resultados"], [self.cliente])
         resposta = self.client.get("/gestao/vendas/nova/", {"cliente": self.cliente.pk})
-        self.assertEqual(resposta.context["form"].initial["cep"], "60000000")
+        self.assertEqual(resposta.context["form"].initial["cep"], "60000-000")
         self.assertEqual(resposta.context["form"].initial["uf"], "CE")
         self.assertContains(resposta, 'data-preco="85.90"')
 

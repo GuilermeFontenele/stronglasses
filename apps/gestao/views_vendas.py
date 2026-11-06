@@ -105,7 +105,11 @@ def vendas(request):
 
 
 def _inicial(cliente: Cliente | None) -> dict:
-    inicial = {"realizado_em": timezone.localtime().replace(second=0, microsecond=0), "uf": "CE"}
+    inicial = {
+        "realizado_em": timezone.localtime().replace(second=0, microsecond=0),
+        "uf": "CE",
+        "forma_pagamento": Pedido.FormaPagamento.PIX,
+    }
     if not cliente:
         return inicial
     inicial["destinatario"] = cliente.nome
@@ -113,7 +117,7 @@ def _inicial(cliente: Cliente | None) -> dict:
     if endereco:
         inicial.update(
             destinatario=endereco.destinatario or cliente.nome,
-            cep=endereco.cep,
+            cep=f"{endereco.cep[:5]}-{endereco.cep[5:]}" if len(endereco.cep) == 8 else endereco.cep,
             logradouro=endereco.logradouro,
             numero_endereco=endereco.numero,
             complemento=endereco.complemento,

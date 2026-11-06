@@ -444,3 +444,16 @@ tr:has(.remover input:checked) td.col-sku input { text-decoration: line-through;
   .tabela-itens .col-oculos, .tabela-itens select { min-width: 180px; }
   .busca-cliente .botao { flex: 1; }
 }
+/* Itens da venda no celular: cada óculos vira um cartão (sem rolagem lateral) */
+@media (max-width: 640px) {
+  .bloco .tabela-rolagem:has(.tabela-itens) { overflow: visible; margin: 0; }
+  .tabela-itens thead { display: none; }
+  .tabela-itens, .tabela-itens tbody { display: block; }
+  .tabela-itens tr[data-item] { display: grid; grid-template-columns: 72px 1fr auto 40px; gap: 8px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--linha); }
+  .tabela-itens tr[data-item][hidden] { display: none; }
+  .tabela-itens td { padding: 0; border: 0; }
+  .tabela-itens td.col-oculos { grid-column: 1 / -1; min-width: 0; }
+  .tabela-itens select { min-width: 0; }
+  .tabela-itens .col-qtd input, .tabela-itens .col-preco input { max-width: none; }
+  .tabela-itens tbody tr:hover { background: none; }
+}

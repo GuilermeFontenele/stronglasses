@@ -309,7 +309,8 @@ def opcoes_variacoes() -> tuple[list, dict]:
     for v in variacoes:
         situacao = "sem estoque" if v.estoque <= 0 else f"{v.estoque} em estoque"
         inativo = "" if v.ativa and v.produto.ativo else " · fora da loja"
-        grupos.setdefault(v.produto.nome, []).append((v.pk, f"{v.descricao_cor} ({situacao}{inativo})"))
+        rotulo = f"{v.produto.nome} · {v.descricao_cor.lower()} ({situacao}{inativo})"
+        grupos.setdefault(v.produto.nome, []).append((v.pk, rotulo))
         dados[str(v.pk)] = (format(v.preco_final, "f"), v.estoque)
     return [("", "Escolha o óculos"), *grupos.items()], dados
 
