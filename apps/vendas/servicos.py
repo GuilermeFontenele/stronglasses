@@ -131,3 +131,12 @@ def mudar_situacao(pedido: Pedido, nova: str, *, usuario=None, codigo_rastreio: 
     pedido.save()
     registrar(RegistroAuditoria.Acao.ALTERACAO, pedido, antes, foto(pedido), usuario)
     return pedido
+
+
+def peso_do_pacote(pedido: Pedido, itens, padrao: int) -> int:
+    """Gramas: o peso informado na venda ou a soma do peso cadastrado dos produtos (padrão para quem não tem)."""
+    if pedido.peso_g:
+        return pedido.peso_g
+    return sum(
+        (item.produto.peso_g if item.produto and item.produto.peso_g else padrao) * item.quantidade for item in itens
+    )

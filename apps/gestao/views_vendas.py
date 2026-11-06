@@ -16,8 +16,12 @@ from apps.core.crypto import hash_busca
 from apps.core.models import RegistroAuditoria
 from apps.core.parametros import get_parametros
 from apps.core.validators import so_digitos
+from apps.envios import melhorenvio
+from apps.envios import servicos as envios_servicos
+from apps.envios.models import Envio
+from apps.envios.servicos import remetente as dados_remetente
 from apps.vendas.models import Pedido, sigla_uf
-from apps.vendas.servicos import EstoqueInsuficiente, ItemNovo, mudar_situacao, registrar_venda
+from apps.vendas.servicos import EstoqueInsuficiente, ItemNovo, mudar_situacao, peso_do_pacote, registrar_venda
 
 from . import metricas
 from .acesso import equipe
@@ -264,47 +268,47 @@ def venda(request, pk):
     return render(
         request,
         "gestao/venda.html",
-        {"secao": "vendas", "pedido": obj, "itens": itens, "form": form, "pode_editar": pode_editar},
+        {
+            "secao": "vendas",
+            "pedido": obj,
+            "itens": itens,
+            "form": form,
+            "pode_editar": pode_editar,
+            **_contexto_envio(request, obj),
+        },
     )
+
+
+def _contexto_envio(request, pedido: Pedido) -> dict:
+    """Bloco "Envio pela transportadora" da ficha (Melhor Envio)."""
+    if not pedido.vai_por_envio:
+        return {"mostrar_envio": False}
+    envios = list(pedido.envios.all())
+    ativo = next((e for e in envios if e.status in Envio.ATIVOS), None)
+    cotacao = request.session.get(f"cotacao_{pedido.pk}") if not ativo else None
+    conexao = melhorenvio.conexao_atual()
+    return {
+        "mostrar_envio": True,
+        "envio": ativo,
+        "envios_anteriores": [e for e in envios if e is not ativo],
+        "cotacao": cotacao,
+        "melhorenvio_conectado": bool(conexao and conexao.conectada),
+        "melhorenvio_testes": melhorenvio.ambiente() == "sandbox",
+        "motivo_sem_envio": envios_servicos.pode_enviar(pedido),
+        "documento_no_cadastro": bool(pedido.cliente_id and pedido.cliente.documento),
+    }
 
 
 # ---------------------------------------------------------------- etiqueta e declaração de conteúdo
 
 
-def peso_do_pacote(pedido: Pedido, itens, padrao: int) -> int:
-    if pedido.peso_g:
-        return pedido.peso_g
-    return sum(
-        ((item.produto.peso_g if item.produto and item.produto.peso_g else padrao) * item.quantidade) for item in itens
-    )
-
-
 @equipe(permissao="vendas.imprimir_etiqueta")
 def venda_etiqueta(request, pk):
     obj = get_object_or_404(Pedido.objects.select_related("cliente"), pk=pk)
-    p = get_parametros(
-        "REMETENTE_NOME",
-        "REMETENTE_ENDERECO",
-        "REMETENTE_BAIRRO",
-        "REMETENTE_CIDADE",
-        "REMETENTE_UF",
-        "REMETENTE_CEP",
-        "CNPJ_LOJA",
-        "PESO_PADRAO_G",
-        padroes={"REMETENTE_NOME": "Strong Glasses", "PESO_PADRAO_G": PESO_PADRAO_G},
-    )
-    remetente = {
-        "nome": p["REMETENTE_NOME"] or "Strong Glasses",
-        "endereco": p["REMETENTE_ENDERECO"] or "",
-        "bairro": p["REMETENTE_BAIRRO"] or "",
-        "cidade": p["REMETENTE_CIDADE"] or "",
-        "uf": (p["REMETENTE_UF"] or "").upper(),
-        "cep": so_digitos(p["REMETENTE_CEP"] or ""),
-        "documento": so_digitos(p["CNPJ_LOJA"] or ""),
-    }
-    remetente["completo"] = all(remetente[c] for c in ("endereco", "cidade", "uf", "cep"))
+    remetente = dados_remetente()
+    padrao = get_parametros("PESO_PADRAO_G", padroes={"PESO_PADRAO_G": PESO_PADRAO_G})["PESO_PADRAO_G"]
     itens = list(obj.itens.select_related("produto"))
-    peso = peso_do_pacote(obj, itens, int(p["PESO_PADRAO_G"] or PESO_PADRAO_G))
+    peso = peso_do_pacote(obj, itens, int(padrao or PESO_PADRAO_G))
     documento = ""
     if obj.cliente_id and obj.cliente.documento:
         documento = obj.cliente.documento

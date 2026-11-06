@@ -457,3 +457,34 @@ tr:has(.remover input:checked) td.col-sku input { text-decoration: line-through;
   .tabela-itens .col-qtd input, .tabela-itens .col-preco input { max-width: none; }
   .tabela-itens tbody tr:hover { background: none; }
 }
+
+/* Envio pela transportadora (Melhor Envio) */
+.bloco-envio .bloco-topo { align-items: center; }
+.cotar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 14px; }
+.opcoes-frete { border: 0; padding: 0; margin: 0 0 16px; display: flex; flex-direction: column; gap: 8px; }
+.opcao-frete { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--linha-forte); border-radius: 12px; cursor: pointer; transition: border-color .12s, background-color .12s; }
+.opcao-frete > span { flex: 1; min-width: 0; }
+.opcao-frete strong { font-size: 15px; font-variant-numeric: tabular-nums; }
+.opcao-frete input { width: 18px; height: 18px; accent-color: var(--primaria); flex: 0 0 auto; }
+.opcao-frete:has(input:checked) { border-color: var(--primaria); background: #fafbfc; box-shadow: 0 0 0 1px var(--primaria); }
+.opcao-frete.indisponivel { cursor: default; color: var(--suave); background: var(--neutro-fundo); border-style: dashed; }
+.comprar-etiqueta .campos { margin-bottom: 14px; }
+.envio-atual { display: flex; flex-direction: column; gap: 12px; }
+.envio-cabecalho { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 14px; border: 1px solid var(--linha); border-radius: 12px; background: #fafbfc; }
+.envio-rastreio { margin: 0; font-variant-numeric: tabular-nums; }
+.envios-anteriores { margin-top: 14px; color: var(--suave); }
+.envios-anteriores summary { cursor: pointer; font-weight: 600; }
+.envios-anteriores ul { margin: 8px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.vazio-esquerda { color: var(--suave); margin: 0 0 12px; }
+
+/* Integrações */
+.integracao { max-width: 760px; }
+.integracao-topo { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+.integracao-topo > div { flex: 1; }
+.integracao-topo p { margin: 4px 0 0; }
+.integracao-icone { display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: var(--neutro-fundo); }
+.integracao .acoes { margin: 18px 0 8px; }
+.passos { margin-top: 18px; padding: 16px 18px; border-radius: 12px; background: #fafbfc; border: 1px solid var(--linha); }
+.passos h3 { font-size: 14px; margin-bottom: 8px; }
+.passos ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; line-height: 1.5; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; background: var(--neutro-fundo); padding: 2px 6px; border-radius: 6px; word-break: break-all; }

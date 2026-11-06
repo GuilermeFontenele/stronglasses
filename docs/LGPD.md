@@ -32,7 +32,7 @@ passam pelo nosso servidor (tokenização do Mercado Pago).
 | Com quem | O quê | Para quê |
 |---|---|---|
 | Mercado Pago | Nome, e-mail, documento, valor | Processar o pagamento |
-| Melhor Envio / transportadora | Nome, endereço, telefone | Entregar o pedido |
+| Melhor Envio e transportadora (Correios, Jadlog, J&T) | Nome, endereço, telefone, e-mail, CPF/CNPJ (exigido na declaração de conteúdo), itens e valores | Comprar a etiqueta, emitir a declaração de conteúdo eletrônica e entregar |
 | Provedor de e-mail transacional | E-mail, nome | Confirmação e rastreio |
 | Hospedagem e banco de dados | Todos (cifrados onde aplicável) | Operar a loja |
 

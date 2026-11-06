@@ -199,6 +199,8 @@ GRUPOS_CONFIGURACAO = [
         [
             "REMETENTE_NOME",
             "REMETENTE_ENDERECO",
+            "REMETENTE_NUMERO",
+            "REMETENTE_COMPLEMENTO",
             "REMETENTE_BAIRRO",
             "REMETENTE_CIDADE",
             "REMETENTE_UF",

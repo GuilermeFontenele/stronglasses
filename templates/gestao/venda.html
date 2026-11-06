@@ -10,7 +10,7 @@
     </div>
     <div class="acoes">
       {% if perms.vendas.imprimir_etiqueta and pedido.situacao != "cancelado" %}
-        <a class="botao{% if pedido.vai_por_envio %} botao-primario{% endif %}" href="{% url 'gestao:venda_etiqueta' pedido.pk %}" target="_blank" rel="noopener">{% icone "imprimir" %} Etiqueta e declaração</a>
+        <a class="botao" href="{% url 'gestao:venda_etiqueta' pedido.pk %}" target="_blank" rel="noopener" title="Etiqueta e declaração para preencher e postar no balcão, sem a integração">{% icone "imprimir" %} Etiqueta manual</a>
       {% endif %}
       {% if pedido.cliente and pedido.cliente.whatsapp %}<a class="botao botao-whatsapp" href="https://wa.me/{{ pedido.cliente.whatsapp|digitos }}" target="_blank" rel="noopener">{% icone "whatsapp" %} WhatsApp</a>{% endif %}
     </div>
@@ -51,6 +51,100 @@
         </dl>
         <p class="campo-ajuda">{% if pedido.estoque_baixado %}Estes itens saíram do estoque.{% elif pedido.situacao == "cancelado" %}Venda cancelada: nada fica baixado do estoque.{% else %}Esta venda não mexeu no estoque.{% endif %}</p>
       </section>
+
+      {% if mostrar_envio and pedido.situacao != "cancelado" %}
+        <section class="bloco bloco-envio" id="envio" aria-labelledby="t-envio">
+          <div class="bloco-topo"><h2 id="t-envio">Envio pela transportadora</h2>{% if melhorenvio_testes %}<span class="selo selo-aviso">Ambiente de testes</span>{% else %}<span class="dica">Melhor Envio</span>{% endif %}</div>
+
+          {% if envio %}
+            <div class="envio-atual">
+              <div class="envio-cabecalho">
+                <div><b>{{ envio.transportadora }} · {{ envio.servico }}</b><br><small class="texto-suave">{{ envio.preco|brl }}{% if envio.prazo_dias %} · até {{ envio.prazo_dias }} dia{{ envio.prazo_dias|pluralize }} úte{{ envio.prazo_dias|pluralize:"il,is" }}{% endif %}{% if envio.com_nota_fiscal %} · com nota fiscal{% else %} · com declaração de conteúdo{% endif %}</small></div>
+                <span class="selo selo-{{ envio.tom }}">{{ envio.get_status_display }}</span>
+              </div>
+              {% if envio.rastreio %}<p class="envio-rastreio">Rastreio: <b>{{ envio.rastreio }}</b></p>{% endif %}
+              {% if envio.erro %}<p class="mensagem mensagem-warning">{{ envio.erro }}</p>{% endif %}
+              <div class="acoes">
+                {% if envio.pode_imprimir and perms.vendas.imprimir_etiqueta %}
+                  <a class="botao botao-primario" href="{% url 'gestao:envio_imprimir' envio.pk %}" target="_blank" rel="noopener">{% icone "imprimir" %} Imprimir etiqueta</a>
+                  {% if not envio.com_nota_fiscal %}<a class="botao" href="{% url 'gestao:envio_dace' envio.pk %}" target="_blank" rel="noopener">{% icone "paginas" %} Declaração de conteúdo</a>{% endif %}
+                {% endif %}
+                {% if pode_editar %}
+                  {% if envio.status == "pago" %}<form method="post" action="{% url 'gestao:envio_acao' envio.pk 'gerar' %}">{% csrf_token %}<button class="botao" type="submit">Gerar de novo</button></form>{% endif %}
+                  {% if envio.status == "gerado" or envio.status == "postado" %}<form method="post" action="{% url 'gestao:envio_acao' envio.pk 'rastrear' %}">{% csrf_token %}<button class="botao" type="submit">{% icone "envio" %} Atualizar rastreio</button></form>{% endif %}
+                {% endif %}
+              </div>
+              {% if pode_editar and envio.pode_cancelar %}
+                <details class="perigo">
+                  <summary>Cancelar etiqueta</summary>
+                  <form method="post" action="{% url 'gestao:envio_acao' envio.pk 'cancelar' %}" class="formulario">
+                    {% csrf_token %}
+                    <p class="campo-ajuda">Só dá para cancelar antes de postar. O valor volta para o saldo do Melhor Envio em até 12 horas.</p>
+                    <button class="botao botao-perigo" type="submit">Cancelar etiqueta</button>
+                  </form>
+                </details>
+              {% endif %}
+            </div>
+
+          {% elif not melhorenvio_conectado %}
+            <p class="vazio-esquerda">Conecte a conta do Melhor Envio para cotar e comprar etiquetas de Correios, Jadlog e J&amp;T daqui.</p>
+            {% if perms.envios.change_conexaomelhorenvio %}<a class="botao" href="{% url 'gestao:integracoes' %}">{% icone "envio" %} Conectar Melhor Envio</a>{% endif %}
+
+          {% elif motivo_sem_envio %}
+            <p class="mensagem mensagem-warning">{{ motivo_sem_envio }}</p>
+
+          {% elif pode_editar %}
+            <form method="post" action="{% url 'gestao:frete_cotar' pedido.pk %}" class="cotar">
+              {% csrf_token %}
+              <button class="botao{% if not cotacao %} botao-primario{% endif %}" type="submit">{% icone "busca" %} {% if cotacao %}Cotar de novo{% else %}Cotar frete{% endif %}</button>
+              <span class="dica">Para {{ pedido.cidade }}/{{ pedido.uf }} · CEP {{ pedido.cep|slice:":5" }}-{{ pedido.cep|slice:"5:" }}</span>
+            </form>
+            {% if cotacao %}
+              <form method="post" action="{% url 'gestao:frete_comprar' pedido.pk %}" class="formulario comprar-etiqueta">
+                {% csrf_token %}
+                <fieldset class="opcoes-frete">
+                  <legend class="oculto">Escolha o frete</legend>
+                  {% for o in cotacao.opcoes %}
+                    {% if o.erro %}
+                      <div class="opcao-frete indisponivel"><span><b>{{ o.transportadora }} · {{ o.servico }}</b><br><small>{{ o.erro }}</small></span></div>
+                    {% else %}
+                      <label class="opcao-frete">
+                        <input type="radio" name="servico" value="{{ o.id }}" required{% if forloop.first %} checked{% endif %}>
+                        <span><b>{{ o.transportadora }} · {{ o.servico }}</b><br><small class="texto-suave">{% if o.prazo_min and o.prazo_max and o.prazo_min != o.prazo_max %}{{ o.prazo_min }} a {{ o.prazo_max }} dias úteis{% elif o.prazo %}{{ o.prazo }} dia{{ o.prazo|pluralize }} úte{{ o.prazo|pluralize:"il,is" }}{% endif %}</small></span>
+                        <strong>{{ o.preco|brl }}</strong>
+                      </label>
+                    {% endif %}
+                  {% endfor %}
+                </fieldset>
+                <div class="campos">
+                  <div class="campo">
+                    <label class="campo-rotulo" for="documento">CPF/CNPJ do destinatário</label>
+                    <input id="documento" name="documento" inputmode="numeric" autocomplete="off" placeholder="{% if documento_no_cadastro %}Usar o do cadastro{% else %}Obrigatório na declaração{% endif %}">
+                    <small class="campo-ajuda">{% if documento_no_cadastro %}Vazio = usa o do cadastro (fica registrado o acesso).{% else %}A transportadora exige na declaração de conteúdo.{% endif %}</small>
+                  </div>
+                  <div class="campo">
+                    <label class="campo-rotulo" for="chave_nfe">Chave da nota fiscal</label>
+                    <input id="chave_nfe" name="chave_nfe" inputmode="numeric" autocomplete="off" placeholder="Só se tiver nota (44 números)">
+                    <small class="campo-ajuda">Vazio = vai com declaração de conteúdo eletrônica.</small>
+                  </div>
+                  {% if pedido.cliente and not documento_no_cadastro %}
+                    <div class="campo campo-checkbox campo-largo"><label><input type="checkbox" name="salvar_documento" value="1" class="interruptor"> <span>Salvar o CPF/CNPJ no cadastro do cliente</span></label></div>
+                  {% endif %}
+                </div>
+                <button class="botao botao-primario" type="submit">{% icone "venda" %} Comprar etiqueta com o saldo do Melhor Envio</button>
+                <p class="campo-ajuda">Cotado em {{ cotacao.quando }} · o preço é conferido de novo na hora da compra.</p>
+              </form>
+            {% endif %}
+          {% endif %}
+
+          {% if envios_anteriores %}
+            <details class="envios-anteriores">
+              <summary>Etiquetas anteriores ({{ envios_anteriores|length }})</summary>
+              <ul>{% for e in envios_anteriores %}<li>{{ e.transportadora }} {{ e.servico }} · {{ e.preco|brl }} · <span class="selo selo-{{ e.tom }}">{{ e.get_status_display }}</span>{% if e.erro %} <small class="texto-suave">{{ e.erro }}</small>{% endif %}</li>{% endfor %}</ul>
+            </details>
+          {% endif %}
+        </section>
+      {% endif %}
 
       {% if pedido.observacoes %}
         <section class="bloco"><h2>Observações</h2><p class="texto-livre">{{ pedido.observacoes|linebreaksbr }}</p></section>

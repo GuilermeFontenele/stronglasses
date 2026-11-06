@@ -43,7 +43,7 @@
     <div class="etq-remetente">
       <p class="etq-rotulo">Remetente</p>
       <p><b>{{ remetente.nome }}</b></p>
-      <p>{{ remetente.endereco }}{% if remetente.bairro %} · {{ remetente.bairro }}{% endif %}</p>
+      <p>{{ remetente.endereco }}{% if remetente.numero %}, {{ remetente.numero }}{% endif %}{% if remetente.complemento %} {{ remetente.complemento }}{% endif %}{% if remetente.bairro %} · {{ remetente.bairro }}{% endif %}</p>
       <p>{{ remetente.cep|cep }} {{ remetente.cidade }}/{{ remetente.uf }}</p>
     </div>
   </section>
@@ -56,7 +56,7 @@
         <thead><tr><th colspan="2">Remetente</th></tr></thead>
         <tbody>
           <tr><th>Nome</th><td>{{ remetente.nome }}</td></tr>
-          <tr><th>Endereço</th><td>{{ remetente.endereco }}{% if remetente.bairro %}, {{ remetente.bairro }}{% endif %}</td></tr>
+          <tr><th>Endereço</th><td>{{ remetente.endereco }}{% if remetente.numero %}, {{ remetente.numero }}{% endif %}{% if remetente.complemento %}, {{ remetente.complemento }}{% endif %}{% if remetente.bairro %}, {{ remetente.bairro }}{% endif %}</td></tr>
           <tr><th>Cidade</th><td>{{ remetente.cidade }}</td></tr>
           <tr><th>UF / CEP</th><td>{{ remetente.uf }} · {{ remetente.cep|cep }}</td></tr>
           <tr><th>CPF/CNPJ</th><td>{{ remetente.documento|documento }}</td></tr>

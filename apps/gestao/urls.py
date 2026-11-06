@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views, views_vendas
+from . import views, views_envios, views_vendas
 
 app_name = "gestao"
 
@@ -22,6 +22,19 @@ urlpatterns = [
     path("vendas/nova/", views_vendas.venda_nova, name="venda_nova"),
     path("vendas/<int:pk>/", views_vendas.venda, name="venda"),
     path("vendas/<int:pk>/etiqueta/", views_vendas.venda_etiqueta, name="venda_etiqueta"),
+    path("vendas/<int:pk>/frete/cotar/", views_envios.frete_cotar, name="frete_cotar"),
+    path("vendas/<int:pk>/frete/comprar/", views_envios.frete_comprar, name="frete_comprar"),
+    path("envios/<int:pk>/imprimir/", views_envios.envio_imprimir, name="envio_imprimir"),
+    path("envios/<int:pk>/declaracao/", views_envios.envio_dace, name="envio_dace"),
+    path("envios/<int:pk>/<str:acao>/", views_envios.envio_acao, name="envio_acao"),
+    path("integracoes/", views_envios.integracoes, name="integracoes"),
+    path("integracoes/melhor-envio/conectar/", views_envios.melhorenvio_conectar, name="melhorenvio_conectar"),
+    path("integracoes/melhor-envio/retorno/", views_envios.melhorenvio_retorno, name="melhorenvio_retorno"),
+    path(
+        "integracoes/melhor-envio/desconectar/",
+        views_envios.melhorenvio_desconectar,
+        name="melhorenvio_desconectar",
+    ),
     path("pedidos/", views.pedidos, name="pedidos"),
     path("pedidos/<int:pk>/", views.pedido, name="pedido"),
     path("banners/", views.banners, name="banners"),

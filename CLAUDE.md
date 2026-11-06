@@ -28,6 +28,9 @@ Loja virtual da Strong Glasses (óculos de sol e armações), em Django 6.
   abrir ficha de cliente registra acesso. O admin do Django fica como bastidor técnico.
 - Deploy: `Dockerfile` + `scripts/iniciar.sh`; homologação em `docs/HOMOLOGACAO.md`
   (`exportar_catalogo`/`importar_catalogo` levam só o catálogo, nunca clientes).
+- `apps/vendas`: vendas lançadas no painel (WhatsApp, hotel, barbearia), estoque em transação, numeração SG00001.
+- `apps/envios`: etiquetas de Correios/Jadlog/J&T pelo Melhor Envio (OAuth, tokens cifrados). Ver `docs/ENVIOS.md`;
+  agendar `atualizar_rastreios`.
 - `apps/nuvemshop`: importação via API (`importar_nuvemshop`, `nuvemshop_token`). Ver `docs/IMPORTACAO.md`.
 
 ## Regras do projeto (não negociáveis)

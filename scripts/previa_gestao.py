@@ -5,6 +5,7 @@ Nunca rode contra o banco real: cria dados de demonstração.
 """
 
 import random
+import secrets
 import sys
 from datetime import date, timedelta
 from decimal import Decimal
@@ -30,6 +31,7 @@ from apps.catalogo.models import (  # noqa: E402
 )
 from apps.clientes.models import Cliente, Endereco  # noqa: E402
 from apps.core.models import Parametro  # noqa: E402
+from apps.envios.models import ConexaoMelhorEnvio, Envio  # noqa: E402
 from apps.historico.models import ItemPedidoHistorico, MetricaMensal, PedidoHistorico  # noqa: E402
 from apps.vendas.models import Pedido  # noqa: E402
 from apps.vendas.servicos import ItemNovo, mudar_situacao, registrar_venda  # noqa: E402
@@ -155,6 +157,23 @@ for n in range(14):
     elif entrega == "correios" and n > 3:
         mudar_situacao(venda, "enviado", codigo_rastreio="AA123456789BR")
 venda_correios = Pedido.objects.filter(entrega="correios").order_by("numero").first()
+Parametro.objects.filter(chave="REMETENTE_NUMERO").update(valor="100")
+ConexaoMelhorEnvio.objects.create(
+    ambiente="sandbox", access_token=secrets.token_hex(8), expira_em=agora + timedelta(days=20)
+)
+venda_com_etiqueta = Pedido.objects.filter(entrega="correios").order_by("numero")[1]
+Envio.objects.create(
+    pedido=venda_com_etiqueta,
+    ambiente="sandbox",
+    me_id="demo-0001",
+    transportadora="Correios",
+    servico="PAC",
+    servico_id=1,
+    preco=Decimal("22.50"),
+    prazo_dias=8,
+    status="gerado",
+    rastreio="AA123456789BR",
+)
 
 navegador = Client()
 navegador.force_login(dono)
@@ -175,6 +194,7 @@ telas = {
     "venda": f"/gestao/vendas/{venda_correios.pk}/",
     "etiqueta": f"/gestao/vendas/{venda_correios.pk}/etiqueta/",
     "cliente_novo": "/gestao/clientes/novo/?para=venda",
+    "venda_etiqueta_me": f"/gestao/vendas/{venda_com_etiqueta.pk}/",
 }
 for nome, url in telas.items():
     html = navegador.get(url).content.decode()

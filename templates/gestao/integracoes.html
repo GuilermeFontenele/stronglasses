@@ -1,0 +1,48 @@
+{% extends "gestao/base.html" %}
+{% load gestao %}
+{% block titulo %}Integrações{% endblock %}
+{% block conteudo %}
+  <div class="cabecalho"><div><h1>Integrações</h1><p class="subtitulo">Serviços externos ligados à loja</p></div></div>
+
+  <section class="bloco integracao" aria-labelledby="t-me">
+    <div class="integracao-topo">
+      <span class="integracao-icone" aria-hidden="true">{% icone "envio" %}</span>
+      <div>
+        <h2 id="t-me">Melhor Envio</h2>
+        <p class="texto-suave">Cotação e etiquetas de Correios, Jadlog e J&amp;T, pagas com o saldo da conta.</p>
+      </div>
+      {% if conexao and conexao.conectada %}<span class="selo selo-ok">Conectado</span>{% else %}<span class="selo selo-neutro">Desconectado</span>{% endif %}
+    </div>
+
+    <dl class="dados">
+      <dt>Ambiente</dt>
+      <dd>{% if ambiente == "sandbox" %}<span class="selo selo-aviso">Testes (sandbox)</span> <small class="texto-suave">nada é cobrado nem enviado de verdade</small>{% else %}<span class="selo selo-ok">Produção</span>{% endif %}</dd>
+      {% if conexao and conexao.conectada %}
+        {% if conexao.conta %}<dt>Conta</dt><dd>{{ conexao.conta }}</dd>{% endif %}
+        <dt>Saldo</dt><dd>{% if saldo is not None %}<b>{{ saldo|brl }}</b>{% elif erro_saldo %}<span class="texto-aviso">{{ erro_saldo }}</span>{% else %}—{% endif %} <a class="link" href="{{ painel_melhorenvio }}" target="_blank" rel="noopener">Adicionar saldo {% icone "seta" "icone icone-mini" %}</a></dd>
+        <dt>Acesso vale até</dt><dd>{{ conexao.expira_em|date:"d/m/Y" }} <small class="texto-suave">(renova sozinho)</small></dd>
+      {% endif %}
+    </dl>
+
+    {% if not configurado %}
+      <div class="passos">
+        <h3>Como conectar</h3>
+        <ol>
+          <li>Crie a conta em <a class="link" href="{{ painel_melhorenvio }}" target="_blank" rel="noopener">{{ painel_melhorenvio|cut:"https://" }}</a>.</li>
+          <li>Lá, vá em <b>Integrações → Área Dev. → Cadastrar aplicativo</b>.</li>
+          <li>Em URL de redirecionamento, coloque exatamente:<br><code class="copiar">{{ redirect_uri }}</code></li>
+          <li>Copie o <b>Client ID</b> e o <b>Secret</b> para o arquivo <code>.env</code> (linhas <code>MELHOR_ENVIO_CLIENT_ID</code> e <code>MELHOR_ENVIO_CLIENT_SECRET</code>) e reinicie o servidor.</li>
+        </ol>
+        <p class="campo-ajuda">Nunca mande o Secret por WhatsApp, e-mail ou chat: ele fica só no <code>.env</code>, que não vai para o git.</p>
+      </div>
+    {% else %}
+      <div class="acoes">
+        <a class="botao botao-primario" href="{% url 'gestao:melhorenvio_conectar' %}">{% if conexao and conexao.conectada %}Reconectar{% else %}Conectar conta{% endif %}</a>
+        {% if conexao and conexao.conectada %}
+          <form method="post" action="{% url 'gestao:melhorenvio_desconectar' %}">{% csrf_token %}<button class="botao" type="submit">Desconectar</button></form>
+        {% endif %}
+      </div>
+      <p class="campo-ajuda">URL de redirecionamento cadastrada no aplicativo: <code>{{ redirect_uri }}</code></p>
+    {% endif %}
+  </section>
+{% endblock %}

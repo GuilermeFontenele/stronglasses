@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "apps.catalogo",
     "apps.carrinho",
     "apps.vendas",
+    "apps.envios",
     "apps.gestao",
     "apps.historico",
     "apps.nuvemshop",
@@ -200,6 +201,16 @@ NUVEMSHOP_STORE_ID = env_str("NUVEMSHOP_STORE_ID")
 NUVEMSHOP_ACCESS_TOKEN = env_str("NUVEMSHOP_ACCESS_TOKEN")
 NUVEMSHOP_CLIENT_ID = env_str("NUVEMSHOP_CLIENT_ID")
 NUVEMSHOP_CLIENT_SECRET = env_str("NUVEMSHOP_CLIENT_SECRET")
+
+# Melhor Envio (etiquetas de Correios, Jadlog e J&T). Ver docs/ENVIOS.md.
+# "sandbox" para testes (sem cobrança de verdade) ou "producao".
+MELHOR_ENVIO_AMBIENTE = env_str("MELHOR_ENVIO_AMBIENTE", "sandbox")
+MELHOR_ENVIO_CLIENT_ID = env_str("MELHOR_ENVIO_CLIENT_ID")
+MELHOR_ENVIO_CLIENT_SECRET = env_str("MELHOR_ENVIO_CLIENT_SECRET")
+# Vazio = monta a partir do endereço do painel; precisa ser idêntica à cadastrada no aplicativo.
+MELHOR_ENVIO_REDIRECT_URI = env_str("MELHOR_ENVIO_REDIRECT_URI")
+# E-mail técnico exigido pela API no User-Agent.
+MELHOR_ENVIO_CONTATO = env_str("MELHOR_ENVIO_CONTATO", SECURITY_CONTATO)
 NUVEMSHOP_USER_AGENT = env_str("NUVEMSHOP_USER_AGENT", f"Strong Glasses Importador ({LGPD_CONTATO_ENCARREGADO})")
 
 # ---------------------------------------------------------------------------

@@ -10,6 +10,7 @@
   <p class="menu-grupo">Loja</p>
   <a href="{% url 'gestao:banners' %}"{% if secao == "banners" %} aria-current="page"{% endif %}>{% icone "banners" %}<span>Banners</span></a>
   <a href="{% url 'gestao:paginas' %}"{% if secao == "paginas" %} aria-current="page"{% endif %}>{% icone "paginas" %}<span>Páginas</span></a>
+  {% if perms.envios.change_conexaomelhorenvio %}<a href="{% url 'gestao:integracoes' %}"{% if secao == "integracoes" %} aria-current="page"{% endif %}>{% icone "envio" %}<span>Integrações</span></a>{% endif %}
   <a href="{% url 'gestao:configuracoes' %}"{% if secao == "configuracoes" %} aria-current="page"{% endif %}>{% icone "configuracoes" %}<span>Configurações</span></a>
   <div class="menu-rodape">
     <a href="/" target="_blank" rel="noopener">{% icone "loja" %}<span>Ver a loja</span></a>
