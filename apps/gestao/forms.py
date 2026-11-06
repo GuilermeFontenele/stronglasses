@@ -357,6 +357,13 @@ class VendaForm(EstiloPainel, forms.ModelForm):
         help_text="Desligue só se o óculos já saiu do estoque antes (ex.: consignado no hotel).",
     )
     salvar_endereco = forms.BooleanField(label="Salvar este endereço no cadastro do cliente", required=False)
+    # Aceita "60000-000" (9 caracteres); clean_cep deixa só os 8 dígitos que o modelo guarda.
+    cep = forms.CharField(
+        label="CEP",
+        required=False,
+        max_length=9,
+        widget=forms.TextInput(attrs={"inputmode": "numeric", "placeholder": "00000-000", "maxlength": "9"}),
+    )
 
     rotulos_vazios = {"uf": "Estado"}
 
@@ -389,7 +396,6 @@ class VendaForm(EstiloPainel, forms.ModelForm):
             "desconto": forms.NumberInput(attrs={"step": "0.01", "min": "0", "data-venda-desconto": ""}),
             "frete": forms.NumberInput(attrs={"step": "0.01", "min": "0", "data-venda-frete": ""}),
             "parcelas": forms.NumberInput(attrs={"min": "1", "max": "12"}),
-            "cep": forms.TextInput(attrs={"inputmode": "numeric", "placeholder": "00000-000", "maxlength": "9"}),
             "peso_g": forms.NumberInput(attrs={"min": "1", "placeholder": "Automático"}),
             "observacoes": forms.Textarea(attrs={"rows": 3}),
             "parceiro": forms.TextInput(attrs={"placeholder": "Ex.: Hotel Praia Mar, Barbearia do Zé"}),

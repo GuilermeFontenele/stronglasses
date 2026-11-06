@@ -14,6 +14,8 @@ from apps.vendas.servicos import ItemNovo, registrar_venda
 
 from .test_gestao import SENHA, BaseGestao, Usuario
 
+CRIACAO = RegistroAuditoria.Acao.CRIACAO
+
 
 class BaseVendasPainel(BaseGestao):
     def setUp(self):
@@ -217,7 +219,8 @@ class LancarVendaTests(BaseVendasPainel):
         )
         novo = Cliente.objects.get(nome="Hotel Praia")
         self.assertRedirects(resposta, f"/gestao/vendas/nova/?cliente={novo.pk}")
-        self.assertTrue(RegistroAuditoria.objects.filter(modelo="clientes.Cliente", objeto_id=str(novo.pk), acao="C"))
+        auditoria = RegistroAuditoria.objects.filter(modelo="clientes.Cliente", objeto_id=str(novo.pk), acao=CRIACAO)
+        self.assertTrue(auditoria.exists())
 
     def test_cpf_repetido(self):
         self.entrar()

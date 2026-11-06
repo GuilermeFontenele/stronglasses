@@ -8,6 +8,8 @@ from apps.core.models import Parametro, RegistroAuditoria
 from apps.vendas.models import Pedido, sigla_uf
 from apps.vendas.servicos import EstoqueInsuficiente, ItemNovo, calcular, mudar_situacao, registrar_venda
 
+CRIACAO = RegistroAuditoria.Acao.CRIACAO
+
 
 class BaseVendas(TestCase):
     def setUp(self):
@@ -54,7 +56,7 @@ class RegistrarVendaTests(BaseVendas):
         self.assertIsNotNone(pedido.pago_em)
         item = pedido.itens.get()
         self.assertEqual((item.nome, item.sku, item.quantidade), ("Zaik", "ZK-1", 2))
-        self.assertTrue(RegistroAuditoria.objects.filter(modelo="vendas.Pedido", acao="C").exists())
+        self.assertTrue(RegistroAuditoria.objects.filter(modelo="vendas.Pedido", acao=CRIACAO).exists())
         segunda = registrar_venda(self.venda(), [ItemNovo(self.variacao, 1)], baixar_estoque=False, aplicar_pix=False)
         self.assertEqual(segunda.numero, 2)
 

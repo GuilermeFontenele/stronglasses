@@ -106,7 +106,7 @@
           <dt>Canal</dt><dd>{{ pedido.get_canal_display }}</dd>
           {% if pedido.parceiro %}<dt>Parceiro</dt><dd>{{ pedido.parceiro }}</dd>{% endif %}
           {% if pedido.cupom %}<dt>Cupom</dt><dd><span class="etiqueta">{{ pedido.cupom }}</span></dd>{% endif %}
-          <dt>Lançada por</dt><dd>{{ pedido.criado_por.get_full_name|default:pedido.criado_por.get_username|default:"—" }}</dd>
+          <dt>Lançada por</dt><dd>{% if pedido.criado_por %}{{ pedido.criado_por.get_full_name|default:pedido.criado_por.get_username }}{% else %}—{% endif %}</dd>
         </dl>
       </section>
 
