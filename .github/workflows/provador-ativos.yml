@@ -3,6 +3,10 @@ name: Provador (conferir arquivos do MediaPipe)
 # Manual: mostra versão, tamanhos e SHA-256 dos arquivos que o comando baixar_provador fixa.
 on:
   workflow_dispatch:
+    inputs:
+      versao:
+        description: "Versão do @mediapipe/tasks-vision (vazio = a mais nova)"
+        required: false
 
 permissions:
   contents: read
@@ -15,7 +19,9 @@ jobs:
       - name: Baixar e calcular hashes
         run: |
           set -e
-          VERSAO=$(npm view @mediapipe/tasks-vision version)
+          npm view @mediapipe/tasks-vision versions --json | tr -d '\n ' | tail -c 400; echo
+          VERSAO="${{ inputs.versao }}"
+          [ -n "$VERSAO" ] || VERSAO=$(npm view @mediapipe/tasks-vision version)
           echo "VERSAO=$VERSAO"
           mkdir pkg && cd pkg
           npm pack "@mediapipe/tasks-vision@$VERSAO" >/dev/null
@@ -27,4 +33,5 @@ jobs:
           sha256sum face_landmarker.task
           curl -sSfI "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@$VERSAO/wasm/vision_wasm_internal.wasm" | head -1
           grep -o "wasm-unsafe-eval\|new Function\|eval(" package/wasm/vision_wasm_internal.js | sort | uniq -c || true
+          grep -o "FilesetResolver\|forVisionTasks\|FaceLandmarker\|detectForVideo\|createFromOptions\|wasmLoaderPath\|wasmBinaryPath" package/vision_bundle.mjs | sort | uniq -c || true
           grep -o "importScripts\|document.createElement(\"script\")\|createElement(\"script\")" package/vision_bundle.mjs | sort | uniq -c || true
