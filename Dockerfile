@@ -23,7 +23,7 @@ RUN DJANGO_ALLOWED_HOSTS=build DB_NAME=build \
     DJANGO_SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(64))')" \
     FIELD_ENCRYPTION_KEYS="$(python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')" \
     FIELD_HASH_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(48))')" \
-    python manage.py collectstatic --noinput \
+    sh -c 'python manage.py baixar_provador && python manage.py collectstatic --noinput' \
     && mkdir -p /app/media && chown -R loja:loja /app/media /app/staticfiles
 
 USER loja

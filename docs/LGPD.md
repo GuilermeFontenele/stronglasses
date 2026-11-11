@@ -27,6 +27,14 @@ porque a loja continua enviando pedidos a esses clientes. Titulares anonimizados
 **Não coletamos:** data de nascimento, gênero ou foto. Dados de cartão nunca
 passam pelo nosso servidor (tokenização do Mercado Pago).
 
+### O que NÃO coletamos: provador virtual
+
+O provador da página do produto usa a câmera só no aparelho da pessoa (MediaPipe rodando no navegador,
+com os arquivos servidos pelo próprio site). Nenhuma imagem, ponto do rosto ou medida é enviada, guardada
+ou registrada em log; a foto tirada no provador é gerada no aparelho e só sai dele se a pessoa compartilhar.
+Como os traços do rosto podem ser dado sensível (biometria), qualquer mudança que envie algo ao servidor
+exige revisão deste documento e consentimento específico antes.
+
 ## Compartilhamento (operadores)
 
 | Com quem | O quê | Para quê |

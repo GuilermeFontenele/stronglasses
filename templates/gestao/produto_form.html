@@ -111,6 +111,17 @@
             {% include "gestao/partials/campo.html" with campo=form.comprimento_cm %}
           </div>
         </section>
+        {% if produto.pk %}
+          <section class="bloco">
+            <div class="bloco-topo"><h2>Provador virtual</h2><span class="dica">Gerado da 1ª foto de cada cor</span></div>
+            <ul class="lista-provador">
+              {% for v in produto.variacoes.all %}
+                <li>{% if v.imagem_provador %}<img src="{{ v.imagem_provador.url }}" alt="" width="96" height="36" loading="lazy">{% else %}<span class="sem-provador">sem foto de frente</span>{% endif %}<small>{{ v.descricao_cor }}</small></li>
+              {% endfor %}
+            </ul>
+            <label class="campo-checkbox"><input type="checkbox" name="refazer_provador" value="1" class="interruptor"> <span>Refazer ao salvar (depois de trocar as fotos)</span></label>
+          </section>
+        {% endif %}
         <section class="bloco">
           <h2>Google</h2>
           {% include "gestao/partials/campo.html" with campo=form.seo_titulo %}

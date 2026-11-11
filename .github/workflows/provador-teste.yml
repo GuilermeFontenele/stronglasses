@@ -1,0 +1,91 @@
+name: Provador (teste no navegador)
+
+# Manual: sobe o site, baixa o MediaPipe e abre o provador num Chromium com câmera falsa.
+# Confere que o modelo carrega sem erro de CSP. A câmera falsa não tem rosto: o esperado é
+# "Centralize o rosto na câmera".
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  provador:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: loja
+          POSTGRES_USER: loja
+          POSTGRES_PASSWORD: provador
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U loja" --health-interval 5s --health-retries 10
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      DB_NAME: loja
+      DB_USER: loja
+      DB_PASSWORD: provador
+      DB_HOST: localhost
+      DB_SSLMODE: disable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -r requirements/dev.txt playwright
+      - run: python -m playwright install --with-deps chromium
+      - run: python manage.py migrate --noinput
+      - run: python manage.py baixar_provador
+      - name: Produto de teste com foto de frente
+        run: |
+          cat > /tmp/produto.py <<'PY'
+          from decimal import Decimal
+          from io import BytesIO
+          from PIL import Image, ImageDraw
+          from django.core.files.base import ContentFile
+          from apps.catalogo import provador
+          from apps.catalogo.models import AcabamentoArmacao, CorLente, ImagemProduto, Produto, Variacao
+          img = Image.new("RGB", (1024, 1024), "white")
+          d = ImageDraw.Draw(img)
+          d.rounded_rectangle((150, 400, 470, 600), radius=50, fill=(25, 25, 25))
+          d.rounded_rectangle((554, 400, 874, 600), radius=50, fill=(25, 25, 25))
+          d.rectangle((470, 420, 554, 432), fill=(25, 25, 25))
+          buf = BytesIO(); img.save(buf, "PNG")
+          p = Produto.objects.create(nome="Teste Provador", slug="teste-provador", preco=Decimal("99.90"), ativo=True)
+          v = Variacao.objects.create(produto=p, armacao=AcabamentoArmacao.objects.create(nome="Preta", cor_hex="#111111"),
+                                      lente=CorLente.objects.create(nome="Fume", cor_hex="#333333"), sku="TP-1", estoque=3)
+          f = ImagemProduto(produto=p, variacao=v, ordem=1); f.imagem.save("frente.png", ContentFile(buf.getvalue()), save=True)
+          print("gerou provador:", provador.preencher(p))
+          PY
+          python manage.py shell < /tmp/produto.py
+      - name: Abrir o provador
+        run: |
+          python manage.py runserver 127.0.0.1:8080 --noreload > /tmp/servidor.log 2>&1 &
+          sleep 6
+          cat > /tmp/abrir.py <<'PY'
+          import base64
+          from playwright.sync_api import sync_playwright
+          with sync_playwright() as pw:
+              b = pw.chromium.launch(args=["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"])
+              pg = b.new_page(viewport={"width": 420, "height": 860})
+              logs = []
+              pg.on("console", lambda m: logs.append(f"{m.type}: {m.text}"))
+              pg.on("pageerror", lambda e: logs.append(f"pageerror: {e}"))
+              pg.goto("http://127.0.0.1:8080/produtos/teste-provador/")
+              print("CSP-RO:", pg.evaluate("1") and "")
+              pg.click("[data-abrir-provador]")
+              try:
+                  pg.wait_for_function(
+                      "() => /Centralize|Olhe/.test(document.querySelector('[data-provador-status]').textContent)"
+                      " || document.querySelector('[data-provador-status]').hidden", timeout=90000)
+              except Exception as e:
+                  print("TIMEOUT", e)
+              print("STATUS:", pg.text_content("[data-provador-status]"))
+              print("\n".join(logs[:60]))
+              print("INICIO_SHOT"); print(base64.b64encode(pg.screenshot()).decode()); print("FIM_SHOT")
+              b.close()
+          PY
+          python /tmp/abrir.py
+          echo "--- servidor"; grep -v "GET /static" /tmp/servidor.log | tail -20

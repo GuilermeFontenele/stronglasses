@@ -317,3 +317,34 @@ a.botao-sec { display: inline-block; text-decoration: none; color: var(--texto);
 
 /* Ambiente de testes */
 .aviso-testes { background: #ffd23f; color: #111; font-size: 12px; font-weight: 700; text-align: center; padding: 6px 16px; }
+
+/* Provador virtual (página do produto) */
+.botao-provar { display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 16px; padding: 12px 16px; border: 1px solid var(--texto); border-radius: 14px; background: #fff; color: var(--texto); font: inherit; text-align: left; cursor: pointer; transition: background-color .15s; }
+.botao-provar:hover { background: #f6f6f6; }
+.botao-provar .icone { width: 26px; height: 26px; flex: 0 0 auto; }
+.botao-provar span { display: flex; flex-direction: column; }
+.botao-provar small { color: var(--suave); font-size: 12px; }
+.provador { width: min(560px, 100vw); max-width: 100vw; max-height: 100dvh; margin: auto; padding: 0; border: 0; border-radius: 18px; background: #0d0d0d; color: #fff; overflow: hidden; }
+.provador::backdrop { background: rgba(0, 0, 0, .7); }
+.provador[open] { display: flex; flex-direction: column; }
+.provador-topo { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 8px 8px 16px; }
+.provador-topo h2 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: .02em; }
+.provador-topo .icone { width: 22px; height: 22px; }
+.provador-palco { position: relative; flex: 1; min-height: 0; background: #000; display: grid; place-items: center; }
+.provador-palco video { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.provador-palco canvas { width: 100%; height: 100%; max-height: 70dvh; object-fit: contain; display: block; }
+.provador-status { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); margin: 0; padding: 8px 14px; border-radius: 999px; background: rgba(0, 0, 0, .65); font-size: 13px; text-align: center; width: max-content; max-width: calc(100% - 32px); }
+.provador-controles { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 16px; }
+.provador-controles .botao { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; background: #fff; color: #111; padding: 12px 20px; }
+.provador-controles .botao .icone { width: 18px; height: 18px; }
+.provador-cores { list-style: none; display: flex; gap: 8px; margin: 0; padding: 0; overflow-x: auto; flex-basis: 100%; scrollbar-width: none; }
+.provador-cores button { display: grid; place-items: center; width: 76px; height: 40px; padding: 4px; border: 2px solid transparent; border-radius: 10px; background: #fff; cursor: pointer; }
+.provador-cores button[aria-pressed="true"] { border-color: #f0c040; }
+.provador-cores img { width: 100%; height: 100%; object-fit: contain; }
+.provador-tamanho { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #cfcfcf; }
+.provador-tamanho input { width: 120px; accent-color: #fff; }
+.provador-privacidade { margin: 0; padding: 0 16px 14px; font-size: 11px; color: #9a9a9a; }
+@media (max-width: 600px) {
+  .provador { width: 100vw; height: 100dvh; border-radius: 0; }
+  .provador-palco canvas { max-height: none; }
+}

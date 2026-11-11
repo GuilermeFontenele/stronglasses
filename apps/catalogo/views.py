@@ -1,11 +1,14 @@
 import json
+from functools import cache
 
 from django.conf import settings
+from django.contrib.staticfiles import finders
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils.safestring import mark_safe
+from django.views.decorators.csp import csp_override, csp_report_only_override
 from django.views.decorators.http import require_GET
 
 from apps.core.models import Pagina
@@ -15,6 +18,22 @@ from .models import Banner, Categoria, Produto
 from .vitrine import categorias_menu, produtos_visiveis
 
 POR_PAGINA = 24
+WASM = "'wasm-unsafe-eval'"
+
+
+def _com_wasm(politica: dict) -> dict:
+    """A política da loja + WebAssembly (só na página do produto, para o provador virtual)."""
+    if not politica:
+        return politica
+    nova = {chave: list(valores) for chave, valores in politica.items()}
+    nova["script-src"] = [*nova.get("script-src", []), WASM]
+    return nova
+
+
+@cache
+def provador_instalado() -> bool:
+    """Os arquivos do MediaPipe existem? (manage.py baixar_provador)"""
+    return bool(finders.find("vendor/mediapipe/face_landmarker.task"))
 
 
 @require_GET
@@ -40,6 +59,8 @@ def home(request):
 
 
 @require_GET
+@csp_override(_com_wasm(settings.SECURE_CSP))
+@csp_report_only_override(_com_wasm(getattr(settings, "SECURE_CSP_REPORT_ONLY", {})))
 def produto(request, slug):
     item = get_object_or_404(produtos_visiveis(), slug=slug)
     variacoes = item.variacoes_ativas
@@ -55,6 +76,11 @@ def produto(request, slug):
         da_cor = [f for f in fotos if f.variacao_id == selecionada.pk]
         fotos = da_cor + [f for f in fotos if f.variacao_id != selecionada.pk]
     preco = selecionada.preco_final if selecionada else item.preco
+    provador = []
+    if provador_instalado():
+        provador = [
+            {"id": v.pk, "cor": v.descricao_cor, "src": v.imagem_provador.url} for v in variacoes if v.imagem_provador
+        ]
     url = request.build_absolute_uri(item.get_absolute_url())
     mensagem = f"Olá! Tenho interesse no {item.nome}"
     if selecionada:
@@ -76,6 +102,7 @@ def produto(request, slug):
             "url_canonica": url,
             "mensagem_whatsapp": mensagem,
             "dados_estruturados": _dados_estruturados(request, item, variacoes, fotos, preco, url),
+            "provador": provador,
         },
     )
 

@@ -235,6 +235,12 @@ class Variacao(AuditModel):
     ativa = models.BooleanField("ativa", default=True)
     ordem = models.PositiveSmallIntegerField("ordem", default=0)
     nuvemshop_id = models.BigIntegerField("ID na Nuvemshop", null=True, blank=True, unique=True, editable=False)
+    imagem_provador = models.ImageField(
+        "imagem do provador",
+        upload_to="provador/",
+        blank=True,
+        help_text="Foto de frente, sem fundo e sem hastes. Gerada sozinha a partir da primeira foto da cor.",
+    )
 
     class Meta:
         ordering = ["produto", "ordem", "id"]

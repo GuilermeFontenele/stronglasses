@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load vitrine catalogo %}
+{% load static vitrine catalogo %}
 {% block title %}{{ produto.seo_titulo|default:produto.nome }} · Strong Glasses{% endblock %}
 {% block description %}{{ produto.seo_descricao|default:produto.descricao|truncatechars:155 }}{% endblock %}
 {% block og_tipo %}product{% endblock %}
@@ -62,6 +62,13 @@
         <p class="estoque esgotado">Esgotado nesta cor</p>
         {% if loja.whatsapp %}<a class="botao-sec" href="https://wa.me/{{ loja.whatsapp }}?text={{ mensagem_whatsapp|add:" (quero ser avisado quando voltar)"|urlencode:"" }}" rel="noopener" target="_blank">Avise-me quando chegar</a>{% endif %}
       {% endif %}
+
+      {% if provador %}
+        <button class="botao-provar" type="button" data-abrir-provador>
+          {% include "partials/icones/camera.html" %}
+          <span><strong>Provar no rosto</strong><small>Use a câmera do celular ou do computador</small></span>
+        </button>
+      {% endif %}
     </div>
 
     {% if produto.descricao %}
@@ -71,4 +78,34 @@
       </section>
     {% endif %}
   </article>
+
+  {% if provador %}
+    <dialog class="provador" data-provador data-ativos="{% static 'vendor/mediapipe/' %}" data-selecionada="{{ selecionada.pk }}" aria-labelledby="t-provador">
+      <div class="provador-topo">
+        <h2 id="t-provador">Provador · {{ produto.nome }}</h2>
+        <button class="topo-icone" type="button" data-fechar-provador aria-label="Fechar o provador">{% include "partials/icones/fechar.html" %}</button>
+      </div>
+      <div class="provador-palco">
+        <video data-provador-video playsinline muted></video>
+        <canvas data-provador-tela aria-label="Sua imagem com o óculos"></canvas>
+        <p class="provador-status" data-provador-status role="status">Abrindo a câmera…</p>
+      </div>
+      <div class="provador-controles">
+        {% if provador|length > 1 %}
+          <ul class="provador-cores" aria-label="Escolher cor">
+            {% for opcao in provador %}
+              <li><button type="button" data-provador-cor="{{ opcao.id }}" data-src="{{ opcao.src }}" aria-pressed="{% if opcao.id == selecionada.pk %}true{% else %}false{% endif %}" title="{{ opcao.cor }}"><img src="{{ opcao.src }}" alt="{{ opcao.cor }}" width="64" height="24" loading="lazy"></button></li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          {% with opcao=provador|first %}<span hidden data-provador-cor="{{ opcao.id }}" data-src="{{ opcao.src }}" aria-pressed="true"></span>{% endwith %}
+        {% endif %}
+        <label class="provador-tamanho">Tamanho <input type="range" min="0.85" max="1.2" step="0.01" value="1" data-provador-tamanho></label>
+        <button class="botao" type="button" data-provador-foto disabled>{% include "partials/icones/camera.html" %} Tirar foto</button>
+      </div>
+      <p class="provador-privacidade">A câmera roda só no seu aparelho: nenhuma imagem é enviada nem guardada.</p>
+    </dialog>
+  {% endif %}
 {% endblock %}
+
+{% block scripts %}{% if provador %}<script type="module" src="{% static 'js/provador.js' %}"></script>{% endif %}{% endblock %}

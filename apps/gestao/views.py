@@ -1,6 +1,7 @@
 """Painel de gestão da loja (/gestao/). Só equipe; toda alteração vai para a trilha de auditoria."""
 
 import json
+import logging
 
 from django.contrib import messages
 from django.contrib.auth import login as entrar_django
@@ -29,6 +30,7 @@ from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_http_methods, require_POST
 
+from apps.catalogo import provador
 from apps.catalogo.models import Banner, Categoria, ImagemProduto, Produto, Variacao
 from apps.clientes import lgpd
 from apps.clientes.models import Cliente, Endereco
@@ -52,6 +54,8 @@ from .forms import (
     VariacaoFormSet,
     VariacaoFormSetNovo,
 )
+
+logger = logging.getLogger(__name__)
 
 POR_PAGINA = 30
 
@@ -325,6 +329,18 @@ def _acao_em_massa(request):
     return redirect(request.get_full_path())
 
 
+def _atualizar_provador(produto: Produto, *, refazer: bool):
+    """Imagem do provador de cada cor (foto de frente sem fundo). Falhar aqui nunca impede salvar."""
+    try:
+        if refazer:
+            for variacao in produto.variacoes.all():
+                provador.atualizar(variacao, forcar=True)
+        else:
+            provador.preencher(produto)
+    except Exception:
+        logger.warning("Não foi possível gerar a imagem do provador do produto %s", produto.pk, exc_info=True)
+
+
 @equipe(permissao="catalogo.view_produto")
 def produto_editar(request, pk=None):
     produto = get_object_or_404(Produto, pk=pk) if pk else Produto()
@@ -349,6 +365,7 @@ def produto_editar(request, pk=None):
                     imagem = ImagemProduto(produto=produto, texto_alternativo=produto.nome[:150], ordem=ordem + i)
                     imagem.imagem.save(arquivo.name, ContentFile(arquivo.read()), save=True)
                     registrar(RegistroAuditoria.Acao.CRIACAO, imagem, None, foto(imagem), request.user)
+            _atualizar_provador(produto, refazer="refazer_provador" in request.POST)
             messages.success(request, f"“{produto.nome}” salvo.")
             if "continuar" in request.POST:
                 return redirect("gestao:produto", pk=produto.pk)

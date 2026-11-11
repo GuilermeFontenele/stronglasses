@@ -33,3 +33,6 @@ Thumbs.db
 # Dados exportados da Nuvemshop (contêm dados pessoais e de negócio): NUNCA versionar
 importacao/
 metricas-nuvemshop.json
+
+# Arquivos do provador virtual (MediaPipe): baixados por "manage.py baixar_provador"
+static/vendor/mediapipe/
