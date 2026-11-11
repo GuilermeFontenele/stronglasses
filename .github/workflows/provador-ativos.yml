@@ -19,7 +19,7 @@ jobs:
       - name: Baixar e calcular hashes
         run: |
           set -e
-          npm view @mediapipe/tasks-vision versions --json | tr -d '\n ' | tail -c 400; echo
+          npm view @mediapipe/tasks-vision versions --json | tr -d '\n ' | grep -o '"0\.10\.[0-9]*"' | tail -3
           VERSAO="${{ inputs.versao }}"
           [ -n "$VERSAO" ] || VERSAO=$(npm view @mediapipe/tasks-vision version)
           echo "VERSAO=$VERSAO"
@@ -34,4 +34,7 @@ jobs:
           curl -sSfI "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@$VERSAO/wasm/vision_wasm_internal.wasm" | head -1
           grep -o "wasm-unsafe-eval\|new Function\|eval(" package/wasm/vision_wasm_internal.js | sort | uniq -c || true
           grep -o "FilesetResolver\|forVisionTasks\|FaceLandmarker\|detectForVideo\|createFromOptions\|wasmLoaderPath\|wasmBinaryPath" package/vision_bundle.mjs | sort | uniq -c || true
+          ls package
+          grep -n "forVisionTasks\|static createFromOptions\|detectForVideo(\|wasmLoaderPath\|wasmBinaryPath\|faceLandmarks\|outputFacialTransformationMatrixes" package/vision.d.ts | head -40 || true
+          grep -n "FilesetResolver.forVisionTasks\|FaceLandmarker" package/README.md | head -20 || true
           grep -o "importScripts\|document.createElement(\"script\")\|createElement(\"script\")" package/vision_bundle.mjs | sort | uniq -c || true
