@@ -1,0 +1,30 @@
+name: Provador (conferir arquivos do MediaPipe)
+
+# Manual: mostra versão, tamanhos e SHA-256 dos arquivos que o comando baixar_provador fixa.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ativos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Baixar e calcular hashes
+        run: |
+          set -e
+          VERSAO=$(npm view @mediapipe/tasks-vision version)
+          echo "VERSAO=$VERSAO"
+          mkdir pkg && cd pkg
+          npm pack "@mediapipe/tasks-vision@$VERSAO" >/dev/null
+          tar xzf ./*.tgz
+          ls -la package package/wasm
+          sha256sum package/vision_bundle.mjs package/wasm/*
+          curl -sSfL -o face_landmarker.task https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task
+          ls -la face_landmarker.task
+          sha256sum face_landmarker.task
+          curl -sSfI "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@$VERSAO/wasm/vision_wasm_internal.wasm" | head -1
+          grep -o "wasm-unsafe-eval\|new Function\|eval(" package/wasm/vision_wasm_internal.js | sort | uniq -c || true
+          grep -o "importScripts\|document.createElement(\"script\")\|createElement(\"script\")" package/vision_bundle.mjs | sort | uniq -c || true
