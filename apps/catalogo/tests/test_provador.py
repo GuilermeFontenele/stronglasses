@@ -82,6 +82,7 @@ class PaginaProdutoTests(VitrineBase):
         self.assertIn('data-src="/media/provador/x.png"', html)
         self.assertIn('src="/static/js/provador.js"', html)
         self.assertIn("nenhuma imagem é enviada nem guardada", html)
+        self.assertIn("Recurso em testes", html)
         self.assertNotIn("style=", html)
         self.assertIn("'wasm-unsafe-eval'", resposta["Content-Security-Policy"])
         home = self.client.get("/")

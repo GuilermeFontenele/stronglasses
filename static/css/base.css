@@ -348,3 +348,6 @@ a.botao-sec { display: inline-block; text-decoration: none; color: var(--texto);
   .provador { width: 100vw; height: 100dvh; border-radius: 0; }
   .provador-palco canvas { max-height: none; }
 }
+.selo-teste { display: inline-block; margin-left: 6px; padding: 2px 7px; border-radius: 999px; background: #fff4d6; color: #7a5600; font-size: 10px; font-style: normal; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; vertical-align: 2px; }
+.provador-aviso { margin: 0; padding: 8px 16px; background: #2a2412; color: #f3dc9b; font-size: 12px; line-height: 1.4; }
+.provador-aviso strong { color: #ffe9a8; }

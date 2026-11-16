@@ -66,7 +66,7 @@
       {% if provador %}
         <button class="botao-provar" type="button" data-abrir-provador>
           {% include "partials/icones/camera.html" %}
-          <span><strong>Provar no rosto</strong><small>Use a câmera do celular ou do computador</small></span>
+          <span><strong>Provar no rosto <em class="selo-teste">Em testes</em></strong><small>Use a câmera do celular ou do computador</small></span>
         </button>
       {% endif %}
     </div>
@@ -85,6 +85,7 @@
         <h2 id="t-provador">Provador · {{ produto.nome }}</h2>
         <button class="topo-icone" type="button" data-fechar-provador aria-label="Fechar o provador">{% include "partials/icones/fechar.html" %}</button>
       </div>
+      <p class="provador-aviso"><strong>Recurso em testes.</strong> O óculos pode não encaixar perfeitamente no rosto: use o ajuste de tamanho e veja como uma ideia de como fica.</p>
       <div class="provador-palco">
         <video data-provador-video playsinline muted></video>
         <canvas data-provador-tela aria-label="Sua imagem com o óculos"></canvas>
