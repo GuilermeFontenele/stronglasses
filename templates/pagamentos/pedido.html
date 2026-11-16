@@ -53,7 +53,7 @@
         <div><dt>Produtos</dt><dd>{{ pedido.subtotal|brl }}</dd></div>
         {% if pedido.desconto %}<div><dt>Desconto</dt><dd>− {{ pedido.desconto|brl }}</dd></div>{% endif %}
         {% if pedido.desconto_pix %}<div><dt>Desconto Pix</dt><dd>− {{ pedido.desconto_pix|brl }}</dd></div>{% endif %}
-        <div><dt>Frete{% if pedido.frete_servico %} ({{ pedido.frete_servico }}){% endif %}</dt><dd>{{ pedido.frete|brl }}</dd></div>
+        <div><dt>Frete{% if pedido.frete_servico %} · {{ pedido.frete_servico }}{% endif %}</dt><dd>{{ pedido.frete|brl }}</dd></div>
         <div class="total"><dt>Total</dt><dd>{{ pedido.total|brl }}</dd></div>
       </dl>
       <p class="ajuda">Entrega em {{ pedido.cidade }}/{{ pedido.uf }}. Guarde este link para acompanhar o pedido. Dúvidas? Fale com a gente no WhatsApp com o número {{ pedido.codigo }}.</p>
