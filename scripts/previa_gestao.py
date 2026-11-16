@@ -204,4 +204,47 @@ for nome, url in telas.items():
 (saida / "entrar.html").write_text(
     Client().get("/gestao/entrar/").content.decode().replace('"/static/', '"static/'), encoding="utf-8"
 )
+
+# Loja: finalizar compra e página do pedido com Pix (credenciais fictícias só para renderizar)
+from django.test import override_settings  # noqa: E402
+
+from apps.pagamentos.models import Pagamento  # noqa: E402
+
+with override_settings(MERCADOPAGO_ACCESS_TOKEN=secrets.token_hex(8), MERCADOPAGO_PUBLIC_KEY=secrets.token_hex(8)):
+    loja = Client()
+    variacao = next(v for p in produtos for v in p.variacoes.all() if v.estoque > 0)
+    loja.post("/carrinho/adicionar/", {"variacao": variacao.pk, "quantidade": 1})
+    paginas = {"loja_carrinho": "/carrinho/", "loja_finalizar": "/finalizar/"}
+    pedido_site = Pedido.objects.create(
+        numero=9999,
+        realizado_em=agora,
+        canal="site",
+        situacao="pendente",
+        forma_pagamento="pix",
+        subtotal=Decimal("189.80"),
+        desconto_pix=Decimal("9.49"),
+        frete=Decimal("10.00"),
+        total=Decimal("190.31"),
+        cidade="Fortaleza",
+        uf="CE",
+        token_acesso="previa" + secrets.token_hex(8),
+        expira_em=agora + timedelta(minutes=30),
+        cliente=clientes[0],
+        frete_servico="Motoboy (Fortaleza)",
+    )
+    pedido_site.itens.create(nome="Óculos de Sol Zaik", cor="Tartaruga", quantidade=2, preco_unitario=Decimal("94.90"))
+    Pagamento.objects.create(
+        pedido=pedido_site,
+        provedor_id="previa-1",
+        metodo="pix",
+        valor=pedido_site.total,
+        pix_copia_e_cola="00020126580014br.gov.bcb.pix0136previa-codigo-pix-copia-e-cola-5204000053039865802BR",
+        expira_em=agora + timedelta(minutes=30),
+    )
+    paginas["loja_pedido_pix"] = f"/pedido/{pedido_site.token_acesso}/"
+    for nome, url in paginas.items():
+        html = loja.get(url).content.decode()
+        (saida / f"{nome}.html").write_text(
+            html.replace('"/static/', '"static/').replace('"/media/', '"media/'), encoding="utf-8"
+        )
 print("Prévia gerada em", saida)
