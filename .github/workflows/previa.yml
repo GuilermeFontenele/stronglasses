@@ -36,7 +36,7 @@ jobs:
       - name: HTML no log (para quem não consegue baixar artefatos)
         run: |
           echo "INICIO_PREVIA"
-          tar czf - previa | base64 -w 0
+          tar czf - previa | base64 -w 20000
           echo
           echo "FIM_PREVIA"
       - uses: actions/upload-artifact@v4
