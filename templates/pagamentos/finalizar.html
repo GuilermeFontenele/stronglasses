@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% load static vitrine l10n %}
+{% block title %}Finalizar compra · Strong Glasses{% endblock %}
+{% block whatsapp_flutuante %}{% endblock %}
+{% block content %}
+  <section class="checkout">
+    <h1>Finalizar compra</h1>
+    {% if form.non_field_errors %}<p class="aviso aviso-error" role="alert">{% for e in form.non_field_errors %}{{ e }} {% endfor %}</p>{% endif %}
+    <form method="post" class="checkout-grade" data-checkout data-url-frete="{% url 'pagamentos:frete' %}" data-subtotal="{{ totais.subtotal|unlocalize }}" data-pix="{{ pix_percentual|default:0|unlocalize }}" novalidate>
+      {% csrf_token %}
+      <div class="checkout-etapas">
+        <fieldset class="checkout-bloco">
+          <legend><span class="etapa">1</span> Seus dados</legend>
+          <div class="checkout-campos">
+            {% include "pagamentos/partials/campo.html" with campo=form.nome largo=True %}
+            {% include "pagamentos/partials/campo.html" with campo=form.email %}
+            {% include "pagamentos/partials/campo.html" with campo=form.whatsapp %}
+            {% include "pagamentos/partials/campo.html" with campo=form.cpf %}
+          </div>
+        </fieldset>
+
+        <fieldset class="checkout-bloco">
+          <legend><span class="etapa">2</span> Entrega</legend>
+          <div class="checkout-campos">
+            {% include "pagamentos/partials/campo.html" with campo=form.cep %}
+            <div class="campo campo-acao"><button class="botao-sec" type="button" data-calcular-frete>Calcular frete</button></div>
+            {% include "pagamentos/partials/campo.html" with campo=form.logradouro largo=True %}
+            {% include "pagamentos/partials/campo.html" with campo=form.numero %}
+            {% include "pagamentos/partials/campo.html" with campo=form.complemento %}
+            {% include "pagamentos/partials/campo.html" with campo=form.bairro %}
+            {% include "pagamentos/partials/campo.html" with campo=form.cidade %}
+            {% include "pagamentos/partials/campo.html" with campo=form.uf %}
+          </div>
+          {{ form.frete }}
+          <p class="ajuda" data-frete-status>{% if form.frete.errors %}<span class="erro">{{ form.frete.errors.0 }}</span>{% else %}Informe o CEP e calcule o frete.{% endif %}</p>
+          <div class="opcoes-entrega" data-frete-opcoes role="radiogroup" aria-label="Opções de entrega"></div>
+        </fieldset>
+
+        <fieldset class="checkout-bloco">
+          <legend><span class="etapa">3</span> Pagamento</legend>
+          <div class="opcoes-pagamento">
+            {% for opcao in form.forma %}
+              <label class="opcao-pagamento">
+                {{ opcao.tag }}
+                <span>
+                  {% if opcao.data.value == "pix" %}<strong>Pix{% if pix_percentual %} · {{ pix_percentual }}% de desconto{% endif %}</strong><small>Aprovação na hora. O QR Code aparece na próxima tela.</small>
+                  {% else %}<strong>Cartão de crédito{% if parcelas > 1 %} · até {{ parcelas }}x sem juros{% endif %}</strong><small>Visa, Mastercard, Elo, American Express e Hipercard.</small>{% endif %}
+                </span>
+              </label>
+            {% endfor %}
+          </div>
+          <label class="checkout-aceite">{{ form.aceite }} <span>Li e concordo com a <a href="/politica-de-privacidade/" target="_blank" rel="noopener">política de privacidade</a> e a de <a href="/trocas-e-devolucoes/" target="_blank" rel="noopener">trocas e devoluções</a>.</span></label>
+          {% for e in form.aceite.errors %}<p class="erro">{{ e }}</p>{% endfor %}
+          <label class="checkout-aceite">{{ form.novidades }} <span>{{ form.novidades.label }}</span></label>
+        </fieldset>
+      </div>
+
+      <aside class="checkout-resumo" aria-label="Resumo do pedido">
+        <h2>Resumo</h2>
+        <ul class="checkout-itens">
+          {% for linha in linhas %}
+            <li>
+              {% if linha.foto %}<img src="{{ linha.foto.imagem.url }}" alt="" width="56" height="56" loading="lazy">{% endif %}
+              <span><b>{{ linha.quantidade }}x {{ linha.variacao.produto.nome }}</b><small>{{ linha.variacao.descricao_cor }}</small></span>
+              <span class="preco">{{ linha.subtotal|brl }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+        <dl>
+          <div><dt>Produtos</dt><dd>{{ totais.subtotal|brl }}</dd></div>
+          <div data-linha-pix><dt>Desconto Pix</dt><dd data-resumo-pix>− {{ totais.pix.desconto_pix|brl }}</dd></div>
+          <div><dt>Frete</dt><dd data-resumo-frete>a calcular</dd></div>
+          <div class="total"><dt>Total</dt><dd data-resumo-total>{{ totais.pix.total|brl }}</dd></div>
+        </dl>
+        <button class="botao botao-largo" type="submit">Continuar para o pagamento</button>
+        <p class="ajuda">Pagamento processado pelo Mercado Pago. Os dados do cartão não passam pelo nosso site.</p>
+        <a class="continuar" href="{% url 'carrinho:ver' %}">Voltar ao carrinho</a>
+      </aside>
+    </form>
+  </section>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/checkout.js' %}" defer></script>{% endblock %}

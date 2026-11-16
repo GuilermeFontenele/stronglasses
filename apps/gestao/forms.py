@@ -233,6 +233,7 @@ GRUPOS_CONFIGURACAO = [
             "REMETENTE_CEP",
         ],
     ),
+    ("Frete no site", ["FRETE_LOCAL_CEPS", "FRETE_MOTOBOY_PRECO", "FRETE_GRATIS_LOCAL_ACIMA"]),
     ("Página inicial", ["OCULOS_ENTREGUES"]),
 ]
 

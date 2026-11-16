@@ -18,6 +18,8 @@ Revise com um contador ou advogado: isto é um ponto de partida técnico, não p
 | IP e navegador do aceite | `Consentimento.ip/user_agent` | Provar o consentimento; segurança | Legítimo interesse (IX) / Marco Civil | 180 dias (`lgpd_expurgar`) |
 | Pedidos anteriores (Nuvemshop): itens, valores, cidade/UF | `PedidoHistorico` | Histórico de vendas, limite do MEI, atendimento | Execução de contrato (V) / obrigação legal (II) | 5 anos após a venda; depois, desvincular do cliente |
 | Vendas lançadas no painel: itens, valores, canal, parceiro, endereço de entrega, rastreio, observações | `vendas.Pedido` | Registrar a venda, entregar, emitir etiqueta e declaração de conteúdo, limite do MEI | Execução de contrato (V) / obrigação legal (II) | Valores: 5 anos após a venda. Endereço, rastreio e observações apagados na anonimização (fica só cidade/UF) |
+| Compras no site: dados de contato, CPF, endereço, itens; pagamentos (forma, situação, valor, parcelas, bandeira, ID no Mercado Pago). **Nenhum dado de cartão** (o Brick do Mercado Pago tokeniza no navegador) | `vendas.Pedido`, `pagamentos.Pagamento` | Vender, cobrar, entregar, trocas e garantia | Execução de contrato (V) / obrigação legal (II) | 5 anos após a venda |
+| Origem da visita (UTM, `?ref=` de afiliado) | sessão e `Pedido.utm_*`/`ref` | Medir campanhas e pagar afiliados | Legítimo interesse (IX) | Junto com o pedido |
 | Aceite de e-mail marketing vindo da Nuvemshop | `Consentimento` (origem "importacao") | Continuar enviando ofertas a quem já tinha aceitado | Consentimento (I) | Até revogação |
 | Usuário do painel | `RegistroAuditoria` | Rastrear alterações e acessos | Legítimo interesse (IX) | Indefinida (não contém dados de clientes em claro) |
 

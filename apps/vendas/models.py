@@ -91,6 +91,11 @@ class Pedido(AuditModel):
         "frete", max_digits=10, decimal_places=2, default=ZERO, validators=[MinValueValidator(ZERO)]
     )
     total = models.DecimalField("total", max_digits=10, decimal_places=2, default=ZERO)
+    # Pedidos do site: link secreto de acompanhamento e prazo para pagar (depois, devolve o estoque)
+    token_acesso = models.CharField(
+        "token de acompanhamento", max_length=64, unique=True, null=True, blank=True, editable=False
+    )
+    expira_em = models.DateTimeField("pagar até", null=True, blank=True)
     # Opção de frete escolhida na cotação do lançamento (vem marcada na compra da etiqueta)
     frete_servico_id = models.PositiveIntegerField("serviço de frete (ID)", null=True, blank=True)
     frete_servico = models.CharField("serviço de frete", max_length=80, blank=True)

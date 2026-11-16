@@ -47,12 +47,18 @@
             <div class="resumo-pix"><dt>No Pix{% if loja.pix_percentual %} ({{ loja.pix_percentual }}% off){% endif %}</dt><dd>{{ resumo.total_pix|brl }}</dd></div>
             {% if resumo.vezes > 1 %}<div class="resumo-parcelas"><dt>No cartão</dt><dd>{{ resumo.vezes }}x de {{ resumo.parcela|brl }} sem juros</dd></div>{% endif %}
           </dl>
-          <p class="ajuda">O frete é combinado na finalização.</p>
-          {% if link_whatsapp %}
-            <a class="botao botao-whatsapp botao-largo" href="{{ link_whatsapp }}" rel="noopener" target="_blank">
-              {% include "catalogo/partials/icone_whatsapp.html" %} Finalizar pelo WhatsApp
-            </a>
-            <p class="ajuda">Seu pedido vai pronto na mensagem. Pagamento online direto no site em breve.</p>
+          {% if pagamento_online %}
+            <p class="ajuda">O frete é calculado na próxima etapa.</p>
+            <a class="botao botao-largo" href="{% url 'pagamentos:finalizar' %}">Finalizar compra</a>
+            {% if link_whatsapp %}<a class="botao-sec botao-largo botao-whatsapp-sec" href="{{ link_whatsapp }}" rel="noopener" target="_blank">{% include "catalogo/partials/icone_whatsapp.html" %} Prefiro comprar pelo WhatsApp</a>{% endif %}
+          {% else %}
+            <p class="ajuda">O frete é combinado na finalização.</p>
+            {% if link_whatsapp %}
+              <a class="botao botao-whatsapp botao-largo" href="{{ link_whatsapp }}" rel="noopener" target="_blank">
+                {% include "catalogo/partials/icone_whatsapp.html" %} Finalizar pelo WhatsApp
+              </a>
+              <p class="ajuda">Seu pedido vai pronto na mensagem. Pagamento online direto no site em breve.</p>
+            {% endif %}
           {% endif %}
           <a class="continuar" href="/">Continuar comprando</a>
         </aside>

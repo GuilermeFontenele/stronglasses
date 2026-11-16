@@ -497,3 +497,5 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .lista-provador img { width: 100%; height: 36px; object-fit: contain; }
 .lista-provador small { font-size: 11px; color: var(--suave); background: #fff; padding: 0 4px; border-radius: 4px; }
 .sem-provador { display: grid; place-items: center; height: 36px; font-size: 11px; color: var(--suave); }
+.lista-pagamentos { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.lista-pagamentos li { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }

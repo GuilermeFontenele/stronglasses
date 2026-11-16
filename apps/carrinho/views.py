@@ -7,6 +7,7 @@ from django.views.decorators.http import require_GET, require_POST
 from apps.catalogo.models import Variacao
 from apps.catalogo.templatetags.vitrine import brl
 from apps.core.parametros import get_parametro
+from apps.pagamentos import mercadopago
 
 from .carrinho import MAXIMO_POR_ITEM, Carrinho
 
@@ -56,6 +57,7 @@ def ver(request):
             "resumo": resumo,
             "link_whatsapp": link_whatsapp,
             "quantidades": range(1, MAXIMO_POR_ITEM + 1),
+            "pagamento_online": mercadopago.configurado(),
         },
     )
 

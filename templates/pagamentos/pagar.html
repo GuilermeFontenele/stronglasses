@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load static vitrine l10n %}
+{% block title %}Pagar com cartão · Pedido {{ pedido.codigo }}{% endblock %}
+{% block head %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block whatsapp_flutuante %}{% endblock %}
+{% block content %}
+  <section class="pedido-cliente">
+    <p class="pedido-codigo">Pedido {{ pedido.codigo }}</p>
+    <div class="pedido-estado">
+      <h1>Pagar com cartão</h1>
+      <p>Total: <b>{{ pedido.total|brl }}</b>{% if parcelas > 1 %}, em até {{ parcelas }}x sem juros{% endif %}. Os dados do cartão vão direto para o Mercado Pago.</p>
+      <p class="aviso aviso-error" role="alert" data-erro-cartao hidden></p>
+      <div id="cartao-mercadopago" class="cartao-brick" data-cartao data-chave="{{ chave_publica }}" data-valor="{{ pedido.total|unlocalize }}" data-parcelas="{{ parcelas }}" data-email="{{ pedido.cliente.email }}" data-url="{% url 'pagamentos:cartao' pedido.token_acesso %}" data-csrf="{{ csrf_token }}" data-voltar="{% url 'pagamentos:pedido' pedido.token_acesso %}">
+        <p class="ajuda" data-carregando>Carregando o pagamento seguro…</p>
+      </div>
+      <form method="post" action="{% url 'pagamentos:gerar_pix' pedido.token_acesso %}" class="trocar-forma">{% csrf_token %}<button class="link-botao" type="submit">Prefere Pix? Pague {{ pix_total|brl }} com desconto</button></form>
+    </div>
+  </section>
+{% endblock %}
+{% block scripts %}
+  <script src="https://sdk.mercadopago.com/js/v2"></script>
+  <script src="{% static 'js/pagar.js' %}" defer></script>
+{% endblock %}

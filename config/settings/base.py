@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "apps.carrinho",
     "apps.vendas",
     "apps.envios",
+    "apps.pagamentos",
     "apps.gestao",
     "apps.historico",
     "apps.nuvemshop",
@@ -51,6 +52,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "apps.core.middleware.UsuarioAtualMiddleware",
+    "apps.core.middleware.OrigemMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django.middleware.csp.ContentSecurityPolicyMiddleware",
@@ -201,6 +203,14 @@ NUVEMSHOP_STORE_ID = env_str("NUVEMSHOP_STORE_ID")
 NUVEMSHOP_ACCESS_TOKEN = env_str("NUVEMSHOP_ACCESS_TOKEN")
 NUVEMSHOP_CLIENT_ID = env_str("NUVEMSHOP_CLIENT_ID")
 NUVEMSHOP_CLIENT_SECRET = env_str("NUVEMSHOP_CLIENT_SECRET")
+
+# Mercado Pago (Pix e cartão no site). Ver docs/PAGAMENTOS.md.
+# Credenciais de teste ou de produção; a chave secreta valida a assinatura dos webhooks.
+MERCADOPAGO_ACCESS_TOKEN = env_str("MERCADOPAGO_ACCESS_TOKEN")
+MERCADOPAGO_PUBLIC_KEY = env_str("MERCADOPAGO_PUBLIC_KEY")
+MERCADOPAGO_WEBHOOK_SECRET = env_str("MERCADOPAGO_WEBHOOK_SECRET")
+# Endereço público do site (https), usado no aviso de pagamento. Vazio = não pede aviso (dev local).
+SITE_URL = env_str("SITE_URL").rstrip("/")
 
 # Melhor Envio (etiquetas de Correios, Jadlog e J&T). Ver docs/ENVIOS.md.
 # "sandbox" para testes (sem cobrança de verdade) ou "producao".

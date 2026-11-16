@@ -88,3 +88,18 @@ class AmbienteTestesMiddleware:
         if settings.AMBIENTE != "producao":
             response["X-Robots-Tag"] = "noindex, nofollow"
         return response
+
+
+class OrigemMiddleware:
+    """Guarda na sessão a origem da primeira visita com UTM ou ?ref= (afiliados e campanhas).
+    Só nomes de campanha: nenhum dado pessoal. O checkout copia para o pedido."""
+
+    CAMPOS = ("ref", "utm_source", "utm_medium", "utm_campaign")
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if request.method == "GET" and any(c in request.GET for c in self.CAMPOS) and "origem" not in request.session:
+            request.session["origem"] = {c: request.GET.get(c, "")[:100] for c in self.CAMPOS if request.GET.get(c)}
+        return self.get_response(request)

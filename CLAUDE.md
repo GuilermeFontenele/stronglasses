@@ -31,6 +31,8 @@ Loja virtual da Strong Glasses (óculos de sol e armações), em Django 6.
 - `apps/vendas`: vendas lançadas no painel (WhatsApp, hotel, barbearia), estoque em transação, numeração SG00001.
 - `apps/envios`: etiquetas de Correios/Jadlog/J&T pelo Melhor Envio (OAuth, tokens cifrados). Ver `docs/ENVIOS.md`;
   agendar `atualizar_rastreios`.
+- `apps/pagamentos`: checkout do site (`/finalizar/`), Pix e cartão (Brick) no Mercado Pago, webhook assinado,
+  `expirar_pedidos` (agendar). Ver `docs/PAGAMENTOS.md`.
 - `apps/nuvemshop`: importação via API (`importar_nuvemshop`, `nuvemshop_token`). Ver `docs/IMPORTACAO.md`.
 
 ## Regras do projeto (não negociáveis)

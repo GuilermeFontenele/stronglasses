@@ -276,6 +276,7 @@ def venda(request, pk):
             "form": form,
             "pode_editar": pode_editar,
             **_contexto_envio(request, obj),
+            "pagamentos": list(obj.pagamentos.all()),
         },
     )
 

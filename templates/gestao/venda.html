@@ -194,6 +194,21 @@
         {% elif pedido.cidade %}<p>{{ pedido.cidade }}/{{ pedido.uf }}</p>{% endif %}
       </section>
 
+      {% if pagamentos %}
+        <section class="bloco">
+          <h2>Mercado Pago</h2>
+          <ul class="lista-pagamentos">
+            {% for pg in pagamentos %}
+              <li>
+                <span><b>{{ pg.get_metodo_display }}</b>{% if pg.parcelas > 1 %} {{ pg.parcelas }}x{% endif %}{% if pg.bandeira and pg.metodo != "pix" %} · {{ pg.bandeira|upper }}{% endif %}<br><small class="texto-suave">{{ pg.criado_em|date:"d/m H:i" }} · nº {{ pg.provedor_id }}</small></span>
+                <span class="selo selo-{{ pg.tom }}">{{ pg.get_status_display }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+          {% if pedido.situacao == "pendente" and pedido.expira_em %}<p class="campo-ajuda">Aguardando o cliente pagar até {{ pedido.expira_em|date:"d/m H:i" }}. Depois disso a venda é cancelada e o estoque volta.</p>{% endif %}
+        </section>
+      {% endif %}
+
       <section class="bloco">
         <h2>Pagamento</h2>
         <dl class="dados">

@@ -112,8 +112,18 @@ def exportar_dados(cliente: Cliente, usuario=None) -> dict:
                     {"produto": i.nome, "cor": i.cor, "quantidade": i.quantidade, "preco": str(i.preco_unitario)}
                     for i in v.itens.all()
                 ],
+                "pagamentos": [
+                    {
+                        "forma": pg.get_metodo_display(),
+                        "situacao": pg.get_status_display(),
+                        "valor": str(pg.valor),
+                        "parcelas": pg.parcelas,
+                        "data": pg.criado_em.isoformat(),
+                    }
+                    for pg in v.pagamentos.all()
+                ],
             }
-            for v in cliente.vendas.prefetch_related("itens")
+            for v in cliente.vendas.prefetch_related("itens", "pagamentos")
         ],
     }
     registrar(RegistroAuditoria.Acao.EXPORTACAO, cliente, None, None, usuario)

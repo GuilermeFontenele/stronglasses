@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load static vitrine %}
+{% block title %}Pedido {{ pedido.codigo }} · Strong Glasses{% endblock %}
+{% block head %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block whatsapp_flutuante %}{% endblock %}
+{% block content %}
+  <section class="pedido-cliente" data-pedido data-url-situacao="{% url 'pagamentos:situacao' pedido.token_acesso %}" data-situacao="{{ pedido.situacao }}">
+    <p class="pedido-codigo">Pedido {{ pedido.codigo }}</p>
+
+    {% if pedido.pago %}
+      <div class="pedido-estado pedido-ok">
+        <h1>Pagamento aprovado!</h1>
+        <p>Obrigado, {{ pedido.cliente.nome|default:pedido.destinatario }}. Já estamos separando o seu óculos.{% if pedido.codigo_rastreio %} Código de rastreio: <b>{{ pedido.codigo_rastreio }}</b>.{% else %} Você recebe o código de rastreio assim que ele for postado.{% endif %}</p>
+      </div>
+    {% elif pedido.situacao == "cancelado" %}
+      <div class="pedido-estado pedido-erro">
+        <h1>Pedido cancelado</h1>
+        <p>O prazo para pagar acabou ou o pedido foi cancelado. Nada foi cobrado.</p>
+        <form method="post" action="{% url 'pagamentos:refazer' pedido.token_acesso %}">{% csrf_token %}<button class="botao" type="submit">Colocar os itens no carrinho de novo</button></form>
+      </div>
+    {% elif pix %}
+      <div class="pedido-estado">
+        <h1>Pague com Pix para confirmar</h1>
+        <p>Abra o app do seu banco, escolha <b>Pix › Ler QR Code</b> ou use o <b>Pix copia e cola</b>. Total: <b>{{ pix.valor|brl }}</b>.</p>
+        <div class="pix">
+          {% if pix.pix_qr_base64 %}<img class="pix-qr" src="data:image/png;base64,{{ pix.pix_qr_base64 }}" alt="QR Code do Pix" width="240" height="240">{% endif %}
+          <label class="visualmente-oculto" for="pix-codigo">Código Pix copia e cola</label>
+          <textarea id="pix-codigo" class="pix-codigo" readonly rows="3">{{ pix.pix_copia_e_cola }}</textarea>
+          <button class="botao botao-largo" type="button" data-copiar="#pix-codigo">Copiar código Pix</button>
+          {% if pix.expira_em %}<p class="ajuda">Vale até {{ pix.expira_em|date:"H:i" }}. Depois disso o pedido é cancelado e nada é cobrado.</p>{% endif %}
+          <p class="pix-aguardando" role="status" data-aguardando>Esperando o pagamento… esta página atualiza sozinha.</p>
+        </div>
+        <p class="ajuda">Prefere cartão? <a href="{% url 'pagamentos:pagar' pedido.token_acesso %}">Pagar com cartão de crédito</a> (sem o desconto do Pix).</p>
+      </div>
+    {% else %}
+      <div class="pedido-estado">
+        <h1>Falta pagar</h1>
+        {% if ultimo and ultimo.status == "rejected" %}<p class="aviso aviso-error">O último pagamento foi recusado pelo banco.</p>{% endif %}
+        {% if ultimo and ultimo.status == "in_process" %}<p class="aviso aviso-info">Seu pagamento está em análise pelo Mercado Pago. Avisamos aqui assim que for aprovado.</p>{% endif %}
+        <div class="pedido-acoes">
+          <a class="botao" href="{% url 'pagamentos:pagar' pedido.token_acesso %}">Pagar com cartão</a>
+          <form method="post" action="{% url 'pagamentos:gerar_pix' pedido.token_acesso %}">{% csrf_token %}<button class="botao-sec" type="submit">Pagar com Pix ({{ pix_total|brl }})</button></form>
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="pedido-detalhes">
+      <h2>Resumo</h2>
+      <ul class="checkout-itens">
+        {% for item in itens %}<li><span><b>{{ item.quantidade }}x {{ item.nome }}</b><small>{{ item.cor }}</small></span><span class="preco">{{ item.subtotal|brl }}</span></li>{% endfor %}
+      </ul>
+      <dl>
+        <div><dt>Produtos</dt><dd>{{ pedido.subtotal|brl }}</dd></div>
+        {% if pedido.desconto %}<div><dt>Desconto</dt><dd>− {{ pedido.desconto|brl }}</dd></div>{% endif %}
+        {% if pedido.desconto_pix %}<div><dt>Desconto Pix</dt><dd>− {{ pedido.desconto_pix|brl }}</dd></div>{% endif %}
+        <div><dt>Frete{% if pedido.frete_servico %} ({{ pedido.frete_servico }}){% endif %}</dt><dd>{{ pedido.frete|brl }}</dd></div>
+        <div class="total"><dt>Total</dt><dd>{{ pedido.total|brl }}</dd></div>
+      </dl>
+      <p class="ajuda">Entrega em {{ pedido.cidade }}/{{ pedido.uf }}. Guarde este link para acompanhar o pedido. Dúvidas? Fale com a gente no WhatsApp com o número {{ pedido.codigo }}.</p>
+    </div>
+  </section>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/pedido.js' %}" defer></script>{% endblock %}

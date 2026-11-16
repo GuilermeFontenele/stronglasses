@@ -83,6 +83,7 @@
             <li><a href="/">Início</a></li>
             {% for cat in categorias_menu %}<li><a href="/{{ cat.slug }}/">{{ cat.nome }}</a></li>{% endfor %}
             <li><a href="/trocas-e-devolucoes/">Trocas e devoluções</a></li>
+            <li><a href="/politica-de-privacidade/">Política de privacidade</a></li>
             <li><a href="{% url 'core:contato' %}">Contato</a></li>
           </ul>
         </section>
