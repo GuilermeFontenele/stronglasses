@@ -97,6 +97,17 @@ if (form) {
         }
       });
       status.textContent = "Escolha como quer receber:";
+      // Endereço do CEP: preenche só o que estiver vazio e leva o cursor para o número.
+      const endereco = json.endereco || {};
+      let preencheu = false;
+      ["logradouro", "bairro", "cidade", "uf"].forEach((nome) => {
+        const campo = form.querySelector(`[name="${nome}"]`);
+        if (campo && !campo.value && endereco[nome]) {
+          campo.value = endereco[nome];
+          preencheu = true;
+        }
+      });
+      if (preencheu) form.querySelector('[name="numero"]')?.focus();
     } catch (erro) {
       status.textContent = erro.message;
     } finally {

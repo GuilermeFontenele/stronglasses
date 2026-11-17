@@ -73,7 +73,7 @@
       <ul class="garantias">
         <li>{% include "partials/icones/envio.html" %}<span><strong>Enviamos para todo o Brasil</strong> · motoboy em Fortaleza. O frete aparece antes de pagar.</span></li>
         <li>{% include "partials/icones/cartao.html" %}<span><strong>Pagamento seguro</strong> pelo Mercado Pago: Pix{% if loja.pix_percentual %} com {{ loja.pix_percentual }}% off{% endif %} ou cartão{% if loja.parcelas > 1 %} em até {{ loja.parcelas }}x sem juros{% endif %}.</span></li>
-        <li>{% include "partials/icones/seta.html" %}<span><strong>Não serviu?</strong> Veja como funcionam as <a href="/trocas-e-devolucoes/">trocas e devoluções</a>.</span></li>
+        <li>{% include "partials/icones/troca.html" %}<span><strong>Não serviu?</strong> Veja como funcionam as <a href="/trocas-e-devolucoes/">trocas e devoluções</a>.</span></li>
       </ul>
     </div>
 

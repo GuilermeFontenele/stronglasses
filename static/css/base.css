@@ -439,3 +439,5 @@ a.botao-sec { display: inline-block; text-decoration: none; color: var(--texto);
 .aviso-pedido span { display: flex; flex-direction: column; gap: 2px; }
 .aviso-pedido small { color: var(--suave); }
 .aviso-pedido b { white-space: nowrap; text-decoration: underline; }
+.botao-whatsapp-sec { width: 100%; border: 1px solid var(--texto); border-radius: 999px; }
+.botao-whatsapp-sec svg { width: 18px; height: 18px; flex: 0 0 auto; }

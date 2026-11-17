@@ -7,13 +7,16 @@ Regras (CLAUDE.md):
 """
 
 import hashlib
+import json
 import logging
 import secrets
+import urllib.request
 from datetime import timedelta
 from decimal import Decimal
 from types import SimpleNamespace
 
 from django.conf import settings
+from django.core.cache import cache
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.utils import timezone
@@ -132,6 +135,36 @@ def opcoes_de_frete(cep: str, linhas) -> list[dict]:
         mais_barata["preco"] = "0.00"
         mais_barata["nome"] += " · frete grátis"
     return sorted(opcoes, key=lambda o: Decimal(o["preco"]))
+
+
+def endereco_do_cep(cep: str) -> dict:
+    """Rua, bairro, cidade e UF do CEP (ViaCEP), para a pessoa não digitar tudo. Vazio se não achar.
+    Só o CEP sai do servidor; o resultado fica um dia em cache."""
+    cep = so_digitos(cep)
+    if len(cep) != 8:
+        return {}
+    chave = f"cep:{cep}"
+    guardado = cache.get(chave)
+    if guardado is not None:
+        return guardado
+    endereco = {}
+    try:
+        pedido = urllib.request.Request(
+            f"https://viacep.com.br/ws/{cep}/json/", headers={"User-Agent": "Strong Glasses"}
+        )
+        with urllib.request.urlopen(pedido, timeout=3) as resposta:  # noqa: S310
+            dados = json.loads(resposta.read().decode("utf-8") or "{}")
+        if isinstance(dados, dict) and not dados.get("erro"):
+            endereco = {
+                "logradouro": str(dados.get("logradouro") or "")[:200],
+                "bairro": str(dados.get("bairro") or "")[:100],
+                "cidade": str(dados.get("localidade") or "")[:100],
+                "uf": str(dados.get("uf") or "")[:2].upper(),
+            }
+    except (OSError, ValueError):
+        return {}  # serviço fora do ar: a pessoa digita o endereço normalmente
+    cache.set(chave, endereco, 24 * 3600)
+    return endereco
 
 
 def assinatura_do_carrinho(cep: str, linhas) -> str:

@@ -84,6 +84,10 @@ class BaseCheckout(VitrineBase):
         patch = mock.patch("apps.pagamentos.mercadopago._requisicao", self.api)
         patch.start()
         self.addCleanup(patch.stop)
+        # Nenhum teste sai para a internet: a consulta de CEP (ViaCEP) falha na hora, como se estivesse fora do ar.
+        sem_rede = mock.patch("apps.pagamentos.servicos.urllib.request.urlopen", side_effect=OSError)
+        sem_rede.start()
+        self.addCleanup(sem_rede.stop)
 
     def dados(self, **extra):
         dados = {
@@ -136,6 +140,32 @@ class CheckoutTests(BaseCheckout):
         self.assertEqual(local["opcoes"][0], esperado)
         fora = self.client.post("/finalizar/frete/", {"cep": "01310100"})
         self.assertEqual(fora.status_code, 400)  # Melhor Envio não conectado nos testes
+
+    def test_cep_preenche_o_endereco(self):
+        import io
+        import json as _json
+
+        resposta_viacep = {
+            "logradouro": "Avenida Beira Mar",
+            "bairro": "Meireles",
+            "localidade": "Fortaleza",
+            "uf": "CE",
+        }
+        self.client.post("/carrinho/adicionar/", {"variacao": self.v1.pk, "quantidade": 1})
+        with mock.patch("apps.pagamentos.servicos.urllib.request.urlopen") as abrir:
+            abrir.return_value.__enter__.return_value = io.BytesIO(_json.dumps(resposta_viacep).encode())
+            dados = self.client.post("/finalizar/frete/", {"cep": "60165-121"}).json()
+            self.client.post("/finalizar/frete/", {"cep": "60165-121"})  # segunda vez vem do cache
+        self.assertEqual(abrir.call_count, 1)
+        self.assertEqual(dados["endereco"]["logradouro"], "Avenida Beira Mar")
+        self.assertEqual((dados["endereco"]["cidade"], dados["endereco"]["uf"]), ("Fortaleza", "CE"))
+
+    def test_cep_fora_do_ar_nao_atrapalha(self):
+        self.client.post("/carrinho/adicionar/", {"variacao": self.v1.pk, "quantidade": 1})
+        with mock.patch("apps.pagamentos.servicos.urllib.request.urlopen", side_effect=OSError):
+            dados = self.client.post("/finalizar/frete/", {"cep": "60110000"}).json()
+        self.assertEqual(dados["endereco"], {})
+        self.assertEqual(dados["opcoes"][0]["id"], "motoboy")
 
     def test_frete_gratis_local(self):
         Parametro.objects.filter(chave="FRETE_GRATIS_LOCAL_ACIMA").update(valor="50")

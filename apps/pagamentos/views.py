@@ -160,7 +160,12 @@ def frete(request):
     if not opcoes:
         erro = "Não encontramos entrega para esse CEP. Fale com a gente no WhatsApp."
         return JsonResponse({"erro": erro}, status=400)
-    return JsonResponse({"opcoes": [{k: o[k] for k in ("id", "nome", "preco", "prazo")} for o in opcoes]})
+    return JsonResponse(
+        {
+            "opcoes": [{k: o[k] for k in ("id", "nome", "preco", "prazo")} for o in opcoes],
+            "endereco": servicos.endereco_do_cep(cep),
+        }
+    )
 
 
 # ---------------------------------------------------------------- acompanhamento e pagamento

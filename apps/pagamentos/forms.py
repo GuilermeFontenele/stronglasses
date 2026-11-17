@@ -4,7 +4,13 @@ from django.core.exceptions import ValidationError
 from apps.core.validators import so_digitos, validar_cpf
 from apps.vendas.models import UFS, Pedido
 
-TELEFONE = {"data-mascara": "telefone", "inputmode": "tel", "autocomplete": "tel", "maxlength": "19"}
+TELEFONE = {
+    "data-mascara": "telefone",
+    "inputmode": "tel",
+    "autocomplete": "tel",
+    "maxlength": "19",
+    "placeholder": "(85) 99999-9999",
+}
 
 
 class CheckoutForm(forms.Form):
@@ -17,13 +23,25 @@ class CheckoutForm(forms.Form):
         label="CPF",
         max_length=14,
         help_text="Exigido pelo Mercado Pago e pela transportadora.",
-        widget=forms.TextInput(attrs={"data-mascara": "documento", "inputmode": "numeric", "maxlength": "14"}),
+        widget=forms.TextInput(
+            attrs={
+                "data-mascara": "documento",
+                "inputmode": "numeric",
+                "maxlength": "14",
+                "placeholder": "000.000.000-00",
+            }
+        ),
     )
     cep = forms.CharField(
         label="CEP",
         max_length=9,
         widget=forms.TextInput(
-            attrs={"data-mascara": "cep", "inputmode": "numeric", "autocomplete": "postal-code", "data-cep": ""}
+            attrs={
+                "data-mascara": "cep",
+                "inputmode": "numeric",
+                "autocomplete": "postal-code",
+                "placeholder": "00000-000",
+            }
         ),
     )
     logradouro = forms.CharField(
