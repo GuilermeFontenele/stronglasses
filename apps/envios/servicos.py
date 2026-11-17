@@ -153,8 +153,9 @@ def montar_carrinho(pedido: Pedido, servico_id: int, documento: str, chave_nfe: 
     }
     destino = {
         "name": pedido.destinatario or (cliente.nome if cliente else ""),
-        "phone": so_digitos(cliente.whatsapp)[-11:] if cliente and cliente.whatsapp else "",
-        "email": cliente.email if cliente else "",
+        # Contato desta compra (pedido do site); senão, o do cadastro.
+        "phone": so_digitos(pedido.whatsapp or (cliente.whatsapp if cliente else ""))[-11:],
+        "email": pedido.email or (cliente.email if cliente else ""),
         "address": pedido.logradouro,
         "number": pedido.numero_endereco or "S/N",
         "complement": pedido.complemento,

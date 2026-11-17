@@ -417,3 +417,25 @@ a.botao-sec { display: inline-block; text-decoration: none; color: var(--texto);
   .checkout-campos { grid-template-columns: 1fr; }
   .checkout-bloco { padding: 16px; }
 }
+
+/* Páginas de erro */
+.pagina-erro { max-width: 560px; margin: 0 auto; padding: 56px 20px 72px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.pagina-erro h1 { font-size: 26px; margin: 0; }
+.pagina-erro p { margin: 0; color: var(--suave); line-height: 1.5; }
+.pagina-erro-codigo { font-size: 72px; font-weight: 800; letter-spacing: -.04em; color: #e3e3e3 !important; line-height: 1; }
+.pagina-erro .busca-form { width: 100%; margin: 8px 0; }
+.pagina-erro-simples { min-height: 100dvh; justify-content: center; }
+.pagina-erro-simples img { width: 64px; height: auto; }
+
+/* Produto: garantias perto do botão de compra */
+.garantias { list-style: none; margin: 20px 0 0; padding: 16px 0 0; border-top: 1px solid var(--linha); display: flex; flex-direction: column; gap: 12px; }
+.garantias li { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; line-height: 1.45; color: var(--suave); }
+.garantias strong { color: var(--texto); }
+.garantias .icone { width: 20px; height: 20px; flex: 0 0 auto; margin-top: 1px; color: var(--texto); }
+.garantias a { color: inherit; }
+
+/* Carrinho: pedido aguardando pagamento */
+.aviso-pedido { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 16px; padding: 14px 16px; border: 1px solid #f0d58a; border-radius: 14px; background: #fff8e1; color: var(--texto); text-decoration: none; }
+.aviso-pedido span { display: flex; flex-direction: column; gap: 2px; }
+.aviso-pedido small { color: var(--suave); }
+.aviso-pedido b { white-space: nowrap; text-decoration: underline; }

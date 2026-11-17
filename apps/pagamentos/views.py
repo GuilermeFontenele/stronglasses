@@ -21,6 +21,8 @@ from django.views.decorators.http import require_GET, require_POST
 from apps.carrinho.carrinho import Carrinho
 from apps.clientes import lgpd
 from apps.clientes.models import Consentimento
+from apps.core import limites
+from apps.core.middleware import ip_da_requisicao
 from apps.core.parametros import get_parametro
 from apps.vendas.models import Pedido
 from apps.vendas.servicos import EstoqueInsuficiente, calcular
@@ -33,6 +35,9 @@ from .models import Pagamento
 logger = logging.getLogger(__name__)
 CHAVE_FRETE = "checkout_frete"
 CHAVE_ORIGEM = "origem"
+CHAVE_PEDIDO = "ultimo_pedido"
+# Cada pedido reserva estoque por alguns minutos: o limite impede esvaziar a loja com pedidos falsos.
+MAXIMO_PEDIDOS_POR_HORA = 20
 
 # Mercado Pago (Brick de cartão): SDK, campos seguros em iframe, antifraude e desafio 3DS do banco.
 MP = ["https://*.mercadopago.com", "https://*.mercadolibre.com", "https://*.mlstatic.com", "https://*.mercadolivre.com"]
@@ -88,8 +93,11 @@ def finalizar(request):
         if frete is None:
             form.add_error(None, "Calcule o frete de novo e escolha uma opção.")
         else:
+            base = f"{request.scheme}://{request.get_host()}"
             try:
-                pedido = servicos.criar_pedido(linhas, dados, frete, request.session.get(CHAVE_ORIGEM))
+                if limites.excedeu(f"pedidos:{ip_da_requisicao(request) or '?'}", MAXIMO_PEDIDOS_POR_HORA, 3600):
+                    raise ValidationError("Muitos pedidos seguidos. Espere um pouco ou finalize pelo WhatsApp.")
+                pedido = servicos.criar_pedido(linhas, dados, frete, request.session.get(CHAVE_ORIGEM), base)
             except EstoqueInsuficiente:
                 messages.error(request, "Um dos óculos acabou de esgotar. Confira o carrinho.")
                 return redirect("carrinho:ver")
@@ -98,6 +106,7 @@ def finalizar(request):
             else:
                 carrinho.limpar()
                 request.session.pop(CHAVE_FRETE, None)
+                request.session[CHAVE_PEDIDO] = pedido.token_acesso  # para achar o pedido se a aba fechar
                 if dados["novidades"] and pedido.cliente:
                     lgpd.registrar_consentimento(
                         pedido.cliente, Consentimento.Finalidade.MARKETING_EMAIL, Consentimento.Origem.CHECKOUT, request
@@ -140,10 +149,8 @@ def frete(request):
         return JsonResponse({"erro": "Seu carrinho está vazio."}, status=400)
     if len("".join(c for c in cep if c.isdigit())) != 8:
         return JsonResponse({"erro": "Informe o CEP com 8 números."}, status=400)
-    chave = f"frete-limite:{request.session.session_key or request.META.get('REMOTE_ADDR', '')}"
-    if cache.get_or_set(chave, 0, 60) > 20:  # evita cotação em massa
+    if limites.excedeu(f"frete:{ip_da_requisicao(request) or '?'}", 40, 60):  # evita cotação em massa
         return JsonResponse({"erro": "Muitas cotações seguidas. Espere um minuto."}, status=429)
-    cache.incr(chave)
     opcoes = servicos.opcoes_de_frete(cep, linhas)
     request.session[CHAVE_FRETE] = {
         "assinatura": servicos.assinatura_do_carrinho(cep, linhas),
@@ -188,7 +195,8 @@ def pedido(request, token):
             "itens": list(obj.itens.all()),
             "pix": pix,
             "ultimo": obj.pagamentos.first(),
-            "pix_total": calcular(obj.subtotal, obj.desconto, obj.frete, aplicar_pix=True)["total"],
+            "primeiro_nome": (obj.destinatario.split() or [""])[0],
+            "pix_total": servicos.total_para(obj, Pedido.FormaPagamento.PIX)["total"],
         },
     )
 
@@ -218,15 +226,16 @@ def pagar(request, token):
     obj = _expirar_se_venceu(_pedido(token))
     if obj.situacao != Pedido.Situacao.PENDENTE:
         return redirect("pagamentos:pedido", token=token)
-    obj = servicos.mudar_forma(obj, Pedido.FormaPagamento.CREDITO)
+    # Só mostra o valor no cartão; o pedido muda de forma quando o pagamento é enviado de fato.
     return render(
         request,
         "pagamentos/pagar.html",
         {
             "pedido": obj,
+            "total_cartao": servicos.total_para(obj, Pedido.FormaPagamento.CREDITO)["total"],
             "chave_publica": settings.MERCADOPAGO_PUBLIC_KEY,
             "parcelas": max(int(get_parametro("PARCELAS_SEM_JUROS", 1) or 1), 1),
-            "pix_total": calcular(obj.subtotal, obj.desconto, obj.frete, aplicar_pix=True)["total"],
+            "pix_total": servicos.total_para(obj, Pedido.FormaPagamento.PIX)["total"],
         },
     )
 
@@ -259,8 +268,7 @@ def refazer(request, token):
         obj.situacao == Pedido.Situacao.PENDENTE
         and not obj.pagamentos.filter(status__in=[Pagamento.Status.APROVADO, Pagamento.Status.EM_ANALISE]).exists()
     ):
-        servicos.mudar_situacao(obj, Pedido.Situacao.CANCELADO)
-        obj.refresh_from_db()
+        obj = servicos.cancelar_pedido(obj)
     if obj.situacao != Pedido.Situacao.CANCELADO:
         return redirect("pagamentos:pedido", token=token)
     carrinho = Carrinho(request)

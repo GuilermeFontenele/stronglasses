@@ -58,6 +58,7 @@ MIDDLEWARE = [
     "django.middleware.csp.ContentSecurityPolicyMiddleware",
     "apps.core.middleware.RedirecionamentoMiddleware",
     "apps.core.middleware.AmbienteTestesMiddleware",
+    "apps.core.middleware.CabecalhosMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -141,11 +142,16 @@ LOGIN_URL = "gestao:entrar"
 # ---------------------------------------------------------------------------
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
-SESSION_COOKIE_AGE = env_int("DJANGO_SESSION_AGE", 60 * 60 * 8)  # 8 horas
+# Visitante: 30 dias (o carrinho e a origem da campanha não se perdem de um dia para o outro).
+# Equipe: a sessão do painel dura bem menos (SESSAO_EQUIPE_SEGUNDOS, aplicada no login).
+SESSION_COOKIE_AGE = env_int("DJANGO_SESSION_AGE", 60 * 60 * 24 * 30)
+SESSAO_EQUIPE_SEGUNDOS = env_int("DJANGO_SESSAO_EQUIPE", 60 * 60 * 8)  # 8 horas sem uso
 CSRF_COOKIE_HTTPONLY = True  # o front envia o token via cabeçalho lido do template
 CSRF_COOKIE_SAMESITE = "Lax"
 
 X_FRAME_OPTIONS = "DENY"
+# Recursos do navegador que o site usa: só a câmera (provador virtual), e só na própria loja.
+PERMISSIONS_POLICY = "camera=(self), microphone=(), geolocation=(), usb=(), bluetooth=(), serial=(), midi=()"
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
@@ -169,6 +175,13 @@ SECURE_CSP = {
     "object-src": [CSP.NONE],
     "base-uri": [CSP.SELF],
     "form-action": [CSP.SELF],
+}
+
+# Cache. "default" guarda parâmetros da loja (memória do processo, rápido). "limites" guarda contadores de
+# tentativas (login, cotações, pedidos): em produção fica no banco para valer para todos os processos.
+CACHES = {
+    "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache", "LOCATION": "loja"},
+    "limites": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache", "LOCATION": "loja"},
 }
 
 # Limites de upload (protege contra requisições gigantes)

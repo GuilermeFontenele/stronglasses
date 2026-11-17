@@ -1,0 +1,18 @@
+{% load static %}<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>{% block title %}Strong Glasses{% endblock %}</title>
+  <link rel="icon" href="{% static 'favicon.ico' %}" sizes="any">
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+</head>
+<body>
+  <main class="pagina-erro pagina-erro-simples">
+    <a href="/" aria-label="Strong Glasses, página inicial"><img src="{% static 'img/logo.png' %}" alt="Strong Glasses" width="80" height="100"></a>
+    {% block content %}{% endblock %}
+    <p><a class="botao" href="/">Voltar para o início</a></p>
+  </main>
+</body>
+</html>

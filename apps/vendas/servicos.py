@@ -12,6 +12,7 @@ from apps.core.auditoria import foto, registrar
 from apps.core.models import RegistroAuditoria
 from apps.core.parametros import get_parametro
 
+from . import avisos
 from .models import ZERO, ItemPedido, Pedido
 
 CENTAVO = Decimal("0.01")
@@ -127,10 +128,43 @@ def mudar_situacao(pedido: Pedido, nova: str, *, usuario=None, codigo_rastreio: 
         pedido.enviado_em = agora
     if codigo_rastreio is not None:
         pedido.codigo_rastreio = codigo_rastreio.strip().upper()[:40]
-    pedido.situacao = nova
+    anterior, pedido.situacao = pedido.situacao, nova
     pedido.save()
     registrar(RegistroAuditoria.Acao.ALTERACAO, pedido, antes, foto(pedido), usuario)
+    # Avisos por e-mail ao comprador (só pedidos do site), depois que a mudança estiver gravada.
+    if anterior == Pedido.Situacao.PENDENTE and nova == Pedido.Situacao.PAGO:
+        transaction.on_commit(lambda: avisos.avisar(pedido, "pago"))
+    elif nova == Pedido.Situacao.ENVIADO and anterior != Pedido.Situacao.ENVIADO:
+        transaction.on_commit(lambda: avisos.avisar(pedido, "enviado"))
     return pedido
+
+
+@transaction.atomic
+def reativar(pedido: Pedido, *, motivo: str = "", usuario=None) -> bool:
+    """Volta um pedido cancelado para "aguardando pagamento", reservando o estoque de novo.
+    False (e nada muda) se algum item não tem mais estoque."""
+    pedido = Pedido.objects.select_for_update().get(pk=pedido.pk)
+    if pedido.situacao != Pedido.Situacao.CANCELADO:
+        return True
+    quantidades: dict[int, int] = {}
+    for item in pedido.itens.all():
+        if item.variacao_id is None:
+            return False  # o produto foi apagado: alguém precisa olhar
+        quantidades[item.variacao_id] = quantidades.get(item.variacao_id, 0) + item.quantidade
+    variacoes = {v.pk: v for v in Variacao.objects.select_for_update().filter(pk__in=quantidades)}
+    if any(pk not in variacoes or variacoes[pk].estoque < qtd for pk, qtd in quantidades.items()):
+        return False
+    antes = foto(pedido)
+    for pk, qtd in quantidades.items():
+        Variacao.objects.filter(pk=pk).update(estoque=F("estoque") - qtd)
+    pedido.situacao = Pedido.Situacao.PENDENTE
+    pedido.estoque_baixado = True
+    pedido.cancelado_em = None
+    if motivo:
+        pedido.observacoes = f"{pedido.observacoes}\n{motivo}".strip()
+    pedido.save()
+    registrar(RegistroAuditoria.Acao.ALTERACAO, pedido, antes, foto(pedido), usuario)
+    return pedido.situacao == Pedido.Situacao.PENDENTE
 
 
 def peso_do_pacote(pedido: Pedido, itens, padrao: int) -> int:

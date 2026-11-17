@@ -69,6 +69,12 @@
           <span><strong>Provar no rosto <em class="selo-teste">Em testes</em></strong><small>Use a câmera do celular ou do computador</small></span>
         </button>
       {% endif %}
+
+      <ul class="garantias">
+        <li>{% include "partials/icones/envio.html" %}<span><strong>Enviamos para todo o Brasil</strong> · motoboy em Fortaleza. O frete aparece antes de pagar.</span></li>
+        <li>{% include "partials/icones/cartao.html" %}<span><strong>Pagamento seguro</strong> pelo Mercado Pago: Pix{% if loja.pix_percentual %} com {{ loja.pix_percentual }}% off{% endif %} ou cartão{% if loja.parcelas > 1 %} em até {{ loja.parcelas }}x sem juros{% endif %}.</span></li>
+        <li>{% include "partials/icones/seta.html" %}<span><strong>Não serviu?</strong> Veja como funcionam as <a href="/trocas-e-devolucoes/">trocas e devoluções</a>.</span></li>
+      </ul>
     </div>
 
     {% if produto.descricao %}
@@ -78,6 +84,10 @@
       </section>
     {% endif %}
   </article>
+
+  {% if relacionados %}
+    {% include "catalogo/partials/fileira.html" with id="relacionados" titulo="Você também pode gostar" produtos=relacionados link="" %}
+  {% endif %}
 
   {% if provador %}
     <dialog class="provador" data-provador data-ativos="{% static 'vendor/mediapipe/' %}" data-selecionada="{{ selecionada.pk }}" aria-labelledby="t-provador">

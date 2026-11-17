@@ -1,0 +1,11 @@
+{% autoescape off %}Olá, {{ primeiro_nome }}!
+
+O seu pedido {{ pedido.codigo }} saiu para entrega{% if pedido.frete_servico %} por {{ pedido.frete_servico }}{% endif %}.
+{% if pedido.codigo_rastreio %}
+Código de rastreio: {{ pedido.codigo_rastreio }}
+{% if pedido.entrega == "correios" %}Acompanhe em: https://rastreamento.correios.com.br/app/index.php?objetos={{ pedido.codigo_rastreio }}
+{% endif %}(O rastreio pode levar algumas horas para aparecer.)
+{% endif %}{% if link %}
+Detalhes do pedido:
+{{ link }}
+{% endif %}{% include "emails/_rodape.txt" %}{% endautoescape %}

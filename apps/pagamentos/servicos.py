@@ -14,7 +14,8 @@ from decimal import Decimal
 from types import SimpleNamespace
 
 from django.conf import settings
-from django.db import transaction
+from django.db import IntegrityError, transaction
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
@@ -27,8 +28,9 @@ from apps.core.validators import so_digitos
 from apps.envios import melhorenvio
 from apps.envios import servicos as envios
 from apps.envios.melhorenvio import ErroMelhorEnvio
+from apps.vendas import avisos
 from apps.vendas.models import Pedido, sigla_uf
-from apps.vendas.servicos import ItemNovo, calcular, mudar_situacao, registrar_venda
+from apps.vendas.servicos import ItemNovo, calcular, mudar_situacao, reativar, registrar_venda
 
 from . import mercadopago
 from .mercadopago import ErroMercadoPago
@@ -36,6 +38,7 @@ from .models import Pagamento
 
 logger = logging.getLogger(__name__)
 ZERO = Decimal("0.00")
+MAXIMO_TENTATIVAS_CARTAO = 5
 PARAMETROS_FRETE = {
     "FRETE_LOCAL_CEPS": "60000000-60999999",
     "FRETE_MOTOBOY_PRECO": Decimal("10.00"),
@@ -139,32 +142,33 @@ def assinatura_do_carrinho(cep: str, linhas) -> str:
 # ---------------------------------------------------------------- cliente e pedido
 
 
-def cliente_do_checkout(*, nome: str, email: str, whatsapp: str, cpf: str) -> Cliente:
-    """Reaproveita o cadastro (mesmo e-mail ou CPF) sem sobrescrever o que já existe; senão cria."""
+def cliente_do_checkout(*, nome: str, email: str, whatsapp: str, cpf: str) -> tuple[Cliente, bool]:
+    """Liga o pedido a um cadastro, sem nunca alterar um cadastro que já existe.
+
+    Ordem: mesmo CPF (identifica a pessoa) → mesmo e-mail → cadastro novo. Devolve (cliente, confiavel):
+    "confiavel" é falso quando só o e-mail bateu, porque qualquer um pode digitar o e-mail de outra pessoa.
+    Nesse caso o pedido usa só os dados digitados nesta compra e nada do cadastro antigo aparece para quem compra.
+    """
     email = email.strip().lower()
-    cliente = (
-        Cliente.objects.filter(email__iexact=email, anonimizado_em__isnull=True).first()
-        or Cliente.objects.filter(documento_hash=hash_busca(cpf), anonimizado_em__isnull=True).first()
-    )
-    if cliente is None:
-        cliente = Cliente(nome=nome, email=email, whatsapp=whatsapp, documento=cpf)
-        cliente.full_clean()
-        cliente.save()
-        registrar(RegistroAuditoria.Acao.CRIACAO, cliente, None, foto(cliente), None)
-        return cliente
-    antes = foto(cliente)
-    mudou = False
-    for campo, valor in (("email", email), ("whatsapp", whatsapp)):
-        if valor and not getattr(cliente, campo):
-            setattr(cliente, campo, valor)
-            mudou = True
-    if cpf and not cliente.documento and not Cliente.objects.filter(documento_hash=hash_busca(cpf)).exists():
-        cliente.documento = cpf
-        mudou = True
-    if mudou:
-        cliente.save()
-        registrar(RegistroAuditoria.Acao.ALTERACAO, cliente, antes, foto(cliente), None)
-    return cliente
+    ativos = Cliente.objects.filter(anonimizado_em__isnull=True)
+    por_cpf = ativos.filter(documento_hash=hash_busca(cpf)).first()
+    if por_cpf:
+        return por_cpf, True
+    por_email = ativos.filter(email__iexact=email).first()
+    if por_email:
+        return por_email, False
+    cliente = Cliente(nome=nome, email=email, whatsapp=whatsapp, documento=cpf)
+    cliente.full_clean()
+    try:
+        with transaction.atomic():
+            cliente.save()
+    except IntegrityError:  # dois envios ao mesmo tempo (clique duplo): o outro já criou
+        existente = ativos.filter(documento_hash=hash_busca(cpf)).first() or ativos.filter(email__iexact=email).first()
+        if existente is None:
+            raise
+        return existente, False
+    registrar(RegistroAuditoria.Acao.CRIACAO, cliente, None, foto(cliente), None)
+    return cliente, True
 
 
 def _salvar_endereco(cliente: Cliente, dados: dict):
@@ -184,12 +188,13 @@ def _salvar_endereco(cliente: Cliente, dados: dict):
     )
 
 
-def criar_pedido(linhas, dados: dict, frete: dict, origem: dict | None = None) -> Pedido:
+def criar_pedido(linhas, dados: dict, frete: dict, origem: dict | None = None, base_url: str = "") -> Pedido:
     """Pedido do site, pendente, com o estoque reservado. `frete` é uma opção de opcoes_de_frete()."""
-    cliente = cliente_do_checkout(
+    cliente, confiavel = cliente_do_checkout(
         nome=dados["nome"], email=dados["email"], whatsapp=dados["whatsapp"], cpf=dados["cpf"]
     )
-    _salvar_endereco(cliente, dados)
+    if confiavel:
+        _salvar_endereco(cliente, dados)
     origem = origem or {}
     prazo = int(_parametros()["PIX_EXPIRACAO_MINUTOS"] or 30)
     pedido = Pedido(
@@ -202,6 +207,9 @@ def criar_pedido(linhas, dados: dict, frete: dict, origem: dict | None = None) -
         frete_servico_id=frete["servico_id"],
         frete_servico=frete["nome"][:80],
         destinatario=dados["nome"][:150],
+        email=dados["email"],
+        whatsapp=dados["whatsapp"],
+        documento=dados["cpf"],
         cep=dados["cep"],
         logradouro=dados["logradouro"],
         numero_endereco=dados["numero"],
@@ -217,7 +225,11 @@ def criar_pedido(linhas, dados: dict, frete: dict, origem: dict | None = None) -
         expira_em=timezone.now() + timedelta(minutes=prazo),
     )
     itens = [ItemNovo(linha.variacao, linha.quantidade) for linha in linhas]
-    return registrar_venda(pedido, itens, baixar_estoque=True, aplicar_pix=dados["forma"] == Pedido.FormaPagamento.PIX)
+    pedido = registrar_venda(
+        pedido, itens, baixar_estoque=True, aplicar_pix=dados["forma"] == Pedido.FormaPagamento.PIX
+    )
+    avisos.avisar(pedido, "recebido", base_url)
+    return pedido
 
 
 @transaction.atomic
@@ -249,14 +261,14 @@ def _url_aviso() -> str | None:
 
 
 def _pagador(pedido: Pedido) -> dict:
-    cliente = pedido.cliente
-    nome = (cliente.nome if cliente else pedido.destinatario).split()
-    pagador = {"email": cliente.email if cliente else "", "first_name": nome[0] if nome else ""}
+    """Quem paga: os dados digitados nesta compra (nunca os de um cadastro antigo)."""
+    nome = pedido.destinatario.split()
+    pagador = {"email": pedido.email, "first_name": nome[0] if nome else ""}
     if len(nome) > 1:
         pagador["last_name"] = " ".join(nome[1:])
-    if cliente and cliente.documento:
-        tipo = "CNPJ" if len(cliente.documento) == 14 else "CPF"
-        pagador["identification"] = {"type": tipo, "number": cliente.documento}
+    if pedido.documento:
+        tipo = "CNPJ" if len(pedido.documento) == 14 else "CPF"
+        pagador["identification"] = {"type": tipo, "number": pedido.documento}
     return pagador
 
 
@@ -339,6 +351,9 @@ def pagar_cartao(pedido: Pedido, formulario: dict) -> Pagamento:
         parcelas = 1
     if not 1 <= parcelas <= maximo:
         raise ErroMercadoPago(f"Parcelamos em até {maximo}x.")
+    # Freia quem usa o checkout para testar cartões roubados.
+    if pedido.pagamentos.filter(metodo=Pagamento.Metodo.CARTAO).count() >= MAXIMO_TENTATIVAS_CARTAO:
+        raise ErroMercadoPago("Muitas tentativas com cartão neste pedido. Pague com Pix ou fale com a gente.")
     pedido = mudar_forma(pedido, Pedido.FormaPagamento.CREDITO)
     pagador = _pagador(pedido)
     identificacao = ((formulario.get("payer") or {}).get("identification")) or {}
@@ -399,16 +414,55 @@ def aplicar(pagamento: Pagamento, dados: dict) -> Pagamento:
         pagamento.save()
         if foto(pagamento) != antes:
             registrar(RegistroAuditoria.Acao.ALTERACAO, pagamento, antes, foto(pagamento), None)
-        pedido = Pedido.objects.select_for_update().get(pk=pagamento.pedido_id)
-        if pagamento.status == Pagamento.Status.APROVADO and pedido.situacao == Pedido.Situacao.PENDENTE:
-            if valor != pedido.total:
-                logger.error("Pagamento %s aprovado com valor diferente do pedido %s", pagamento.pk, pedido.pk)
-            else:
-                pedido.forma_pagamento = pagamento.metodo  # "pix" ou "credito", os mesmos valores do pedido
-                pedido.parcelas = pagamento.parcelas
-                pedido.save(update_fields=["forma_pagamento", "parcelas", "atualizado_em"])
-                mudar_situacao(pedido, Pedido.Situacao.PAGO)
+        if pagamento.status == Pagamento.Status.APROVADO:
+            _confirmar(Pedido.objects.select_for_update().get(pk=pagamento.pedido_id), pagamento)
     return pagamento
+
+
+def total_para(pedido: Pedido, metodo: str) -> dict:
+    """Total do pedido se for pago com `metodo` ("pix" ou "credito"): o desconto do Pix entra ou sai."""
+    if pedido.forma_pagamento == metodo:
+        return {"desconto_pix": pedido.desconto_pix, "total": pedido.total}
+    return calcular(pedido.subtotal, pedido.desconto, pedido.frete, aplicar_pix=metodo == Pedido.FormaPagamento.PIX)
+
+
+def _confirmar(pedido: Pedido, pagamento: Pagamento) -> None:
+    """Dinheiro aprovado no Mercado Pago: marca o pedido como pago se o valor bater.
+
+    O valor certo depende da forma usada: quem gerou o Pix e depois abriu a tela do cartão ainda pode
+    pagar aquele Pix (com desconto). E se o pedido já tinha sido cancelado por prazo, ele é reativado
+    quando ainda há estoque. O que não fechar fica como alerta no painel para alguém conferir.
+    """
+    if pedido.canal != Pedido.Canal.SITE or pedido.situacao not in (
+        Pedido.Situacao.PENDENTE,
+        Pedido.Situacao.CANCELADO,
+    ):
+        return
+    esperado = total_para(pedido, pagamento.metodo)
+    if pagamento.valor != esperado["total"]:
+        logger.error("Pagamento %s aprovado com valor diferente do pedido %s", pagamento.pk, pedido.pk)
+        return
+    if pedido.situacao == Pedido.Situacao.CANCELADO:
+        motivo = "Reativado sozinho: o pagamento foi aprovado depois do cancelamento."
+        if not reativar(pedido, motivo=motivo):
+            logger.error("Pagamento %s aprovado em pedido cancelado sem estoque (%s)", pagamento.pk, pedido.pk)
+            return
+        pedido.refresh_from_db()
+    pedido.forma_pagamento = pagamento.metodo  # "pix" ou "credito", os mesmos valores do pedido
+    pedido.desconto_pix, pedido.total = esperado["desconto_pix"], esperado["total"]
+    pedido.parcelas = pagamento.parcelas
+    pedido.save(update_fields=["forma_pagamento", "desconto_pix", "total", "parcelas", "atualizado_em"])
+    mudar_situacao(pedido, Pedido.Situacao.PAGO)
+
+
+def para_conferir():
+    """Pagamentos que pedem olho humano: dinheiro aprovado sem pedido pago, ou estorno/contestação de pedido pago."""
+    aprovado_sem_pedido = Q(status=Pagamento.Status.APROVADO) & ~Q(pedido__situacao__in=Pedido.PAGOS)
+    devolvido = Q(
+        status__in=[Pagamento.Status.ESTORNADO, Pagamento.Status.CONTESTADO, Pagamento.Status.EM_MEDIACAO],
+        pedido__situacao__in=Pedido.PAGOS,
+    )
+    return Pagamento.objects.filter(aprovado_sem_pedido | devolvido).select_related("pedido")
 
 
 def sincronizar(provedor_id: str) -> Pagamento | None:
@@ -437,6 +491,21 @@ def atualizar_pedido(pedido: Pedido) -> Pedido:
     return pedido
 
 
+def cancelar_pedido(pedido: Pedido, *, usuario=None, mesmo_pago: bool = False) -> Pedido:
+    """Cancela o pedido (o estoque volta) e as cobranças ainda abertas no Mercado Pago, para o Pix
+    antigo não poder ser pago depois. Não devolve dinheiro: estorno de pedido pago é feito no Mercado Pago."""
+    abertos = pedido.pagamentos.filter(status__in=[Pagamento.Status.PENDENTE, Pagamento.Status.AUTORIZADO])
+    for pagamento in abertos:
+        try:
+            aplicar(pagamento, mercadopago.cancelar(pagamento.provedor_id))
+        except ErroMercadoPago:
+            pass  # a cobrança vence sozinha no prazo do pedido
+    pedido.refresh_from_db()
+    if pedido.situacao == Pedido.Situacao.CANCELADO or (pedido.pago and not mesmo_pago):
+        return pedido
+    return mudar_situacao(pedido, Pedido.Situacao.CANCELADO, usuario=usuario)
+
+
 def expirar(pedido: Pedido) -> bool:
     """Cancela o pedido não pago no prazo e devolve o estoque. Confere a API antes. True se cancelou."""
     pedido = atualizar_pedido(pedido)
@@ -444,8 +513,7 @@ def expirar(pedido: Pedido) -> bool:
         return False
     if pedido.pagamentos.filter(status=Pagamento.Status.EM_ANALISE).exists():
         return False  # cartão em análise: espera a resposta
-    mudar_situacao(pedido, Pedido.Situacao.CANCELADO)
-    return True
+    return cancelar_pedido(pedido).situacao == Pedido.Situacao.CANCELADO
 
 
 def expirar_pendentes(margem_minutos: int = 5) -> int:

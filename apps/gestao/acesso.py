@@ -5,12 +5,12 @@ from functools import wraps
 from urllib.parse import urlencode
 
 from django.contrib.auth.views import redirect_to_login
-from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
 
+from apps.core import limites
 from apps.core.middleware import ip_da_requisicao
 
 MAXIMO_TENTATIVAS = 5
@@ -24,20 +24,16 @@ def _chaves(request, usuario: str) -> list[str]:
 
 
 def bloqueado(request, usuario: str) -> bool:
-    return any((cache.get(chave) or 0) >= MAXIMO_TENTATIVAS for chave in _chaves(request, usuario))
+    return any(limites.total(chave) >= MAXIMO_TENTATIVAS for chave in _chaves(request, usuario))
 
 
 def registrar_falha(request, usuario: str) -> None:
     for chave in _chaves(request, usuario):
-        cache.add(chave, 0, BLOQUEIO_SEGUNDOS)
-        try:
-            cache.incr(chave)
-        except ValueError:
-            cache.set(chave, 1, BLOQUEIO_SEGUNDOS)
+        limites.contar(chave, BLOQUEIO_SEGUNDOS)
 
 
 def limpar_falhas(request, usuario: str) -> None:
-    cache.delete_many(_chaves(request, usuario))
+    limites.zerar(*_chaves(request, usuario))
 
 
 def equipe(view=None, *, permissao: str | None = None):

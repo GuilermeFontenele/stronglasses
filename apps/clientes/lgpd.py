@@ -102,6 +102,9 @@ def exportar_dados(cliente: Cliente, usuario=None) -> dict:
                 "total": str(v.total),
                 "entrega": v.get_entrega_display(),
                 "destinatario": v.destinatario,
+                "email": v.email,
+                "whatsapp": v.whatsapp,
+                "cpf_informado": bool(v.documento),
                 "endereco": ", ".join(
                     parte
                     for parte in (v.logradouro, v.numero_endereco, v.complemento, v.bairro, v.cidade, v.uf, v.cep)
@@ -145,6 +148,10 @@ def anonimizar(cliente: Cliente, usuario=None) -> Cliente:
     # Vendas ficam (obrigação fiscal), mas sem o endereço de entrega; cidade/UF bastam para as estatísticas.
     cliente.vendas.update(
         destinatario="",
+        email="",
+        whatsapp="",
+        documento="",
+        token_acesso=None,
         cep="",
         logradouro="",
         numero_endereco="",

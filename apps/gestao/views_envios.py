@@ -183,6 +183,8 @@ def _documento_para_envio(request, pedido: Pedido, informado: str, com_nota: boo
                 cliente.save()
                 registrar(RegistroAuditoria.Acao.ALTERACAO, cliente, None, {"campo": "documento"}, request.user)
         return informado
+    if pedido.documento:  # CPF informado pelo próprio comprador nesta compra (pedido do site)
+        return pedido.documento
     if cliente and cliente.documento:
         registrar(
             RegistroAuditoria.Acao.ACESSO,

@@ -7,6 +7,7 @@ from django.db import models
 
 from apps.catalogo.models import Produto, Variacao
 from apps.clientes.models import Cliente
+from apps.core.fields import EncryptedTextField
 from apps.core.models import AuditModel
 
 UFS = {
@@ -30,6 +31,9 @@ def sigla_uf(texto: str) -> str:
 
 
 class Pedido(AuditModel):
+    # Fora da trilha de auditoria em claro: CPF do comprador e o link secreto do pedido.
+    CAMPOS_SENSIVEIS_AUDITORIA = ("documento", "token_acesso")
+
     class Situacao(models.TextChoices):
         PENDENTE = "pendente", "Aguardando pagamento"
         PAGO = "pago", "Pago"
@@ -91,6 +95,11 @@ class Pedido(AuditModel):
         "frete", max_digits=10, decimal_places=2, default=ZERO, validators=[MinValueValidator(ZERO)]
     )
     total = models.DecimalField("total", max_digits=10, decimal_places=2, default=ZERO)
+    # Pedidos do site: o que o comprador informou nesta compra. O cadastro (Cliente) pode ser de outra
+    # compra antiga com outro e-mail; cobrança, avisos e etiqueta usam sempre os dados daqui.
+    email = models.EmailField("e-mail do comprador", blank=True)
+    whatsapp = models.CharField("WhatsApp do comprador", max_length=16, blank=True)
+    documento = EncryptedTextField("CPF/CNPJ do comprador", blank=True, help_text="Guardado criptografado.")
     # Pedidos do site: link secreto de acompanhamento e prazo para pagar (depois, devolve o estoque)
     token_acesso = models.CharField(
         "token de acompanhamento", max_length=64, unique=True, null=True, blank=True, editable=False

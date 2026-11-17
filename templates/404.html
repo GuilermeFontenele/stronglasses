@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Página não encontrada · Strong Glasses{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block content %}
+  <section class="pagina-erro">
+    <p class="pagina-erro-codigo" aria-hidden="true">404</p>
+    <h1>Não achamos essa página</h1>
+    <p>O link pode estar antigo ou o produto saiu de linha. Que tal procurar o modelo que você quer?</p>
+    <form class="busca-form" method="get" action="{% url 'catalogo:busca' %}" role="search">
+      <label class="visualmente-oculto" for="q-erro">O que você procura?</label>
+      <input id="q-erro" name="q" type="search" placeholder="Modelo, cor, categoria…" autocomplete="off" maxlength="80">
+      <button class="botao" type="submit">Buscar</button>
+    </form>
+    <p><a class="botao-sec" href="/">Voltar para o início</a></p>
+  </section>
+{% endblock %}

@@ -1,10 +1,10 @@
 import json
+import unicodedata
 from functools import cache
 
 from django.conf import settings
 from django.contrib.staticfiles import finders
 from django.core.paginator import Paginator
-from django.db.models import Q
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils.safestring import mark_safe
@@ -103,8 +103,23 @@ def produto(request, slug):
             "mensagem_whatsapp": mensagem,
             "dados_estruturados": _dados_estruturados(request, item, variacoes, fotos, preco, url),
             "provador": provador,
+            "relacionados": _relacionados(item),
         },
     )
+
+
+def _relacionados(item, quantidade: int = 8) -> list:
+    """Outros produtos das mesmas categorias (primeiro os destaques), para quem ainda está escolhendo."""
+    categorias = list(item.categorias.values_list("pk", flat=True))
+    if not categorias:
+        return []
+    candidatos = produtos_visiveis().filter(categorias__in=categorias).exclude(pk=item.pk)
+    return [p for p in candidatos.order_by("-destaque", "nome")[: quantidade * 2] if p.variacoes_ativas][:quantidade]
+
+
+def _sem_acento(texto: str) -> str:
+    decomposto = unicodedata.normalize("NFKD", texto or "")
+    return "".join(c for c in decomposto if not unicodedata.combining(c)).lower()
 
 
 def _json_seguro(dados) -> str:
@@ -182,14 +197,22 @@ def busca(request):
     termo = " ".join(request.GET.get("q", "").split())[:80]
     resultados = []
     if len(termo) >= 2:
-        filtro = Q()
-        for palavra in termo.split()[:5]:
-            filtro &= (
-                Q(nome__icontains=palavra)
-                | Q(descricao__icontains=palavra)
-                | Q(categorias__nome__icontains=palavra)
-                | Q(variacoes__armacao__nome__icontains=palavra)
-                | Q(variacoes__lente__nome__icontains=palavra)
+        # A loja tem poucas centenas de produtos: comparar em Python deixa a busca igual em qualquer banco,
+        # ignora acentos ("oculos" acha "Óculos") e não repete produto.
+        palavras = [_sem_acento(p) for p in termo.split()[:5]]
+        for produto in produtos_visiveis().prefetch_related("categorias").order_by("-destaque", "nome"):
+            texto = _sem_acento(
+                " ".join(
+                    [
+                        produto.nome,
+                        produto.descricao,
+                        *(c.nome for c in produto.categorias.all()),
+                        *(v.descricao_cor for v in produto.variacoes_ativas),
+                        *(v.sku for v in produto.variacoes_ativas),
+                    ]
+                )
             )
-        resultados = list(produtos_visiveis().filter(filtro).order_by("nome")[:48])
+            if all(palavra in texto for palavra in palavras):
+                resultados.append(produto)
+        resultados = resultados[:48]
     return render(request, "catalogo/busca.html", {"termo": termo, "resultados": resultados})

@@ -20,6 +20,7 @@ from apps.envios import melhorenvio
 from apps.envios import servicos as envios_servicos
 from apps.envios.models import Envio
 from apps.envios.servicos import remetente as dados_remetente
+from apps.pagamentos import servicos as pagamentos
 from apps.vendas.models import Pedido, sigla_uf
 from apps.vendas.servicos import EstoqueInsuficiente, ItemNovo, mudar_situacao, peso_do_pacote, registrar_venda
 
@@ -70,6 +71,8 @@ def vendas(request):
     situacao = request.GET.get("situacao", "")
     if situacao == "pagas":
         qs = qs.filter(situacao__in=Pedido.PAGOS)
+    elif situacao == "conferir":
+        qs = qs.filter(pk__in=pagamentos.para_conferir().values("pedido_id"))
     elif situacao == "a-enviar":
         qs = qs.filter(
             situacao=Pedido.Situacao.PAGO, entrega__in=[Pedido.Entrega.CORREIOS, Pedido.Entrega.TRANSPORTADORA]
@@ -246,7 +249,8 @@ def venda(request, pk):
             return redirect("gestao:venda", pk=obj.pk)
         if request.POST.get("acao") == "cancelar":
             devolveu = obj.estoque_baixado
-            mudar_situacao(obj, Pedido.Situacao.CANCELADO, usuario=request.user)
+            # Também fecha no Mercado Pago as cobranças ainda abertas (um Pix antigo não pode ser pago depois).
+            pagamentos.cancelar_pedido(obj, usuario=request.user, mesmo_pago=True)
             aviso = " Os itens voltaram para o estoque." if devolveu else ""
             messages.success(request, f"Venda {obj.codigo} cancelada.{aviso}")
             return redirect("gestao:venda", pk=obj.pk)
@@ -277,6 +281,7 @@ def venda(request, pk):
             "pode_editar": pode_editar,
             **_contexto_envio(request, obj),
             "pagamentos": list(obj.pagamentos.all()),
+            "pago_online": obj.pagamentos.filter(status="approved").exists(),
         },
     )
 
@@ -297,7 +302,7 @@ def _contexto_envio(request, pedido: Pedido) -> dict:
         "melhorenvio_conectado": bool(conexao and conexao.conectada),
         "melhorenvio_testes": melhorenvio.ambiente() == "sandbox",
         "motivo_sem_envio": envios_servicos.pode_enviar(pedido),
-        "documento_no_cadastro": bool(pedido.cliente_id and pedido.cliente.documento),
+        "documento_no_cadastro": bool(pedido.documento or (pedido.cliente_id and pedido.cliente.documento)),
     }
 
 

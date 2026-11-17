@@ -181,3 +181,23 @@ document.querySelectorAll("form[data-auto-enviar]").forEach((form) => {
   form.querySelectorAll("[data-sem-js]").forEach((b) => (b.hidden = true));
   form.querySelector("select")?.addEventListener("change", () => form.requestSubmit());
 });
+
+// Filtros da categoria: escolher já aplica (o botão "Aplicar" fica só para quem está sem JavaScript).
+document.querySelectorAll("form[data-filtros-loja]").forEach((form) => {
+  form.querySelectorAll("[data-sem-js]").forEach((botao) => (botao.hidden = true));
+  form.querySelectorAll("select").forEach((campo) => campo.addEventListener("change", () => form.requestSubmit()));
+});
+
+// Enviar formulário uma vez só: evita pedido ou item em dobro com clique duplo.
+document.querySelectorAll("form[method=post]").forEach((form) =>
+  form.addEventListener("submit", (evento) => {
+    const botao = evento.submitter || form.querySelector("button[type=submit]");
+    if (!botao) return;
+    // Espera os outros tratadores: se algum cancelou o envio (campo faltando), o botão continua ativo.
+    setTimeout(() => {
+      if (evento.defaultPrevented) return;
+      botao.disabled = true;
+      setTimeout(() => (botao.disabled = false), 8000);
+    }, 0);
+  }),
+);

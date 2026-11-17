@@ -38,6 +38,8 @@ class ApiFalsa:
 
     def __call__(self, metodo, caminho, corpo=None, chave_idempotencia=None):
         self.chamadas.append((metodo, caminho, corpo, chave_idempotencia))
+        if metodo == "PUT":  # cancelar cobrança pendente
+            return {**self.criado, "status": corpo["status"]}
         if metodo == "POST":
             self.proximo += 1
             self.ultimo = corpo
@@ -191,12 +193,70 @@ class CheckoutTests(BaseCheckout):
         self.assertContains(resposta, "Calcule o frete de novo")
         self.assertFalse(Pedido.objects.exists())
 
-    def test_cliente_existente_nao_e_sobrescrito(self):
-        existente = Cliente.objects.create(nome="Maria S.", email="maria@exemplo.com")
+    def test_email_de_outra_pessoa_nao_expoe_nem_altera_o_cadastro(self):
+        existente = Cliente.objects.create(nome="Maria Secreta", email="maria@exemplo.com")
         pedido = self.comprar(nome="Outra Pessoa")
         self.assertEqual(pedido.cliente, existente)
         existente.refresh_from_db()
-        self.assertEqual((existente.nome, existente.whatsapp), ("Maria S.", "+5585988887777"))
+        self.assertEqual((existente.nome, existente.whatsapp, existente.documento), ("Maria Secreta", "", ""))
+        self.assertFalse(existente.enderecos.exists())
+        # A cobrança e a tela usam só o que foi digitado nesta compra.
+        self.assertEqual(
+            (pedido.destinatario, pedido.email, pedido.documento), ("Outra Pessoa", "maria@exemplo.com", CPF)
+        )
+        self.assertEqual(self.api.chamadas[0][2]["payer"]["first_name"], "Outra")
+        self.api.situacao = "approved"
+        self.assertNotContains(self.client.get(f"/pedido/{pedido.token_acesso}/"), "Secreta")
+
+    def test_mesmo_cpf_reaproveita_o_cadastro(self):
+        existente = Cliente.objects.create(nome="Maria Souza", email="antigo@exemplo.com", documento=CPF)
+        pedido = self.comprar()
+        self.assertEqual(pedido.cliente, existente)
+        self.assertEqual(Cliente.objects.count(), 1)
+        self.assertTrue(existente.enderecos.filter(cep="60110000").exists())
+        self.assertEqual(pedido.email, "maria@exemplo.com")
+
+    def test_cpf_e_link_do_pedido_ficam_fora_da_auditoria(self):
+        from apps.core.models import RegistroAuditoria
+
+        pedido = self.comprar()
+        registro = RegistroAuditoria.objects.filter(modelo="vendas.Pedido", objeto_id=str(pedido.pk)).first()
+        texto = str(registro.depois)
+        self.assertNotIn(CPF, texto)
+        self.assertNotIn(pedido.token_acesso, texto)
+
+    def test_emails_do_pedido(self):
+        from django.core import mail
+
+        pedido = self.comprar()
+        self.assertEqual(len(mail.outbox), 1)
+        recebido = mail.outbox[0]
+        self.assertEqual(recebido.to, ["maria@exemplo.com"])
+        self.assertIn(pedido.codigo, recebido.subject)
+        self.assertIn(f"https://loja.exemplo.com.br/pedido/{pedido.token_acesso}/", recebido.body)
+        self.assertIn("R$ 100,15", recebido.body)
+        self.api.situacao = "approved"
+        with self.captureOnCommitCallbacks(execute=True):
+            servicos.sincronizar(Pagamento.objects.get().provedor_id)
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertIn("Pagamento aprovado", mail.outbox[1].subject)
+
+    def test_limite_de_pedidos_por_hora(self):
+        from apps.pagamentos import views
+
+        with mock.patch.object(views, "MAXIMO_PEDIDOS_POR_HORA", 1):
+            self.comprar()
+            self.client.post("/carrinho/adicionar/", {"variacao": self.v1.pk, "quantidade": 1})
+            self.client.post("/finalizar/frete/", {"cep": "60110000"})
+            resposta = self.client.post("/finalizar/", self.dados())
+        self.assertContains(resposta, "Muitos pedidos seguidos")
+        self.assertEqual(Pedido.objects.count(), 1)
+
+    def test_carrinho_lembra_do_pedido_em_aberto(self):
+        pedido = self.comprar()
+        resposta = self.client.get("/carrinho/")
+        self.assertContains(resposta, "Você tem um pedido aguardando pagamento")
+        self.assertContains(resposta, f"/pedido/{pedido.token_acesso}/")
 
 
 class WebhookTests(BaseCheckout):
@@ -251,8 +311,7 @@ class CartaoTests(BaseCheckout):
         politica = pagina["Content-Security-Policy"]
         self.assertIn("https://sdk.mercadopago.com", politica)
         self.assertNotIn("sdk.mercadopago.com", self.client.get("/").get("Content-Security-Policy", ""))
-        pedido.refresh_from_db()
-        self.assertEqual(pedido.total, Decimal("104.90"))  # sem desconto do Pix
+        self.assertContains(pagina, 'data-valor="104.90"')  # sem o desconto do Pix
         url = f"/pedido/{pedido.token_acesso}/cartao/"
         muitas = {"token": "aprovar", "payment_method_id": "visa", "installments": 6, "issuer_id": "25"}
         self.assertEqual(self.client.post(url, muitas, content_type="application/json").status_code, 400)
@@ -267,6 +326,36 @@ class CartaoTests(BaseCheckout):
         self.assertEqual(corpo["statement_descriptor"], "STRONGGLASSES")
         pedido.refresh_from_db()
         self.assertEqual((pedido.situacao, pedido.forma_pagamento, pedido.parcelas), ("pago", "credito", 3))
+        self.assertEqual(pedido.total, Decimal("104.90"))
+
+    def test_limite_de_tentativas_de_cartao(self):
+        pedido = self.comprar(forma="credito")
+        url = f"/pedido/{pedido.token_acesso}/cartao/"
+        dados = {"token": "recusar", "payment_method_id": "visa", "installments": 1}
+        for _ in range(servicos.MAXIMO_TENTATIVAS_CARTAO):
+            self.assertEqual(self.client.post(url, dados, content_type="application/json").status_code, 402)
+        bloqueado = self.client.post(url, {**dados, "token": "aprovar"}, content_type="application/json")
+        self.assertEqual(bloqueado.status_code, 400)
+        self.assertIn("Muitas tentativas", bloqueado.json()["mensagem"])
+
+    def test_pix_gerado_antes_ainda_vale_depois_de_abrir_o_cartao(self):
+        pedido = self.comprar()  # Pix de 100,15 gerado
+        pix = Pagamento.objects.get()
+        self.client.get(f"/pedido/{pedido.token_acesso}/pagar/")  # só olhar o cartão não muda o pedido
+        pedido.refresh_from_db()
+        self.assertEqual((pedido.forma_pagamento, pedido.total), ("pix", Decimal("100.15")))
+        # Tentou o cartão (recusado): o pedido passou para 104,90. Aí pagou o Pix antigo.
+        url = f"/pedido/{pedido.token_acesso}/cartao/"
+        self.client.post(
+            url, {"token": "recusar", "payment_method_id": "visa", "installments": 1}, content_type="application/json"
+        )
+        pedido.refresh_from_db()
+        self.assertEqual(pedido.total, Decimal("104.90"))
+        self.api.criado = {"id": int(pix.provedor_id), "transaction_amount": 100.15, "payment_method_id": "pix"}
+        self.api.situacao = "approved"
+        servicos.sincronizar(pix.provedor_id)
+        pedido.refresh_from_db()
+        self.assertEqual((pedido.situacao, pedido.forma_pagamento, pedido.total), ("pago", "pix", Decimal("100.15")))
 
     def test_trocar_para_pix(self):
         pedido = self.comprar(forma="credito")
@@ -296,6 +385,42 @@ class ExpiracaoTests(BaseCheckout):
         self.assertEqual(servicos.expirar_pendentes(), 0)
         pedido.refresh_from_db()
         self.assertEqual(pedido.situacao, "pago")
+
+    def test_cancelar_fecha_a_cobranca_no_mercado_pago(self):
+        pedido = self.comprar()
+        servicos.cancelar_pedido(pedido)
+        self.assertIn("PUT", [c[0] for c in self.api.chamadas])
+        self.assertEqual(Pagamento.objects.get().status, "cancelled")
+        pedido.refresh_from_db()
+        self.assertEqual(pedido.situacao, "cancelado")
+
+    def test_pago_depois_de_cancelado_reativa_se_tem_estoque(self):
+        pedido = self.comprar()
+        pagamento = Pagamento.objects.get()
+        Pedido.objects.filter(pk=pedido.pk).update(expira_em=timezone.now() - timedelta(minutes=10))
+        self.api.situacao = "cancelled"
+        servicos.expirar_pendentes()
+        self.v1.refresh_from_db()
+        self.assertEqual(self.v1.estoque, 2)
+        self.api.situacao = "approved"  # o banco confirmou o Pix com atraso
+        servicos.sincronizar(pagamento.provedor_id)
+        pedido.refresh_from_db()
+        self.v1.refresh_from_db()
+        self.assertEqual((pedido.situacao, self.v1.estoque), ("pago", 1))
+        self.assertIn("Reativado", pedido.observacoes)
+        self.assertEqual(servicos.para_conferir().count(), 0)
+
+    def test_pago_depois_de_cancelado_sem_estoque_vira_alerta(self):
+        pedido = self.comprar()
+        pagamento = Pagamento.objects.get()
+        servicos.cancelar_pedido(pedido)
+        self.v1.estoque = 0
+        self.v1.save()
+        self.api.situacao = "approved"
+        servicos.sincronizar(pagamento.provedor_id)
+        pedido.refresh_from_db()
+        self.assertEqual(pedido.situacao, "cancelado")
+        self.assertEqual(servicos.para_conferir().count(), 1)
 
     def test_link_errado(self):
         self.assertEqual(self.client.get("/pedido/nao-existe/").status_code, 404)

@@ -177,6 +177,13 @@
         {% if pedido.cliente %}
           <a class="pessoa" href="{% url 'gestao:cliente' pedido.cliente_id %}"><span class="avatar" aria-hidden="true">{{ pedido.cliente.nome|slice:":1"|upper }}</span><b>{{ pedido.cliente.nome }}</b></a>
         {% else %}<p class="texto-suave">Venda sem cadastro de cliente.</p>{% endif %}
+        {% if pedido.email or pedido.whatsapp %}
+          <dl class="dados">
+            <dt>Comprou como</dt><dd>{{ pedido.destinatario }}</dd>
+            {% if pedido.email %}<dt>E-mail</dt><dd><a class="link" href="mailto:{{ pedido.email }}">{{ pedido.email }}</a></dd>{% endif %}
+            {% if pedido.whatsapp %}<dt>WhatsApp</dt><dd><a class="link" href="https://wa.me/{{ pedido.whatsapp|digitos }}" target="_blank" rel="noopener">{{ pedido.whatsapp|telefone }}</a></dd>{% endif %}
+          </dl>
+        {% endif %}
       </section>
 
       <section class="bloco">
@@ -227,6 +234,7 @@
             {% csrf_token %}
             <input type="hidden" name="acao" value="cancelar">
             <p class="campo-ajuda">A venda sai do faturamento{% if pedido.estoque_baixado %} e os itens <b>voltam para o estoque</b>{% endif %}. Não dá para desfazer.</p>
+            {% if pago_online %}<p class="mensagem mensagem-warning">Esta venda foi paga pelo Mercado Pago. Cancelar aqui <b>não devolve o dinheiro</b>: faça o estorno no painel do Mercado Pago.</p>{% endif %}
             <button class="botao botao-perigo botao-largo" type="submit">Cancelar a venda {{ pedido.codigo }}</button>
           </form>
         </details>

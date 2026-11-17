@@ -103,3 +103,17 @@ class OrigemMiddleware:
         if request.method == "GET" and any(c in request.GET for c in self.CAMPOS) and "origem" not in request.session:
             request.session["origem"] = {c: request.GET.get(c, "")[:100] for c in self.CAMPOS if request.GET.get(c)}
         return self.get_response(request)
+
+
+class CabecalhosMiddleware:
+    """Permissions-Policy: o navegador só libera o que o site realmente usa (câmera do provador)."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        resposta = self.get_response(request)
+        politica = getattr(settings, "PERMISSIONS_POLICY", "")
+        if politica and "Permissions-Policy" not in resposta:
+            resposta["Permissions-Policy"] = politica
+        return resposta

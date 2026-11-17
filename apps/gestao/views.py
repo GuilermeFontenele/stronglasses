@@ -3,6 +3,7 @@
 import json
 import logging
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login as entrar_django
 from django.contrib.auth import logout as sair_django
@@ -191,6 +192,8 @@ def entrar(request):
         elif form.is_valid() and form.get_user().is_staff:
             limpar_falhas(request, usuario)
             entrar_django(request, form.get_user())
+            # Sessão da equipe expira bem antes da de visitante (que guarda só o carrinho).
+            request.session.set_expiry(settings.SESSAO_EQUIPE_SEGUNDOS)
             return redirect(destino)
         else:
             registrar_falha(request, usuario)

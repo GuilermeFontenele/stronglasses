@@ -78,6 +78,11 @@ def consultar(pagamento_id: str) -> dict:
     return _requisicao("GET", f"/v1/payments/{urllib.parse.quote(str(pagamento_id))}")
 
 
+def cancelar(pagamento_id: str) -> dict:
+    """Cancela uma cobrança ainda pendente (ex.: Pix não pago de um pedido cancelado)."""
+    return _requisicao("PUT", f"/v1/payments/{urllib.parse.quote(str(pagamento_id))}", {"status": "cancelled"})
+
+
 def assinatura_valida(cabecalho: str, request_id: str, data_id: str, agora: float | None = None) -> bool:
     """Confere o `x-signature` (ts=...,v1=...) do webhook com a assinatura secreta do aplicativo."""
     segredo = settings.MERCADOPAGO_WEBHOOK_SECRET

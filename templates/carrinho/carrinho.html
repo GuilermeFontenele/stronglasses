@@ -5,6 +5,12 @@
 {% block content %}
   <section class="carrinho">
     <h1>Seu carrinho</h1>
+    {% if pedido_em_aberto %}
+      <a class="aviso-pedido" href="{% url 'pagamentos:pedido' pedido_em_aberto.token_acesso %}">
+        <span><strong>Você tem um pedido aguardando pagamento</strong><small>{{ pedido_em_aberto.codigo }} · {{ pedido_em_aberto.total|brl }} · reservado até {{ pedido_em_aberto.expira_em|date:"H:i" }}</small></span>
+        <b>Pagar agora</b>
+      </a>
+    {% endif %}
     {% if linhas %}
       <div class="carrinho-conteudo">
         <ul class="carrinho-itens">

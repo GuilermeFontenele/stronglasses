@@ -9,6 +9,9 @@ from .models import Parametro
 
 _PREFIXO = "parametro:"
 _AUSENTE = object()
+# Curto de propósito: cada processo do servidor tem o seu cache, e uma mudança feita no painel
+# precisa aparecer em todos em até um minuto.
+TEMPO_CACHE = 60
 
 
 def get_parametro(chave: str, padrao=None):
@@ -21,7 +24,7 @@ def get_parametro(chave: str, padrao=None):
         return padrao
     # Dentro de uma transação o valor pode ainda ser desfeito: não guarda no cache.
     if not connection.in_atomic_block:
-        cache.set(_PREFIXO + chave, valor, timeout=300)
+        cache.set(_PREFIXO + chave, valor, timeout=TEMPO_CACHE)
     return valor
 
 
@@ -47,5 +50,5 @@ def get_parametros(*chaves: str, padroes: dict | None = None) -> dict:
         for parametro in Parametro.objects.filter(pk__in=faltando):
             resultado[parametro.pk] = parametro.valor_tipado()
             if guardar:
-                cache.set(_PREFIXO + parametro.pk, resultado[parametro.pk], timeout=300)
+                cache.set(_PREFIXO + parametro.pk, resultado[parametro.pk], timeout=TEMPO_CACHE)
     return {chave: resultado.get(chave, padroes.get(chave)) for chave in chaves}

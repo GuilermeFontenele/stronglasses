@@ -21,7 +21,7 @@ Loja virtual da Strong Glasses (óculos de sol e armações), em Django 6.
 - `apps/clientes`: `Cliente`, `Endereco`, `Consentimento` e os direitos do titular (`lgpd.py`).
 - `apps/catalogo`: `Produto` → `Variacao` (armação + lente, SKU, estoque), imagens, seletor de cor.
 - `apps/carrinho`: carrinho na sessão (só IDs e quantidades, sem dado pessoal); totais sempre recalculados
-  no servidor. Finalização pelo WhatsApp até o checkout do Mercado Pago existir.
+  no servidor. Finaliza no checkout do site (`apps/pagamentos`) ou pelo WhatsApp.
 - `apps/historico`: pedidos e métricas da Nuvemshop (somente leitura; faturamento por ano para o MEI).
 - `apps/gestao`: painel da loja em `/gestao/` (dashboard com gráficos SVG, produtos, estoque, clientes, pedidos,
   banners, páginas, configurações). Só equipe, login com limite de tentativas, toda alteração auditada;
@@ -33,6 +33,7 @@ Loja virtual da Strong Glasses (óculos de sol e armações), em Django 6.
   agendar `atualizar_rastreios`.
 - `apps/pagamentos`: checkout do site (`/finalizar/`), Pix e cartão (Brick) no Mercado Pago, webhook assinado,
   `expirar_pedidos` (agendar). Ver `docs/PAGAMENTOS.md`.
+- Limites de tentativas (login, cotações, pedidos): `apps/core/limites.py`, cache `limites` (no banco em produção).
 - `apps/nuvemshop`: importação via API (`importar_nuvemshop`, `nuvemshop_token`). Ver `docs/IMPORTACAO.md`.
 
 ## Regras do projeto (não negociáveis)

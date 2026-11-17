@@ -1,0 +1,9 @@
+{% load vitrine %}{% autoescape off %}Olá, {{ primeiro_nome }}!
+
+O pagamento do pedido {{ pedido.codigo }} foi aprovado ({{ pedido.total|brl }}). Já estamos separando o seu óculos.
+
+Assim que ele for enviado, você recebe outro e-mail{% if pedido.entrega == "motoboy" %} e combinamos a entrega pelo WhatsApp{% else %} com o código de rastreio{% endif %}.
+{% if link %}
+Acompanhe por aqui:
+{{ link }}
+{% endif %}{% include "emails/_rodape.txt" %}{% endautoescape %}

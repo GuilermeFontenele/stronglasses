@@ -17,6 +17,10 @@ if not FIELD_ENCRYPTION_KEYS or not FIELD_HASH_KEY:
 
 DATABASES["default"]["OPTIONS"]["sslmode"] = env_str("DB_SSLMODE", "require")
 
+# Contadores de tentativas no banco: valem para todos os processos do servidor
+# (a tabela é criada por "manage.py createcachetable", que o scripts/iniciar.sh roda).
+CACHES["limites"] = {"BACKEND": "django.core.cache.backends.db.DatabaseCache", "LOCATION": "cache_limites"}
+
 # HTTPS em tudo
 SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", True)
 # O health check da hospedagem chama /saude/ por HTTP interno; não redireciona essa rota.

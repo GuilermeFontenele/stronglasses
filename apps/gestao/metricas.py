@@ -9,6 +9,7 @@ from django.utils import timezone
 
 from apps.catalogo.models import Produto, Variacao
 from apps.historico.models import STATUS_PAGOS, ItemPedidoHistorico, MetricaMensal, PedidoHistorico
+from apps.pagamentos import servicos as pagamentos
 from apps.vendas.models import UFS, ItemPedido, Pedido
 
 PERIODOS = {
@@ -211,6 +212,10 @@ def alertas() -> dict:
         Q(total__lte=0) | Q(total__isnull=True)
     )
     return {
+        "pagamentos_conferir": pagamentos.para_conferir().count(),
+        "a_enviar": Pedido.objects.filter(
+            situacao=Pedido.Situacao.PAGO, entrega__in=[Pedido.Entrega.CORREIOS, Pedido.Entrega.TRANSPORTADORA]
+        ).count(),
         "estoque_baixo": estoque_baixo[:8],
         "estoque_baixo_total": estoque_baixo.count(),
         "sem_estoque": sem_estoque.count(),

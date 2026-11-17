@@ -16,10 +16,17 @@ import django
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 django.setup()
 
+from io import BytesIO  # noqa: E402
+
 from django.contrib.auth import get_user_model  # noqa: E402
+from django.core.files.base import ContentFile  # noqa: E402
+from django.core.files.storage import default_storage  # noqa: E402
 from django.test import Client  # noqa: E402
 from django.utils import timezone  # noqa: E402
+from PIL import Image, ImageDraw  # noqa: E402
 
+from apps.catalogo import provador  # noqa: E402
+from apps.catalogo import views as catalogo_views  # noqa: E402
 from apps.catalogo.models import (  # noqa: E402
     AcabamentoArmacao,
     Banner,
@@ -120,11 +127,51 @@ hoje = date.today()
 for m in range(12):
     mes = date(hoje.year - (1 if hoje.month - m <= 0 else 0), (hoje.month - m - 1) % 12 + 1, 1)
     MetricaMensal.objects.create(mes=mes, visitas=900 + aleatorio.randint(0, 900), vendas=aleatorio.randint(5, 20))
-for k in range(3):
-    ImagemProduto.objects.create(
-        produto=produtos[2], imagem=f"produtos/demo{k}.webp", texto_alternativo=f"Foto {k}", ordem=k
-    )
-Banner.objects.create(titulo="Mapa do Brasil", imagem="banners/demo.webp", imagem_mobile="banners/demo-cel.webp")
+
+
+def _foto(armacao: str, lente: str, deslocamento: int = 0) -> ContentFile:
+    """Foto de produto de mentira: óculos de frente em fundo claro, como as fotos reais da loja."""
+    img = Image.new("RGB", (800, 800), "#f4f4f2")
+    d = ImageDraw.Draw(img)
+    y = 320 + deslocamento
+    for x in (140, 450):
+        d.rounded_rectangle((x, y, x + 210, y + 150), radius=62, fill=lente, outline=armacao, width=16)
+    d.rectangle((350, y + 36, 450, y + 50), fill=armacao)
+    d.rectangle((30, y + 30, 140, y + 40), fill=armacao)
+    d.rectangle((660, y + 30, 770, y + 40), fill=armacao)
+    buf = BytesIO()
+    img.save(buf, "WEBP", quality=70)
+    return ContentFile(buf.getvalue())
+
+
+def _banner(largura: int, altura: int, texto: str) -> ContentFile:
+    img = Image.new("RGB", (largura, altura), "#1c2530")
+    d = ImageDraw.Draw(img)
+    for n in range(0, largura, 6):
+        tom = 28 + int(60 * n / largura)
+        d.rectangle((n, 0, n + 6, altura), fill=(tom, tom + 12, tom + 28))
+    d.text((largura // 12, altura // 2), texto, fill="white")
+    buf = BytesIO()
+    img.save(buf, "WEBP", quality=60)
+    return ContentFile(buf.getvalue())
+
+
+for p in produtos:
+    for ordem, v in enumerate(p.variacoes.select_related("armacao", "lente")):
+        for angulo in (0, 1):
+            foto = ImagemProduto(
+                produto=p,
+                variacao=v if angulo == 0 else None,
+                texto_alternativo=f"{p.nome} {v.descricao_cor.lower()}",
+                ordem=ordem * 2 + angulo,
+            )
+            foto.imagem.save("foto.webp", _foto(v.armacao.cor_hex, v.lente.cor_hex if v.lente else "#333", angulo * 40))
+    provador.preencher(p)
+catalogo_views.provador_instalado = lambda: True  # na prévia, mostra o botão do provador sem baixar o MediaPipe
+banner = Banner(titulo="Coleção de verão")
+banner.imagem.save("banner.webp", _banner(1920, 800, "COLECAO DE VERAO"), save=False)
+banner.imagem_mobile.save("banner-cel.webp", _banner(1080, 1350, "COLECAO DE VERAO"), save=False)
+banner.save()
 
 # Vendas lançadas no painel (hotel, barbearia, WhatsApp)
 Parametro.objects.filter(chave="REMETENTE_ENDERECO").update(valor="Rua Exemplo, 100, sala 2")
@@ -214,7 +261,17 @@ with override_settings(MERCADOPAGO_ACCESS_TOKEN=secrets.token_hex(8), MERCADOPAG
     loja = Client()
     variacao = next(v for p in produtos for v in p.variacoes.all() if v.estoque > 0)
     loja.post("/carrinho/adicionar/", {"variacao": variacao.pk, "quantidade": 1})
-    paginas = {"loja_carrinho": "/carrinho/", "loja_finalizar": "/finalizar/"}
+    paginas = {
+        "loja_home": "/",
+        "loja_categoria": "/feminino/",
+        "loja_produto": f"/produtos/{produtos[0].slug}/",
+        "loja_busca": "/busca/?q=oculos",
+        "loja_busca_vazia": "/busca/?q=xyzabc",
+        "loja_404": "/nao-existe/",
+        "loja_privacidade": "/politica-de-privacidade/",
+        "loja_carrinho": "/carrinho/",
+        "loja_finalizar": "/finalizar/",
+    }
     pedido_site = Pedido.objects.create(
         numero=9999,
         realizado_em=agora,
@@ -247,4 +304,20 @@ with override_settings(MERCADOPAGO_ACCESS_TOKEN=secrets.token_hex(8), MERCADOPAG
         (saida / f"{nome}.html").write_text(
             html.replace('"/static/', '"static/').replace('"/media/', '"media/'), encoding="utf-8"
         )
+
+
+def _despejar(pasta: str = "") -> None:
+    """Copia as imagens (guardadas em memória nos testes) para a pasta da prévia."""
+    pastas, arquivos = default_storage.listdir(pasta)
+    for nome in arquivos:
+        caminho = f"{pasta}/{nome}".lstrip("/")
+        destino = saida / "media" / caminho
+        destino.parent.mkdir(parents=True, exist_ok=True)
+        with default_storage.open(caminho) as arquivo:
+            destino.write_bytes(arquivo.read())
+    for nome in pastas:
+        _despejar(f"{pasta}/{nome}".lstrip("/"))
+
+
+_despejar()
 print("Prévia gerada em", saida)

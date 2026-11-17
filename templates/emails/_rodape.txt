@@ -1,0 +1,3 @@
+{% load paginas %}
+Dúvidas? Responda este e-mail{% if whatsapp %} ou chame no WhatsApp: {{ whatsapp|telefone }} (https://wa.me/{{ whatsapp }}){% endif %}.
+Strong Glasses

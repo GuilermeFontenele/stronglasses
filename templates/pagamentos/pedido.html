@@ -10,7 +10,7 @@
     {% if pedido.pago %}
       <div class="pedido-estado pedido-ok">
         <h1>Pagamento aprovado!</h1>
-        <p>Obrigado, {{ pedido.cliente.nome|default:pedido.destinatario }}. Já estamos separando o seu óculos.{% if pedido.codigo_rastreio %} Código de rastreio: <b>{{ pedido.codigo_rastreio }}</b>.{% else %} Você recebe o código de rastreio assim que ele for postado.{% endif %}</p>
+        <p>Obrigado, {{ primeiro_nome }}. Já estamos separando o seu óculos.{% if pedido.codigo_rastreio %} Código de rastreio: <b>{{ pedido.codigo_rastreio }}</b>.{% else %} Você recebe o código de rastreio assim que ele for postado.{% endif %}</p>
       </div>
     {% elif pedido.situacao == "cancelado" %}
       <div class="pedido-estado pedido-erro">

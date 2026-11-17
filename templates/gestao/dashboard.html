@@ -49,6 +49,8 @@
     <section class="bloco" aria-labelledby="t-alertas">
       <div class="bloco-topo"><h2 id="t-alertas">Precisa de atenção</h2></div>
       <ul class="alertas">
+        {% if alertas.pagamentos_conferir %}<li><a href="{% url 'gestao:vendas' %}?situacao=conferir"><span>{% icone "alerta" %} Pagamentos para conferir no Mercado Pago</span><b class="selo selo-erro">{{ alertas.pagamentos_conferir }}</b></a></li>{% endif %}
+        {% if alertas.a_enviar %}<li><a href="{% url 'gestao:vendas' %}?situacao=a-enviar"><span>{% icone "envio" %} Vendas pagas aguardando envio</span><b class="selo selo-aviso">{{ alertas.a_enviar }}</b></a></li>{% endif %}
         <li><a href="{% url 'gestao:estoque' %}?filtro=baixo"><span>{% icone "alerta" %} Cores com estoque baixo (≤1)</span><b class="selo {% if alertas.estoque_baixo_total %}selo-aviso{% else %}selo-ok{% endif %}">{{ alertas.estoque_baixo_total }}</b></a></li>
         <li><a href="{% url 'gestao:produtos' %}?status=publicados&amp;estoque=zerado"><span>{% icone "estoque" %} Publicados sem estoque</span><b class="selo {% if alertas.sem_estoque %}selo-erro{% else %}selo-ok{% endif %}">{{ alertas.sem_estoque }}</b></a></li>
         <li><a href="{% url 'gestao:produtos' %}?status=publicados&amp;pendencia=sem-foto"><span>{% icone "banners" %} Publicados sem foto</span><b class="selo {% if alertas.sem_foto %}selo-erro{% else %}selo-ok{% endif %}">{{ alertas.sem_foto }}</b></a></li>

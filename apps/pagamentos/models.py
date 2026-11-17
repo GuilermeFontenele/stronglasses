@@ -9,6 +9,9 @@ from apps.vendas.models import Pedido
 
 
 class Pagamento(AuditModel):
+    # O QR Code é uma imagem grande e o copia e cola é um meio de pagamento: não vão para a trilha de auditoria.
+    CAMPOS_SENSIVEIS_AUDITORIA = ("pix_qr_base64", "pix_copia_e_cola")
+
     class Metodo(models.TextChoices):
         PIX = "pix", "Pix"
         CARTAO = "credito", "Cartão de crédito"

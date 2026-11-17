@@ -307,3 +307,36 @@ class CriarBannerArquivoTests(TestCase):
             with self.assertRaises(CommandError):
                 call_command("criar_banner", "--arquivo", pc, "--arquivo-celular", cel, stdout=io.StringIO())
         self.assertFalse(Banner.objects.exists())
+
+
+class MelhoriasVitrineTests(VitrineBase):
+    def test_busca_ignora_acento_e_nao_repete(self):
+        for termo in ("oculos roshi", "ÓCULOS", "oculos de sol"):
+            with self.subTest(termo=termo):
+                resultados = self.client.get("/busca/", {"q": termo}).context["resultados"]
+                self.assertEqual([p.slug for p in resultados], ["oculos-de-sol-roshi"])
+
+    def test_pagina_404_amigavel(self):
+        resposta = self.client.get("/pagina-que-nao-existe/")
+        self.assertEqual(resposta.status_code, 404)
+        self.assertContains(resposta, "Não achamos essa página", status_code=404)
+        self.assertContains(resposta, 'action="/busca/"', status_code=404)
+
+    def test_permissions_policy(self):
+        politica = self.client.get("/")["Permissions-Policy"]
+        self.assertIn("camera=(self)", politica)
+        self.assertIn("geolocation=()", politica)
+
+    def test_produto_mostra_garantias_e_relacionados(self):
+        from apps.catalogo.models import Categoria, Produto, Variacao
+
+        categoria = Categoria.objects.create(nome="Solar", slug="solar")
+        self.produto.categorias.add(categoria)
+        outro = Produto.objects.create(nome="Óculos Ohana", slug="oculos-ohana", preco="89.90", ativo=True)
+        outro.categorias.add(categoria)
+        Variacao.objects.create(produto=outro, armacao=self.v1.armacao, lente=self.v1.lente, sku="OH-1", estoque=2)
+        resposta = self.client.get("/produtos/oculos-de-sol-roshi/")
+        self.assertContains(resposta, "Você também pode gostar")
+        self.assertContains(resposta, "/produtos/oculos-ohana/")
+        self.assertContains(resposta, "trocas e devoluções")
+        self.assertEqual([p.slug for p in resposta.context["relacionados"]], ["oculos-ohana"])

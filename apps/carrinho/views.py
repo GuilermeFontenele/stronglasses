@@ -2,12 +2,14 @@ from urllib.parse import quote
 
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from apps.catalogo.models import Variacao
 from apps.catalogo.templatetags.vitrine import brl
 from apps.core.parametros import get_parametro
 from apps.pagamentos import mercadopago
+from apps.vendas.models import Pedido
 
 from .carrinho import MAXIMO_POR_ITEM, Carrinho
 
@@ -40,6 +42,19 @@ def _mensagem_whatsapp(linhas, resumo) -> str:
     return "\n".join(partes)
 
 
+def _pedido_em_aberto(request):
+    """Pedido desta sessão que ainda espera pagamento (a pessoa fechou a aba do Pix, por exemplo)."""
+    token = request.session.get("ultimo_pedido")
+    if not token:
+        return None
+    pedido = Pedido.objects.filter(
+        token_acesso=token, situacao=Pedido.Situacao.PENDENTE, expira_em__gt=timezone.now()
+    ).first()
+    if pedido is None:
+        request.session.pop("ultimo_pedido", None)
+    return pedido
+
+
 @require_GET
 def ver(request):
     carrinho = Carrinho(request)
@@ -53,6 +68,7 @@ def ver(request):
         request,
         "carrinho/carrinho.html",
         {
+            "pedido_em_aberto": _pedido_em_aberto(request),
             "linhas": linhas,
             "resumo": resumo,
             "link_whatsapp": link_whatsapp,

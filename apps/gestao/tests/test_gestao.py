@@ -417,3 +417,39 @@ class AjustesTests(BaseGestao):
         self.assertContains(
             self.client.get(f"/gestao/clientes/{self.cliente.pk}/"), 'href="https://wa.me/5585999998888"'
         )
+
+
+class SessaoTests(BaseGestao):
+    def test_sessao_da_equipe_dura_menos_que_a_do_visitante(self):
+        from django.conf import settings
+
+        self.client.post("/gestao/entrar/", {"username": self.dono.username, "password": SENHA})
+        self.assertEqual(self.client.session.get_expiry_age(), settings.SESSAO_EQUIPE_SEGUNDOS)
+        self.assertGreater(settings.SESSION_COOKIE_AGE, settings.SESSAO_EQUIPE_SEGUNDOS)
+
+    def test_limite_de_login_usa_o_cache_de_limites(self):
+        from apps.core import limites
+
+        errada = secrets.token_urlsafe(8)
+        for _ in range(5):
+            self.client.post("/gestao/entrar/", {"username": "alguem", "password": errada})
+        bloqueado = self.client.post("/gestao/entrar/", {"username": "alguem", "password": errada})
+        self.assertEqual(bloqueado.status_code, 429)
+        self.assertTrue(any(limites.total(chave) >= 5 for chave in ("gestao:login:ip:127.0.0.1",)))
+
+    def test_alerta_de_pagamento_para_conferir(self):
+        from apps.pagamentos.models import Pagamento
+        from apps.vendas.models import Pedido
+        from apps.vendas.servicos import ItemNovo, registrar_venda
+
+        pedido = registrar_venda(
+            Pedido(forma_pagamento="pix", canal="site", situacao="pendente"),
+            [ItemNovo(self.variacao, 1)],
+            baixar_estoque=True,
+            aplicar_pix=True,
+        )
+        Pagamento.objects.create(pedido=pedido, provedor_id="900", metodo="pix", status="approved", valor=1)
+        self.entrar()
+        self.assertContains(self.client.get("/gestao/"), "Pagamentos para conferir no Mercado Pago")
+        lista = self.client.get("/gestao/vendas/", {"situacao": "conferir"})
+        self.assertEqual([v.pk for v in lista.context["pagina"]], [pedido.pk])

@@ -3,7 +3,7 @@
 {% block content %}
   <section class="vitrine">
     <h1>{{ categoria.nome }}</h1>
-    <form class="filtros" method="get">
+    <form class="filtros" method="get" data-filtros-loja>
       <label>Público
         <select name="publico">
           <option value="">Todos</option>
@@ -18,7 +18,7 @@
           <option value="novidades"{% if ordem == "novidades" %} selected{% endif %}>Novidades</option>
         </select>
       </label>
-      <button class="botao-sec" type="submit">Aplicar</button>
+      <button class="botao-sec" type="submit" data-sem-js>Aplicar</button>
     </form>
     <p class="contagem">{{ pagina.paginator.count }} produto{{ pagina.paginator.count|pluralize }}</p>
     <div class="grade">{% for produto in pagina %}{% include "catalogo/partials/card.html" %}{% empty %}<p class="vazio">Nenhum produto aqui ainda.</p>{% endfor %}</div>

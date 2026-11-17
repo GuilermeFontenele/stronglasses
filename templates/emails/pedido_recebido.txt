@@ -1,0 +1,14 @@
+{% load vitrine %}{% autoescape off %}Olá, {{ primeiro_nome }}!
+
+Recebemos o seu pedido {{ pedido.codigo }}. Ele fica reservado até {{ pedido.expira_em|date:"H:i" }} de hoje, aguardando o pagamento.
+{% if link %}
+Para pagar ou acompanhar, use este link (guarde-o, ele é só seu):
+{{ link }}
+{% endif %}
+Resumo:
+{% for item in itens %}- {{ item.quantidade }}x {{ item.nome }}{% if item.cor %} ({{ item.cor|lower }}){% endif %}: {{ item.subtotal|brl }}
+{% endfor %}Frete{% if pedido.frete_servico %} ({{ pedido.frete_servico }}){% endif %}: {{ pedido.frete|brl }}
+Total: {{ pedido.total|brl }}{% if pedido.desconto_pix %} (já com o desconto do Pix){% endif %}
+
+Entrega: {{ pedido.logradouro }}, {{ pedido.numero_endereco }}{% if pedido.complemento %}, {{ pedido.complemento }}{% endif %} · {{ pedido.bairro }} · {{ pedido.cidade }}/{{ pedido.uf }}
+{% include "emails/_rodape.txt" %}{% endautoescape %}

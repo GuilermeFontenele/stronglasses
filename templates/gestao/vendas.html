@@ -15,6 +15,7 @@
       <option value="">Todas as situações</option>
       <option value="pagas"{% if situacao == "pagas" %} selected{% endif %}>Pagas (inclui enviadas e entregues)</option>
       <option value="a-enviar"{% if situacao == "a-enviar" %} selected{% endif %}>Aguardando envio</option>
+      <option value="conferir"{% if situacao == "conferir" %} selected{% endif %}>Pagamento para conferir</option>
       {% for valor, rotulo in situacoes %}<option value="{{ valor }}"{% if situacao == valor %} selected{% endif %}>{{ rotulo }}</option>{% endfor %}
     </select></label>
     <label><span class="oculto">Canal</span><select name="canal">
